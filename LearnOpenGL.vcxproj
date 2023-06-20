@@ -142,6 +142,18 @@
     <ClCompile Include="glad.c" />
     <ClCompile Include="Source.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="camera.h" />
+    <ClInclude Include="shader.h" />
+    <ClInclude Include="stb_image.h" />
+    <ClInclude Include="texture.h" />
+    <ClInclude Include="tm.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="shaders\fragmentShaders\fragmentShader1t2D.frag" />
+    <None Include="shaders\fragmentShaders\fragmentShaderSource.frag" />
+    <None Include="shaders\vertexShaders\vertexShaderSource.vert" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
