@@ -21,6 +21,7 @@ const unsigned int SCR_HEIGHT = 600;
 
 bool renderFilled = true;
 bool renderAxis = false;
+bool renderNormals = false;
 
 float deltaTime = 0.0f;	// Time between current frame and last frame
 float lastFrame = 0.0f; // Time of last frame
@@ -76,6 +77,10 @@ void processInput(GLFWwindow* window)
 	else if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS)
 	{
 		renderAxis = !renderAxis;
+	}
+	else if (glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS)
+	{
+		renderNormals = !renderNormals;
 	}
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 		camera.ProcessKeyboard(FORWARD, deltaTime);
@@ -204,16 +209,18 @@ int main()
 		// Render objects
 		cube.setMVP(model, view, proj);
 
-		// cube.draw(lightPos, camera.Position);
-
-		cube.drawNormals(glm::vec3(1.0f, 0.0f, 1.0f));
+		cube.draw(lightPos, camera.Position);
 
 		model = glm::scale(glm::translate(glm::mat4(1.0f), lightPos), glm::vec3(0.2f));
 		light.setMVP(model, view, proj);
 		
-		// light.draw();
+		light.draw();
 
-		light.drawNormals(glm::vec3(1.0f, 0.0f, 1.0f));
+		if (renderNormals)
+		{
+			cube.drawNormals(glm::vec3(1.0f, 0.0f, 1.0f));
+			light.drawNormals(glm::vec3(1.0f, 0.0f, 1.0f));
+		}
 
 		// Check and call events and swap buffers
 		glfwSwapBuffers(window);

@@ -47,6 +47,17 @@ public:
 
 	void setModel(glm::mat4 model) { m_Model = model; }
 
+	void setView(glm::mat4 view) { m_View = view; }
+
+	void setProj(glm::mat4 proj) { m_Proj = proj; }
+
+	void setMVP(glm::mat4 model, glm::mat4 view, glm::mat4 proj) 
+	{
+		m_Model = model;
+		m_View = view;
+		m_Proj = proj;
+	}
+
 	void setColor(glm::vec3 color) { m_Color = color; }
 
 	void draw(glm::mat4 model, glm::mat4 view, glm::mat4 proj, glm::vec3 color)
@@ -57,6 +68,20 @@ public:
 		m_ShaderProgram.setMat4("proj", proj);
 
 		m_ShaderProgram.setVec3("color", color);
+
+		glBindVertexArray(VAO);
+		glDrawArrays(GL_LINES, 0, 2);
+		glBindVertexArray(0);
+	}
+
+	void draw()
+	{
+		m_ShaderProgram.use();
+		m_ShaderProgram.setMat4("model", m_Model);
+		m_ShaderProgram.setMat4("view", m_View);
+		m_ShaderProgram.setMat4("proj", m_Proj);
+
+		m_ShaderProgram.setVec3("color", m_Color);
 
 		glBindVertexArray(VAO);
 		glDrawArrays(GL_LINES, 0, 2);
@@ -76,6 +101,6 @@ public:
 	std::vector<float> vertices;
 	glm::vec3 m_Start;
 	glm::vec3 m_End;
-	glm::mat4 m_Model;
+	glm::mat4 m_Model, m_View, m_Proj;
 	glm::vec3 m_Color;
 };

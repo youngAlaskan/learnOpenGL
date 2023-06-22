@@ -200,56 +200,49 @@ public:
 		indicesPush3i(TRF, TRB, TLB);
 		indicesPush3i(TRF, TLB, TLF);
 
-		std::vector<glm::vec3> positions;
-		positions.push_back(glm::vec3(-0.5f, -0.5f,  0.5f)); // BLF
-		positions.push_back(glm::vec3(-0.5f,  0.5f,  0.5f)); // TLF
-		positions.push_back(glm::vec3( 0.5f,  0.5f,  0.5f)); // TRF
-		positions.push_back(glm::vec3( 0.5f, -0.5f,  0.5f)); // BRF
-		positions.push_back(glm::vec3(-0.5f, -0.5f, -0.5f)); // BLB
-		positions.push_back(glm::vec3(-0.5f,  0.5f, -0.5f)); // TLB
-		positions.push_back(glm::vec3( 0.5f,  0.5f, -0.5f)); // TRB
-		positions.push_back(glm::vec3( 0.5f, -0.5f, -0.5f));  // BRB
+		m_Positions.push_back(glm::vec3(-0.5f, -0.5f,  0.5f)); // BLF
+		m_Positions.push_back(glm::vec3(-0.5f,  0.5f,  0.5f)); // TLF
+		m_Positions.push_back(glm::vec3( 0.5f,  0.5f,  0.5f)); // TRF
+		m_Positions.push_back(glm::vec3( 0.5f, -0.5f,  0.5f)); // BRF
+		m_Positions.push_back(glm::vec3(-0.5f, -0.5f, -0.5f)); // BLB
+		m_Positions.push_back(glm::vec3(-0.5f,  0.5f, -0.5f)); // TLB
+		m_Positions.push_back(glm::vec3( 0.5f,  0.5f, -0.5f)); // TRB
+		m_Positions.push_back(glm::vec3( 0.5f, -0.5f, -0.5f));  // BRB
 
-		std::vector<glm::vec3> colors;
-		colors.push_back(glm::vec3(1.0f, 0.0f, 0.0f)); // BLF - Red
-		colors.push_back(glm::vec3(1.0f, 1.0f, 0.0f)); // TLF - Yellow
-		colors.push_back(glm::vec3(0.0f, 0.0f, 1.0f)); // TRF - Blue
-		colors.push_back(glm::vec3(0.0f, 1.0f, 0.0f)); // BRF - Green
-		colors.push_back(glm::vec3(1.0f, 0.0f, 0.0f)); // BLB - Red
-		colors.push_back(glm::vec3(1.0f, 1.0f, 0.0f)); // TLB - Yellow
-		colors.push_back(glm::vec3(0.0f, 0.0f, 1.0f)); // TRB - Blue
-		colors.push_back(glm::vec3(0.0f, 1.0f, 0.0f)); // BRB - Green
+		m_Colors.push_back(glm::vec3(1.0f, 0.0f, 0.0f)); // BLF - Red
+		m_Colors.push_back(glm::vec3(1.0f, 1.0f, 0.0f)); // TLF - Yellow
+		m_Colors.push_back(glm::vec3(0.0f, 0.0f, 1.0f)); // TRF - Blue
+		m_Colors.push_back(glm::vec3(0.0f, 1.0f, 0.0f)); // BRF - Green
+		m_Colors.push_back(glm::vec3(1.0f, 0.0f, 0.0f)); // BLB - Red
+		m_Colors.push_back(glm::vec3(1.0f, 1.0f, 0.0f)); // TLB - Yellow
+		m_Colors.push_back(glm::vec3(0.0f, 0.0f, 1.0f)); // TRB - Blue
+		m_Colors.push_back(glm::vec3(0.0f, 1.0f, 0.0f)); // BRB - Green
 
-		std::vector<glm::vec3> normals;
-		normals.push_back(glm::vec3( 0.0f,  0.0f,  1.0f)); // POS Z
-		normals.push_back(glm::vec3( 1.0f,  0.0f,  0.0f)); // POS X
-		normals.push_back(glm::vec3( 0.0f,  0.0f, -1.0f)); // NEG Z
-		normals.push_back(glm::vec3(-1.0f,  0.0f,  0.0f)); // NEG X
-		normals.push_back(glm::vec3( 0.0f, -1.0f,  0.0f)); // NEG Y
-		normals.push_back(glm::vec3( 0.0f,  1.0f,  0.0f)); // POS Y
+		m_Normals.push_back(glm::vec3( 0.0f,  0.0f,  1.0f)); // POS Z
+		m_Normals.push_back(glm::vec3( 1.0f,  0.0f,  0.0f)); // POS X
+		m_Normals.push_back(glm::vec3( 0.0f,  0.0f, -1.0f)); // NEG Z
+		m_Normals.push_back(glm::vec3(-1.0f,  0.0f,  0.0f)); // NEG X
+		m_Normals.push_back(glm::vec3( 0.0f, -1.0f,  0.0f)); // NEG Y
+		m_Normals.push_back(glm::vec3( 0.0f,  1.0f,  0.0f)); // POS Y
 
-		std::vector<glm::vec3> texCoords;
-		texCoords.push_back(glm::vec3(-1.0f, -1.0f,  1.0f)); // BLF
-		texCoords.push_back(glm::vec3(-1.0f,  1.0f,  1.0f)); // TLF
-		texCoords.push_back(glm::vec3( 1.0f,  1.0f,  1.0f)); // TRF
-		texCoords.push_back(glm::vec3( 1.0f, -1.0f,  1.0f)); // BRF
-		texCoords.push_back(glm::vec3(-1.0f, -1.0f, -1.0f)); // BLB
-		texCoords.push_back(glm::vec3(-1.0f,  1.0f, -1.0f)); // TLB
-		texCoords.push_back(glm::vec3( 1.0f,  1.0f, -1.0f)); // TRB
-		texCoords.push_back(glm::vec3( 1.0f, -1.0f, -1.0f)); // BRB
+		m_TexCoords.push_back(glm::vec3(-1.0f, -1.0f,  1.0f)); // BLF
+		m_TexCoords.push_back(glm::vec3(-1.0f,  1.0f,  1.0f)); // TLF
+		m_TexCoords.push_back(glm::vec3( 1.0f,  1.0f,  1.0f)); // TRF
+		m_TexCoords.push_back(glm::vec3( 1.0f, -1.0f,  1.0f)); // BRF
+		m_TexCoords.push_back(glm::vec3(-1.0f, -1.0f, -1.0f)); // BLB
+		m_TexCoords.push_back(glm::vec3(-1.0f,  1.0f, -1.0f)); // TLB
+		m_TexCoords.push_back(glm::vec3( 1.0f,  1.0f, -1.0f)); // TRB
+		m_TexCoords.push_back(glm::vec3( 1.0f, -1.0f, -1.0f)); // BRB
 
 		for (unsigned int i = 0; i < m_VerticesN; i++) {
 			unsigned int corner = m_Indices[i];
-			connectivityPush3f(positions[corner]);
-			connectivityPush3f(colors[corner]);
-			connectivityPush3f(normals[i / 6]);
-			connectivityPush3f(texCoords[corner]);
+			connectivityPush3f(m_Positions[corner]);
+			connectivityPush3f(m_Colors[corner]);
+			connectivityPush3f(m_Normals[i / 6]);
+			connectivityPush3f(m_TexCoords[corner]);
 
-			glm::vec3 vertex = positions[corner];
-
-			glm::vec3 dir = normals[i / 6];
-
-			m_Normals.push_back(Line(vertex, vertex + dir));
+			normalPush3f(m_Positions[corner]);
+			normalPush3f(m_Positions[corner] + m_Normals[i / 6]);
 		}
 
 		for (unsigned int i = 0; i < m_VerticesN; i++) {
@@ -257,6 +250,7 @@ public:
 		}
 
 		m_ShaderProgram = Shader("positionColorNormalTex.vert", "litObject.frag");
+		m_ShaderProgramNormals = Shader("position.vert", "uniformColor.frag");
 
 		glGenVertexArrays(1, &VAO);
 		glGenBuffers(1, &VBO);
@@ -284,6 +278,19 @@ public:
 		glEnableVertexAttribArray(3);
 
 		// Unbinds
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindVertexArray(0);
+
+		glGenVertexArrays(1, &nVAO);
+		glGenBuffers(1, &nVBO);
+		glBindVertexArray(nVAO);
+
+		glBindBuffer(GL_ARRAY_BUFFER, nVBO);
+		glBufferData(GL_ARRAY_BUFFER, m_NormalData.size() * sizeof(float), m_NormalData.data(), GL_STATIC_DRAW);
+
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(0);
+
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		glBindVertexArray(0);
 	}
@@ -342,9 +349,16 @@ public:
 	// TODO: Fix normals bug. Normals only showing up in one place
 	void drawNormals(glm::vec3 color)
 	{
-		for (int i = 0; i < m_Normals.size(); i++) {
-			m_Normals.at(i).draw(m_Model, m_View, m_Proj, color);
-		}
+		m_ShaderProgramNormals.use();
+		m_ShaderProgramNormals.setMat4("model", m_Model);
+		m_ShaderProgramNormals.setMat4("view", m_View);
+		m_ShaderProgramNormals.setMat4("proj", m_Proj);
+
+		m_ShaderProgramNormals.setVec3("color", color);
+
+		glBindVertexArray(nVAO);
+		glDrawArrays(GL_LINES, 0, 72);
+		glBindVertexArray(0);
 	}
 
 	void print(unsigned int start = 0, unsigned int end = 0) {
@@ -390,12 +404,13 @@ public:
 	}
 
 public:
-	std::vector<float> m_ConnectivityData;
+	std::vector<float> m_ConnectivityData, m_NormalData;
 	std::vector<unsigned int> m_Indices;
-	std::vector<Line> m_Normals;
+	std::vector<glm::vec3> m_Positions, m_Colors, m_Normals, m_TexCoords;
 	unsigned int m_TrianglesN, m_VerticesN;
-	Shader m_ShaderProgram;
+	Shader m_ShaderProgram, m_ShaderProgramNormals;
 	unsigned int VAO, VBO, EBO;
+	unsigned int nVAO, nVBO, nEBO;
 	glm::mat4 m_Model = glm::mat4(1.0f);
 	glm::mat4 m_View = glm::mat4(1.0f);
 	glm::mat4 m_Proj = glm::mat4(1.0f);
@@ -406,6 +421,13 @@ protected:
 		m_ConnectivityData.push_back(v.x);
 		m_ConnectivityData.push_back(v.y);
 		m_ConnectivityData.push_back(v.z);
+	}
+
+	void normalPush3f(glm::vec3 v)
+	{
+		m_NormalData.push_back(v.x);
+		m_NormalData.push_back(v.y);
+		m_NormalData.push_back(v.z);
 	}
 
 	void indicesPush3i(unsigned int x, unsigned int y, unsigned int z)
