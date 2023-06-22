@@ -10,6 +10,8 @@
 class Shader
 {
 public:
+    Shader() {}
+
     // constructor reads and builds the shader
     Shader(const char* vertexPath, const char* fragmentPath)
     {
@@ -24,8 +26,8 @@ public:
         try
         {
             // open files
-            vShaderFile.open(vertexPath);
-            fShaderFile.open(fragmentPath);
+            vShaderFile.open(std::string(".\\shaders\\vertexShaders\\") + std::string(vertexPath));
+            fShaderFile.open(std::string(".\\shaders\\fragmentShaders\\") + std::string(fragmentPath));
             std::stringstream vShaderStream, fShaderStream;
             // read file's buffer contents into streams
             vShaderStream << vShaderFile.rdbuf();
@@ -85,23 +87,23 @@ public:
     {
         glUniform1f(glGetUniformLocation(ID, name.c_str()), value);
     }
-    void setVec2(const std::string& name, float* v) {
-        glUniform2fv(glGetUniformLocation(ID, name.c_str()), 1, v);
+    void setVec2(const std::string& name, glm::vec2 v) {
+        glUniform2fv(glGetUniformLocation(ID, name.c_str()), 1, glm::value_ptr(v));
     }
-    void setVec3(const std::string& name, float* v) {
-        glUniform3fv(glGetUniformLocation(ID, name.c_str()), 1, v);
+    void setVec3(const std::string& name, glm::vec3 v) {
+        glUniform3fv(glGetUniformLocation(ID, name.c_str()), 1, glm::value_ptr(v));
     }
-    void setVec4(const std::string& name, float* v) {
-        glUniform4fv(glGetUniformLocation(ID, name.c_str()), 1, v);
+    void setVec4(const std::string& name, glm::vec4 v) {
+        glUniform4fv(glGetUniformLocation(ID, name.c_str()), 1, glm::value_ptr(v));
     }
-    void setMat2(const std::string& name, float* m) {
-        glUniformMatrix2fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, m);
+    void setMat2(const std::string& name, glm::mat2 m) {
+        glUniformMatrix2fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, glm::value_ptr(m));
     }
-    void setMat3(const std::string& name, float* m) {
-        glUniformMatrix3fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, m);
+    void setMat3(const std::string& name, glm::mat3 m) {
+        glUniformMatrix3fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, glm::value_ptr(m));
     }
-    void setMat4(const std::string& name, float* m) {
-        glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, m);
+    void setMat4(const std::string& name, glm::mat4 m) {
+        glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, glm::value_ptr(m));
     }
 
 public:

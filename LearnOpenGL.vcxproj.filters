@@ -38,10 +38,20 @@
     <ClInclude Include="camera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="line.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="light.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\fragmentShaders\fragmentShaderSource.frag" />
-    <None Include="shaders\vertexShaders\vertexShaderSource.vert" />
-    <None Include="shaders\fragmentShaders\fragmentShader1t2D.frag" />
+    <None Include="shaders\fragmentShaders\2texCube.frag" />
+    <None Include="shaders\vertexShaders\positionColorTex.vert" />
+    <None Include="shaders\fragmentShaders\1tex2D.frag" />
+    <None Include="shaders\vertexShaders\position.vert" />
+    <None Include="shaders\fragmentShaders\litObject.frag" />
+    <None Include="shaders\fragmentShaders\uniformColor.frag" />
+    <None Include="shaders\vertexShaders\positionColorNormalTex.vert" />
   </ItemGroup>
 </Project>

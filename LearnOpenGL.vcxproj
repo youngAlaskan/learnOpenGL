@@ -144,15 +144,21 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="camera.h" />
+    <ClInclude Include="light.h" />
+    <ClInclude Include="line.h" />
     <ClInclude Include="shader.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="texture.h" />
     <ClInclude Include="tm.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\fragmentShaders\fragmentShader1t2D.frag" />
-    <None Include="shaders\fragmentShaders\fragmentShaderSource.frag" />
-    <None Include="shaders\vertexShaders\vertexShaderSource.vert" />
+    <None Include="shaders\fragmentShaders\1tex2D.frag" />
+    <None Include="shaders\fragmentShaders\uniformColor.frag" />
+    <None Include="shaders\fragmentShaders\litObject.frag" />
+    <None Include="shaders\fragmentShaders\2texCube.frag" />
+    <None Include="shaders\vertexShaders\position.vert" />
+    <None Include="shaders\vertexShaders\positionColorNormalTex.vert" />
+    <None Include="shaders\vertexShaders\positionColorTex.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
