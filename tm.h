@@ -5,6 +5,9 @@
 #include <iostream>
 
 #include "line.h"
+#include "shader.h"
+#include "material.h"
+#include "light.h"
 
 enum plane {
 	XY,
@@ -160,7 +163,7 @@ public:
 
 	}
 	
-	virtual void SetAsAACube() {
+	void SetAsAACube(Material material) {
 #if 0
 		5-----6
 	  / |   / |
@@ -169,6 +172,7 @@ public:
 	| /   | /
 	0-----3
 #endif
+		m_Material = material;
 		unsigned int BLF = 0, TLF = 1, TRF = 2, BRF = 3, BLB = 4, TLB = 5, TRB = 6, BRB = 7;
 		unsigned int index = 0;
 		m_TrianglesN = 12;
@@ -317,7 +321,7 @@ public:
 		m_Proj = proj;
 	}
 
-	virtual void draw()
+	void draw()
 	{
 		m_ShaderProgram.use();
 		m_ShaderProgram.setMat4("model", m_Model);
@@ -329,16 +333,18 @@ public:
 		glBindVertexArray(0);
 	}
 
-	void draw(glm::vec3 lightPos, glm::vec3 cameraPos)
+	void draw(Light light, glm::vec3 cameraPos)
 	{
 		m_ShaderProgram.use();
 		m_ShaderProgram.setMat4("model", m_Model);
 		m_ShaderProgram.setMat4("view", m_View);
 		m_ShaderProgram.setMat4("proj", m_Proj);
 
-		m_ShaderProgram.setVec3("objectColor", glm::vec3(1.0f, 0.5f, 0.31f));
-		m_ShaderProgram.setVec3("lightPos", lightPos);
-		m_ShaderProgram.setVec3("lightColor", glm::vec3(1.0f, 1.0f, 1.0f));
+		m_Material.sendToShader(m_ShaderProgram, light.m_Color);
+
+		light.sendToShader(m_ShaderProgram);
+
+		m_ShaderProgram.setVec3("lightPos", light.m_Pos);
 		m_ShaderProgram.setVec3("viewPos", cameraPos);
 
 		glBindVertexArray(VAO);
@@ -400,6 +406,10 @@ public:
 		glDeleteVertexArrays(1, &VAO);
 		glDeleteBuffers(1, &VBO);
 		glDeleteBuffers(1, &EBO);
+		glDeleteVertexArrays(1, &nVAO);
+		glDeleteBuffers(1, &nVBO);
+		glDeleteBuffers(1, &nEBO);
+		glDeleteProgram(m_ShaderProgramNormals.ID);
 		glDeleteProgram(m_ShaderProgram.ID);
 	}
 
@@ -408,6 +418,7 @@ public:
 	std::vector<unsigned int> m_Indices;
 	std::vector<glm::vec3> m_Positions, m_Colors, m_Normals, m_TexCoords;
 	unsigned int m_TrianglesN, m_VerticesN;
+	Material m_Material;
 	Shader m_ShaderProgram, m_ShaderProgramNormals;
 	unsigned int VAO, VBO, EBO;
 	unsigned int nVAO, nVBO, nEBO;
@@ -415,7 +426,7 @@ public:
 	glm::mat4 m_View = glm::mat4(1.0f);
 	glm::mat4 m_Proj = glm::mat4(1.0f);
 
-protected:
+private:
 	void connectivityPush3f(glm::vec3 v)
 	{
 		m_ConnectivityData.push_back(v.x);

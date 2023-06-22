@@ -1,6 +1,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
+#include <thread>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -9,6 +10,7 @@
 #include "stb_image.h"
 
 #include "shader.h"
+#include "material.h"
 #include "texture.h"
 #include "camera.h"
 
@@ -19,6 +21,8 @@
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
+const unsigned int DESIRED_FRAME_RATE = 60;
+
 bool renderFilled = true;
 bool renderAxis = false;
 bool renderNormals = false;
@@ -27,17 +31,12 @@ float deltaTime = 0.0f;	// Time between current frame and last frame
 float lastFrame = 0.0f; // Time of last frame
 
 float mixPercent = 0.2f;
+int material = 0;
 
 Camera camera(glm::vec3(1.0f, 1.0f, 3.0f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
-
-glm::vec3 cameraPos = glm::vec3(1.0f, 1.0f, 3.0f);
-glm::vec3 cameraFront = glm::vec3(-1.0f, -1.0f, -1.0f);
-glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
-
-glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
@@ -73,6 +72,16 @@ void processInput(GLFWwindow* window)
 	{
 		mixPercent -= 0.0001f;
 		mixPercent = mixPercent < 0.0f ? 0.0f : mixPercent;
+	}
+	else if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+	{
+		material = material - 1 < 0 ? 0 : material - 1;
+		std::cout << "Material changed to: " << material << std::endl;
+	}
+	else if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+	{
+		material = material + 1 >= (int) materials.size() ? ((int) materials.size() == 0 ? 0 : (int) materials.size() - 1) : material + 1;
+		std::cout << "Material changed to: " << material << std::endl;
 	}
 	else if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS)
 	{
@@ -163,10 +172,13 @@ int main()
 	// Set up vertex data
 	// ------------------
 	TriangleMesh cube;
-	cube.SetAsAACube();
+	cube.SetAsAACube(materials[emerald]);
 
 	Light light;
 	light.SetAsAACube();
+
+	light.setPos(glm::vec3(1.2f, 1.0f, 2.0f));
+	light.setColor(glm::vec3(1.0f, 1.0f, 1.0f));
 
 	glm::vec3 origin = glm::vec3(0.0f, 0.0f, 0.0f);
 
@@ -176,6 +188,8 @@ int main()
 
 	glm::mat4 model, view, proj;
 
+	float frameCount = 0;
+
 	// Render Loop
 	std::cout << "Starting render loop" << std::endl;
 	while (!glfwWindowShouldClose(window))
@@ -183,7 +197,7 @@ int main()
 		float currentFrame = (float) glfwGetTime();
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
-		//std::cout << "Up time: " << currentFrame << 's' << '\r';
+		std::cout << "FPS: " << frameCount / currentFrame << '\r';
 
 		// Input
 		processInput(window);
@@ -193,6 +207,8 @@ int main()
 		view = camera.GetViewMatrix(); 
 		proj = glm::perspective(glm::radians(camera.Zoom), (float) SCR_WIDTH / (float) SCR_HEIGHT, 0.1f, 100.0f);
 
+		//light.m_Pos = glm::vec3(1.0f + sin(currentFrame), light.m_Pos.y, 1.0f + sin(currentFrame));
+		
 		// Render
 		// ------
 		// Set Background
@@ -208,12 +224,13 @@ int main()
 
 		// Render objects
 		cube.setMVP(model, view, proj);
+		cube.m_Material = materials[material];
 
-		cube.draw(lightPos, camera.Position);
+		cube.draw(light, camera.Position);
 
-		model = glm::scale(glm::translate(glm::mat4(1.0f), lightPos), glm::vec3(0.2f));
+		model = glm::scale(glm::translate(glm::mat4(1.0f), light.m_Pos), glm::vec3(0.2f));
 		light.setMVP(model, view, proj);
-		
+		//light.setColor(glm::vec3(1.0f));
 		light.draw();
 
 		if (renderNormals)
@@ -225,6 +242,9 @@ int main()
 		// Check and call events and swap buffers
 		glfwSwapBuffers(window);
 		glfwPollEvents();
+
+		frameCount++;
+		std::this_thread::sleep_for(std::chrono::nanoseconds((int) (frameCount / currentFrame / (float) DESIRED_FRAME_RATE * 1e7)));
 	}
 
 	glfwTerminate();

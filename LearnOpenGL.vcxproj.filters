@@ -44,6 +44,9 @@
     <ClInclude Include="light.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="material.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\fragmentShaders\2texCube.frag" />

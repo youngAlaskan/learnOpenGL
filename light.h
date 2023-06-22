@@ -1,13 +1,15 @@
 #pragma once
 
-#include "tm.h"
+#include "shader.h"
+#include "material.h"
 
-class Light : public TriangleMesh
+class Light
 {
 public:
 	Light() {}
 
-	void SetAsAACube() override {
+	void SetAsAACube()
+	{
 #if 0
 		5 ----- 6
 	  / |     / |
@@ -97,7 +99,6 @@ public:
 		}
 
 		m_ShaderProgram = Shader("position.vert", "uniformColor.frag");
-		m_ShaderProgramNormals = Shader("position.vert", "uniformColor.frag");
 
 		glGenVertexArrays(1, &VAO);
 		glGenBuffers(1, &VBO);
@@ -133,16 +134,159 @@ public:
 		glBindVertexArray(0);
 	}
 
-	void draw() override {
+	void setColor(glm::vec3 color)
+	{
+		m_Color = color;
+	}
+
+	void setPos(glm::vec3 pos)
+	{
+		m_Pos = pos;
+	}
+
+	void setModel(glm::mat4 model)
+	{
+		m_Model = model;
+	}
+
+	void setView(glm::mat4 view)
+	{
+		m_View = view;
+	}
+
+	void setProj(glm::mat4 proj)
+	{
+		m_Proj = proj;
+	}
+
+	void setMVP(glm::mat4 model, glm::mat4 view, glm::mat4 proj)
+	{
+		m_Model = model;
+		m_View = view;
+		m_Proj = proj;
+	}
+
+	void draw()
+	{
 		m_ShaderProgram.use();
 		m_ShaderProgram.setMat4("model", m_Model);
 		m_ShaderProgram.setMat4("view", m_View);
 		m_ShaderProgram.setMat4("proj", m_Proj);
 
-		m_ShaderProgram.setVec3("color", glm::vec3(1.0f, 1.0f, 1.0f));
+		m_ShaderProgram.setVec3("color", m_Color);
 
 		glBindVertexArray(VAO);
 		glDrawElements(GL_TRIANGLES, m_VerticesN, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
+	}
+
+	void drawNormals(glm::vec3 color)
+	{
+		m_ShaderProgram.use();
+		m_ShaderProgram.setMat4("model", m_Model);
+		m_ShaderProgram.setMat4("view", m_View);
+		m_ShaderProgram.setMat4("proj", m_Proj);
+
+		m_ShaderProgram.setVec3("color", color);
+
+		glBindVertexArray(nVAO);
+		glDrawArrays(GL_LINES, 0, 72);
+		glBindVertexArray(0);
+	}
+
+	void sendToShader(Shader& shader)
+	{
+		shader.setVec3("light.position", m_Pos);
+
+		shader.setFloat("light.kA", m_KA);
+		shader.setFloat("light.kD", m_KD);
+		shader.setFloat("light.kS", m_KS);
+	}
+
+	void print(unsigned int start = 0, unsigned int end = 0) {
+		std::cout << "Number of Triangles = " << m_TrianglesN << std::endl;
+
+		for (unsigned int i = start; i < 36 * m_TrianglesN && i < 36 * end; i++)
+		{
+			if (i == start)
+			{
+				std::cout << "Triangle: " << start << std::endl << '<';
+			}
+			else if (i % 36 == 0)
+			{
+				std::cout << '>' << std::endl << "Triangle: " << i / 36 << std::endl << '<';
+			}
+			else if (i % 12 == 0)
+			{
+				std::cout << '>' << std::endl << '<';
+			}
+			else if (i % 12 == 3 || i % 12 == 6 || i % 12 == 9)
+			{
+				std::cout << ">, <";
+			}
+			else
+			{
+				std::cout << ", ";
+			}
+
+			if (m_ConnectivityData[i] >= 0.0f)
+				std::cout << ' ';
+			std::cout << m_ConnectivityData[i];
+		}
+
+		std::cout << '>' << std::endl;
+	}
+
+	~Light()
+	{
+		glDeleteVertexArrays(1, &VAO);
+		glDeleteBuffers(1, &VBO);
+		glDeleteBuffers(1, &EBO);
+		glDeleteVertexArrays(1, &nVAO);
+		glDeleteBuffers(1, &nVBO);
+		glDeleteBuffers(1, &nEBO);
+		glDeleteProgram(m_ShaderProgram.ID);
+	}
+
+public:
+	glm::vec3 m_Color;
+	glm::vec3 m_Pos;
+	float m_KA = 1.0f, m_KD = 1.0f, m_KS = 1.0f;
+
+	// 'inherited' TriangleMesh members
+	std::vector<float> m_ConnectivityData, m_NormalData;
+	std::vector<unsigned int> m_Indices;
+	std::vector<glm::vec3> m_Positions, m_Colors, m_Normals, m_TexCoords;
+	unsigned int m_TrianglesN, m_VerticesN;
+	Material m_Material;
+	Shader m_ShaderProgram;
+	unsigned int VAO, VBO, EBO;
+	unsigned int nVAO, nVBO, nEBO;
+
+private:
+	glm::mat4 m_Model = glm::mat4(1.0f);
+	glm::mat4 m_View = glm::mat4(1.0f);
+	glm::mat4 m_Proj = glm::mat4(1.0f);
+
+private:
+	void connectivityPush3f(glm::vec3 v)
+	{
+		m_ConnectivityData.push_back(v.x);
+		m_ConnectivityData.push_back(v.y);
+		m_ConnectivityData.push_back(v.z);
+	}
+
+	void normalPush3f(glm::vec3 v)
+	{
+		m_NormalData.push_back(v.x);
+		m_NormalData.push_back(v.y);
+		m_NormalData.push_back(v.z);
+	}
+
+	void indicesPush3i(unsigned int x, unsigned int y, unsigned int z)
+	{
+		m_Indices.push_back(x);
+		m_Indices.push_back(y);
+		m_Indices.push_back(z);
 	}
 };
