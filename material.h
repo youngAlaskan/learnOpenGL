@@ -59,7 +59,7 @@ public:
         m_Shininess = shininess;
     }
 
-    void sendToShader(Shader shader, glm::vec3 lightColor)
+    void sendToShader(Shader& shader, glm::vec3 lightColor)
     {
         shader.setVec3("material.ambientColor", m_AmbientColor * lightColor);
         shader.setVec3("material.diffuseColor", m_DiffuseColor * lightColor);

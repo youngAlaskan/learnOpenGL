@@ -4,6 +4,8 @@
 #include <vector>
 #include <iostream>
 
+#include "utils.h"
+
 #include "line.h"
 #include "shader.h"
 #include "material.h"
@@ -321,6 +323,11 @@ public:
 		m_Proj = proj;
 	}
 
+	void setMaterial(Material material)
+	{
+		m_Material = material;
+	}
+
 	void draw()
 	{
 		m_ShaderProgram.use();
@@ -350,6 +357,8 @@ public:
 		glBindVertexArray(VAO);
 		glDrawElements(GL_TRIANGLES, m_VerticesN, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
+
+		checkForErrors("ERROR::TM::DRAW: ");
 	}
 
 	// TODO: Fix normals bug. Normals only showing up in one place
@@ -365,6 +374,8 @@ public:
 		glBindVertexArray(nVAO);
 		glDrawArrays(GL_LINES, 0, 72);
 		glBindVertexArray(0);
+
+		checkForErrors("ERROR::TM::DRAW_NORMALS: ");
 	}
 
 	void print(unsigned int start = 0, unsigned int end = 0) {

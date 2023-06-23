@@ -1,5 +1,7 @@
 #pragma once
 
+#include "utils.h"
+
 #include "shader.h"
 #include "material.h"
 
@@ -99,6 +101,7 @@ public:
 		}
 
 		m_ShaderProgram = Shader("position.vert", "uniformColor.frag");
+		m_ShaderProgramNormals = Shader("position.vert", "uniformColor.frag");
 
 		glGenVertexArrays(1, &VAO);
 		glGenBuffers(1, &VBO);
@@ -178,20 +181,24 @@ public:
 		glBindVertexArray(VAO);
 		glDrawElements(GL_TRIANGLES, m_VerticesN, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
+
+		checkForErrors("ERROR::LIGHT::DRAW: ");
 	}
 
 	void drawNormals(glm::vec3 color)
 	{
-		m_ShaderProgram.use();
-		m_ShaderProgram.setMat4("model", m_Model);
-		m_ShaderProgram.setMat4("view", m_View);
-		m_ShaderProgram.setMat4("proj", m_Proj);
+		m_ShaderProgramNormals.use();
+		m_ShaderProgramNormals.setMat4("model", m_Model);
+		m_ShaderProgramNormals.setMat4("view", m_View);
+		m_ShaderProgramNormals.setMat4("proj", m_Proj);
 
-		m_ShaderProgram.setVec3("color", color);
+		m_ShaderProgramNormals.setVec3("color", color);
 
 		glBindVertexArray(nVAO);
-		glDrawArrays(GL_LINES, 0, 72);
+		glDrawArrays(GL_LINES, 0, (int) m_Normals.size() * 2);
 		glBindVertexArray(0);
+
+		checkForErrors("ERROR::LIGHT::DRAW_NORMALS: ");
 	}
 
 	void sendToShader(Shader& shader)
@@ -246,6 +253,7 @@ public:
 		glDeleteBuffers(1, &nVBO);
 		glDeleteBuffers(1, &nEBO);
 		glDeleteProgram(m_ShaderProgram.ID);
+		glDeleteProgram(m_ShaderProgramNormals.ID);
 	}
 
 public:
@@ -258,12 +266,9 @@ public:
 	std::vector<unsigned int> m_Indices;
 	std::vector<glm::vec3> m_Positions, m_Colors, m_Normals, m_TexCoords;
 	unsigned int m_TrianglesN, m_VerticesN;
-	Material m_Material;
-	Shader m_ShaderProgram;
+	Shader m_ShaderProgram, m_ShaderProgramNormals;
 	unsigned int VAO, VBO, EBO;
 	unsigned int nVAO, nVBO, nEBO;
-
-private:
 	glm::mat4 m_Model = glm::mat4(1.0f);
 	glm::mat4 m_View = glm::mat4(1.0f);
 	glm::mat4 m_Proj = glm::mat4(1.0f);

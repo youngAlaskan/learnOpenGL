@@ -151,6 +151,7 @@
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="texture.h" />
     <ClInclude Include="tm.h" />
+    <ClInclude Include="utils.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\fragmentShaders\1tex2D.frag" />

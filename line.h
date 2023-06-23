@@ -5,6 +5,8 @@
 #include <vector>
 #include <iostream>
 
+#include "utils.h"
+
 #include "shader.h"
 
 /* Largely based on the work of jackw11111
@@ -72,6 +74,8 @@ public:
 		glBindVertexArray(VAO);
 		glDrawArrays(GL_LINES, 0, 2);
 		glBindVertexArray(0);
+
+		checkForErrors("ERROR while drawing Line: ");
 	}
 
 	void draw()
@@ -86,6 +90,8 @@ public:
 		glBindVertexArray(VAO);
 		glDrawArrays(GL_LINES, 0, 2);
 		glBindVertexArray(0);
+
+		checkForErrors("ERROR while drawing Line: ");
 	}
 
 	~Line()

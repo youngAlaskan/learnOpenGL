@@ -9,6 +9,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#include "utils.h"
+
 #include "shader.h"
 #include "material.h"
 #include "texture.h"
@@ -31,7 +33,7 @@ float deltaTime = 0.0f;	// Time between current frame and last frame
 float lastFrame = 0.0f; // Time of last frame
 
 float mixPercent = 0.2f;
-int material = 0;
+int materialIndex = 0;
 
 Camera camera(glm::vec3(1.0f, 1.0f, 3.0f));
 float lastX = SCR_WIDTH / 2.0f;
@@ -75,13 +77,13 @@ void processInput(GLFWwindow* window)
 	}
 	else if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
 	{
-		material = material - 1 < 0 ? 0 : material - 1;
-		std::cout << "Material changed to: " << material << std::endl;
+		materialIndex = materialIndex - 1 < 0 ? 0 : materialIndex - 1;
+		std::cout << "Material changed to: " << materialIndex << std::endl;
 	}
 	else if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
 	{
-		material = material + 1 >= (int) materials.size() ? ((int) materials.size() == 0 ? 0 : (int) materials.size() - 1) : material + 1;
-		std::cout << "Material changed to: " << material << std::endl;
+		materialIndex = materialIndex + 1 >= (int) materials.size() ? ((int) materials.size() == 0 ? 0 : (int) materials.size() - 1) : materialIndex + 1;
+		std::cout << "Material changed to: " << materialIndex << std::endl;
 	}
 	else if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS)
 	{
@@ -167,6 +169,9 @@ int main()
 		return -1;
 	}
 
+	// glEnable(GL_DEBUG_OUTPUT);
+	// glDebugMessageCallback(MessageCallback, 0);
+
 	glEnable(GL_DEPTH_TEST);
 
 	// Set up vertex data
@@ -187,8 +192,12 @@ int main()
 	Line zAxis(origin, glm::vec3(0.0f, 0.0f, 10.0f));
 
 	glm::mat4 model, view, proj;
+	glm::mat4 identity = glm::mat4(1.0f);
 
 	float frameCount = 0;
+	bool firstRun = true;
+
+	checkForErrors("ERROR::SOURCE::MAIN: ");
 
 	// Render Loop
 	std::cout << "Starting render loop" << std::endl;
@@ -197,13 +206,13 @@ int main()
 		float currentFrame = (float) glfwGetTime();
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
-		std::cout << "FPS: " << frameCount / currentFrame << '\r';
+		// std::cout << "FPS: " << frameCount / currentFrame << '\r';
 
 		// Input
 		processInput(window);
 
 		// Set matricies
-		model = glm::mat4(1.0f);
+		model = identity;
 		view = camera.GetViewMatrix(); 
 		proj = glm::perspective(glm::radians(camera.Zoom), (float) SCR_WIDTH / (float) SCR_HEIGHT, 0.1f, 100.0f);
 
@@ -217,21 +226,21 @@ int main()
 
 		if (renderAxis)
 		{
-			xAxis.draw(glm::mat4(1.0f), view, proj, glm::vec3(1.0f, 0.0f, 0.0f));
-			yAxis.draw(glm::mat4(1.0f), view, proj, glm::vec3(0.0f, 1.0f, 0.0f));
-			zAxis.draw(glm::mat4(1.0f), view, proj, glm::vec3(0.0f, 0.0f, 1.0f));
+			xAxis.draw(identity, view, proj, glm::vec3(1.0f, 0.0f, 0.0f));
+			yAxis.draw(identity, view, proj, glm::vec3(0.0f, 1.0f, 0.0f));
+			zAxis.draw(identity, view, proj, glm::vec3(0.0f, 0.0f, 1.0f));
 		}
 
 		// Render objects
 		cube.setMVP(model, view, proj);
-		cube.m_Material = materials[material];
+		cube.setMaterial(materials[materialIndex]);
 
 		cube.draw(light, camera.Position);
 
-		model = glm::scale(glm::translate(glm::mat4(1.0f), light.m_Pos), glm::vec3(0.2f));
-		light.setMVP(model, view, proj);
-		//light.setColor(glm::vec3(1.0f));
-		light.draw();
+		//model = glm::scale(glm::translate(identity, light.m_Pos), glm::vec3(0.2f));
+		//light.setMVP(model, view, proj);
+		
+		//light.draw();
 
 		if (renderNormals)
 		{
@@ -243,8 +252,15 @@ int main()
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 
+		checkForErrors("ERROR::SOURCE::END_OF_LOOP: ");
+
 		frameCount++;
 		std::this_thread::sleep_for(std::chrono::nanoseconds((int) (frameCount / currentFrame / (float) DESIRED_FRAME_RATE * 1e7)));
+		if (firstRun)
+		{
+			std::cout << "First run!" << std::endl;
+			firstRun = false;
+		}
 	}
 
 	glfwTerminate();
