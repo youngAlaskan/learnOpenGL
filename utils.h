@@ -15,23 +15,29 @@ std::unordered_map<GLenum, std::string> errorMessages {
 	{ GL_CONTEXT_LOST, "CONTEXT_LOST, 0x0507"}
 };
 
-void checkForErrors(const char* message)
+inline void CheckForErrors(const char* message)
 {
 	GLenum error;
+	bool first = true;
 	while ((error = glGetError()) != GL_NO_ERROR)
 	{
+		if (first)
+		{
+			std::cout << "-----------------------------------------------" << std::endl;
+			first = false;
+		}
 		std::cout << message << errorMessages[error] << std::endl;
 	}
 }
 
 // Not using currently
-void GLAPIENTRY MessageCallback(GLenum source,
-	GLenum type,
-	GLuint id,
-	GLenum severity,
-	GLsizei length,
-	const GLchar* message,
-	const void* userParam)
+inline void GLAPIENTRY MessageCallback(GLenum source,
+                                       GLenum type,
+                                       GLuint id,
+                                       GLenum severity,
+                                       GLsizei length,
+                                       const GLchar* message,
+                                       const void* userParam)
 {
 	std::cerr
 		<< "GL CALLBACK: " << (type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "")

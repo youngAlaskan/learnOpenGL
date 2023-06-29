@@ -50,6 +50,9 @@
     <ClInclude Include="utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="entity.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\fragmentShaders\2texCube.frag" />
@@ -59,5 +62,6 @@
     <None Include="shaders\fragmentShaders\litObject.frag" />
     <None Include="shaders\fragmentShaders\uniformColor.frag" />
     <None Include="shaders\vertexShaders\positionColorNormalTex.vert" />
+    <None Include="shaders\fragmentShaders\variableColor.frag" />
   </ItemGroup>
 </Project>

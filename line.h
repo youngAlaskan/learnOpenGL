@@ -28,83 +28,81 @@ public:
 
 		m_ShaderProgram = Shader("position.vert", "uniformColor.frag");
 
-		vertices = {
+		m_Vertices = {
 			start.x, start.y, start.z,
 			end.x, end.y, end.z
 		};
 
-		glGenVertexArrays(1, &VAO);
-		glGenBuffers(1, &VBO);
-		glBindVertexArray(VAO);
+		glGenVertexArrays(1, &m_VAO);
+		glGenBuffers(1, &m_VBO);
+		glBindVertexArray(m_VAO);
 
-		glBindBuffer(GL_ARRAY_BUFFER, VBO);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices.data(), GL_STATIC_DRAW);
+		glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(m_Vertices), m_Vertices.data(), GL_STATIC_DRAW);
 
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)nullptr);
 		glEnableVertexAttribArray(0);
 
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		glBindVertexArray(0);
 	}
 
-	void setModel(glm::mat4 model) { m_Model = model; }
+	void SetModel(const glm::mat4& model) { m_Model = model; }
 
-	void setView(glm::mat4 view) { m_View = view; }
+	void SetView(const glm::mat4& view) { m_View = view; }
 
-	void setProj(glm::mat4 proj) { m_Proj = proj; }
+	void SetProj(const glm::mat4& proj) { m_Proj = proj; }
 
-	void setMVP(glm::mat4 model, glm::mat4 view, glm::mat4 proj) 
+	void SetMVP(const glm::mat4& model, const glm::mat4& view, const glm::mat4& proj) 
 	{
 		m_Model = model;
 		m_View = view;
 		m_Proj = proj;
 	}
 
-	void setColor(glm::vec3 color) { m_Color = color; }
+	void SetColor(const glm::vec3 color) { m_Color = color; }
 
-	void draw(glm::mat4 model, glm::mat4 view, glm::mat4 proj, glm::vec3 color)
+	void Draw() const
 	{
-		m_ShaderProgram.use();
-		m_ShaderProgram.setMat4("model", model);
-		m_ShaderProgram.setMat4("view", view);
-		m_ShaderProgram.setMat4("proj", proj);
+		m_ShaderProgram.Use();
+		m_ShaderProgram.SetMat4("model", m_Model);
+		m_ShaderProgram.SetMat4("view", m_View);
+		m_ShaderProgram.SetMat4("proj", m_Proj);
 
-		m_ShaderProgram.setVec3("color", color);
+		m_ShaderProgram.SetVec3("color", m_Color);
 
-		glBindVertexArray(VAO);
+		glBindVertexArray(m_VAO);
 		glDrawArrays(GL_LINES, 0, 2);
 		glBindVertexArray(0);
 
-		checkForErrors("ERROR while drawing Line: ");
+		CheckForErrors("ERROR while drawing Line: ");
 	}
 
-	void draw()
+	bool operator==(const Line& other) const
 	{
-		m_ShaderProgram.use();
-		m_ShaderProgram.setMat4("model", m_Model);
-		m_ShaderProgram.setMat4("view", m_View);
-		m_ShaderProgram.setMat4("proj", m_Proj);
-
-		m_ShaderProgram.setVec3("color", m_Color);
-
-		glBindVertexArray(VAO);
-		glDrawArrays(GL_LINES, 0, 2);
-		glBindVertexArray(0);
-
-		checkForErrors("ERROR while drawing Line: ");
+		return m_ShaderProgram == other.m_ShaderProgram &&
+			m_VAO == other.m_VAO &&
+			m_VBO == other.m_VBO &&
+			m_Vertices == other.m_Vertices &&
+			m_Start == other.m_Start &&
+			m_End == other.m_End &&
+			m_Model == other.m_Model &&
+			m_View == other.m_View &&
+			m_Proj == other.m_Proj &&
+			m_Color == other.m_Color;
 	}
 
 	~Line()
 	{
-		glDeleteVertexArrays(1, &VAO);
-		glDeleteBuffers(1, &VBO);
-		glDeleteProgram(m_ShaderProgram.ID);
+		glDeleteVertexArrays(1, &m_VAO);
+		glDeleteBuffers(1, &m_VBO);
+		glDeleteProgram(m_ShaderProgram.m_ID);
 	}
 
 public:
 	Shader m_ShaderProgram;
-	unsigned int VAO, VBO;
-	std::vector<float> vertices;
+	unsigned int m_VAO, m_VBO;
+	std::vector<float> m_Vertices;
 	glm::vec3 m_Start;
 	glm::vec3 m_End;
 	glm::mat4 m_Model, m_View, m_Proj;

@@ -13,17 +13,16 @@
 
 #include "shader.h"
 #include "material.h"
-#include "texture.h"
 #include "camera.h"
 
 #include "line.h"
 #include "tm.h"
 #include "light.h"
 
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
+constexpr unsigned int SCR_WIDTH = 800;
+constexpr unsigned int SCR_HEIGHT = 600;
 
-const unsigned int DESIRED_FRAME_RATE = 60;
+constexpr unsigned int DESIRED_FRAME_RATE = 60;
 
 bool renderFilled = true;
 bool renderAxis = false;
@@ -32,67 +31,36 @@ bool renderNormals = false;
 float deltaTime = 0.0f;	// Time between current frame and last frame
 float lastFrame = 0.0f; // Time of last frame
 
-float mixPercent = 0.2f;
-int materialIndex = 0;
-
 Camera camera(glm::vec3(1.0f, 1.0f, 3.0f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+void FramebufferSizeCallback(GLFWwindow* window, int width, int height)
 {
 	glViewport(0, 0, width, height);
 }
 
-void processInput(GLFWwindow* window)
+void ProcessInput(GLFWwindow* window)
 {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 	{
 		glfwSetWindowShouldClose(window, true);
 	}
-	// TODO: Add delay to prevent flickering
-	else if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS)
-	{
-		renderFilled = !renderFilled;
 
-		if (renderFilled)
-		{
-			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		}
-		else
-		{
-			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		}
-	}
-	else if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+	renderAxis = glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS;
+
+	renderNormals = glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS;
+
+	if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS)
 	{
-		mixPercent += 0.0001f;
-		mixPercent = mixPercent > 1.0f ? 1.0f : mixPercent;
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	}
-	else if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+	else
 	{
-		mixPercent -= 0.0001f;
-		mixPercent = mixPercent < 0.0f ? 0.0f : mixPercent;
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	}
-	else if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-	{
-		materialIndex = materialIndex - 1 < 0 ? 0 : materialIndex - 1;
-		std::cout << "Material changed to: " << materialIndex << std::endl;
-	}
-	else if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-	{
-		materialIndex = materialIndex + 1 >= (int) materials.size() ? ((int) materials.size() == 0 ? 0 : (int) materials.size() - 1) : materialIndex + 1;
-		std::cout << "Material changed to: " << materialIndex << std::endl;
-	}
-	else if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS)
-	{
-		renderAxis = !renderAxis;
-	}
-	else if (glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS)
-	{
-		renderNormals = !renderNormals;
-	}
+
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 		camera.ProcessKeyboard(FORWARD, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
@@ -105,30 +73,30 @@ void processInput(GLFWwindow* window)
 		camera.ProcessKeyboard(TOGGLE_FLY, deltaTime);
 }
 
-void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
+void MouseCallback(GLFWwindow* window, double xPosIn, double yPosIn)
 {
-	float xpos = static_cast<float>(xposIn);
-	float ypos = static_cast<float>(yposIn);
+	auto xPos = static_cast<float>(xPosIn);
+	auto yPos = static_cast<float>(yPosIn);
 
 	if (firstMouse)
 	{
-		lastX = xpos;
-		lastY = ypos;
+		lastX = xPos;
+		lastY = yPos;
 		firstMouse = false;
 	}
 
-	float xoffset = xpos - lastX;
-	float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
+	float xOffset = xPos - lastX;
+	float yOffset = lastY - yPos; // reversed since y-coordinates go from bottom to top
 
-	lastX = xpos;
-	lastY = ypos;
+	lastX = xPos;
+	lastY = yPos;
 
-	camera.ProcessMouseMovement(xoffset, yoffset);
+	camera.ProcessMouseMovement(xOffset, yOffset);
 }
 
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+void ScrollCallback(GLFWwindow* window, double xOffset, double yOffset)
 {
-	camera.ProcessMouseScroll(static_cast<float>(yoffset));
+	camera.ProcessMouseScroll(static_cast<float>(yOffset));
 }
 
 int main()
@@ -142,7 +110,7 @@ int main()
 	
 	// Create Window
 	// -------------
-	GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", nullptr, nullptr);
 	if (!window)
 	{
 		std::cout << "Failed to create GLFW window" << std::endl;
@@ -152,18 +120,18 @@ int main()
 
 	glfwMakeContextCurrent(window);
 	// Register window resizing callback
-	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+	glfwSetFramebufferSizeCallback(window, FramebufferSizeCallback);
 
 	// Register mouse callback
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-	glfwSetCursorPosCallback(window, mouse_callback);
+	glfwSetCursorPosCallback(window, MouseCallback);
 
 	// Register scroll callback
-	glfwSetScrollCallback(window, scroll_callback);
+	glfwSetScrollCallback(window, ScrollCallback);
 
 	// Initialize GLAD
 	// ---------------
-	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+	if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)))
 	{
 		std::cout << "Failed to initialize GLAD" << std::endl;
 		return -1;
@@ -176,45 +144,47 @@ int main()
 
 	// Set up vertex data
 	// ------------------
-	TriangleMesh cube;
-	cube.SetAsAACube(materials[emerald]);
-
 	Light light;
-	light.SetAsAACube();
+	light.SetAsAACube(glm::vec3(1.2f, 1.0f, 2.0f));
 
-	light.setPos(glm::vec3(1.2f, 1.0f, 2.0f));
-	light.setColor(glm::vec3(1.0f, 1.0f, 1.0f));
+	TriangleMesh cube;
+	cube.SetAsAACube(materials[EMERALD]);
+	cube.m_DrawingMode = LIT;
+	cube.m_Light = &light;
+	cube.m_Camera = &camera;
 
-	glm::vec3 origin = glm::vec3(0.0f, 0.0f, 0.0f);
+	auto origin = glm::vec3(0.0f, 0.0f, 0.0f);
 
 	Line xAxis(origin, glm::vec3(10.0f, 0.0f, 0.0f));
 	Line yAxis(origin, glm::vec3(0.0f, 10.0f, 0.0f));
 	Line zAxis(origin, glm::vec3(0.0f, 0.0f, 10.0f));
 
 	glm::mat4 model, view, proj;
-	glm::mat4 identity = glm::mat4(1.0f);
+	auto identity = glm::mat4(1.0f);
 
-	float frameCount = 0;
+	float frameCount = 0.0f;
+	float currentFrame = 0.0f;
 	bool firstRun = true;
 
-	checkForErrors("ERROR::SOURCE::MAIN: ");
+	CheckForErrors("ERROR::SOURCE::MAIN: ");
 
 	// Render Loop
 	std::cout << "Starting render loop" << std::endl;
 	while (!glfwWindowShouldClose(window))
 	{
-		float currentFrame = (float) glfwGetTime();
+		currentFrame = static_cast<float>(glfwGetTime());
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
 		// std::cout << "FPS: " << frameCount / currentFrame << '\r';
 
 		// Input
-		processInput(window);
+		ProcessInput(window);
 
-		// Set matricies
+		// Set matrices
 		model = identity;
 		view = camera.GetViewMatrix(); 
-		proj = glm::perspective(glm::radians(camera.Zoom), (float) SCR_WIDTH / (float) SCR_HEIGHT, 0.1f, 100.0f);
+		proj = glm::perspective(glm::radians(camera.m_Zoom),
+			static_cast<float>(SCR_WIDTH) / static_cast<float>(SCR_HEIGHT), 0.1f, 100.0f);
 
 		//light.m_Pos = glm::vec3(1.0f + sin(currentFrame), light.m_Pos.y, 1.0f + sin(currentFrame));
 		
@@ -226,36 +196,40 @@ int main()
 
 		if (renderAxis)
 		{
-			xAxis.draw(identity, view, proj, glm::vec3(1.0f, 0.0f, 0.0f));
-			yAxis.draw(identity, view, proj, glm::vec3(0.0f, 1.0f, 0.0f));
-			zAxis.draw(identity, view, proj, glm::vec3(0.0f, 0.0f, 1.0f));
+			xAxis.SetMVP(model, view, proj);
+			yAxis.SetMVP(model, view, proj);
+			zAxis.SetMVP(model, view, proj);
+
+			xAxis.SetColor(glm::vec3(1.0f, 0.0f, 0.0f));
+			yAxis.SetColor(glm::vec3(0.0f, 1.0f, 0.0f));
+			zAxis.SetColor(glm::vec3(0.0f, 0.0f, 1.0f));
+
+			xAxis.Draw();
+			yAxis.Draw();
+			zAxis.Draw();
 		}
 
 		// Render objects
-		cube.setMVP(model, view, proj);
-		cube.setMaterial(materials[materialIndex]);
+		cube.SetMVP(model, view, proj);
 
-		cube.draw(light, camera.Position);
-
-		//model = glm::scale(glm::translate(identity, light.m_Pos), glm::vec3(0.2f));
-		//light.setMVP(model, view, proj);
+		cube.Draw();
+		model = glm::scale(glm::translate(identity, light.m_Pos), glm::vec3(0.2f));
+		light.SetMVP(model, view, proj);
 		
-		//light.draw();
+		light.Draw();
 
 		if (renderNormals)
 		{
-			cube.drawNormals(glm::vec3(1.0f, 0.0f, 1.0f));
-			light.drawNormals(glm::vec3(1.0f, 0.0f, 1.0f));
+			cube.DrawNormals(glm::vec3(1.0f, 0.0f, 1.0f));
+			light.DrawNormals(glm::vec3(1.0f, 0.0f, 1.0f));
 		}
 
 		// Check and call events and swap buffers
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 
-		checkForErrors("ERROR::SOURCE::END_OF_LOOP: ");
-
 		frameCount++;
-		std::this_thread::sleep_for(std::chrono::nanoseconds((int) (frameCount / currentFrame / (float) DESIRED_FRAME_RATE * 1e7)));
+		//std::this_thread::sleep_for(std::chrono::nanoseconds((int) (frameCount / currentFrame / (float) DESIRED_FRAME_RATE * 1e7)));
 		if (firstRun)
 		{
 			std::cout << "First run!" << std::endl;

@@ -144,6 +144,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="camera.h" />
+    <ClInclude Include="entity.h" />
     <ClInclude Include="light.h" />
     <ClInclude Include="line.h" />
     <ClInclude Include="material.h" />
@@ -158,6 +159,7 @@
     <None Include="shaders\fragmentShaders\uniformColor.frag" />
     <None Include="shaders\fragmentShaders\litObject.frag" />
     <None Include="shaders\fragmentShaders\2texCube.frag" />
+    <None Include="shaders\fragmentShaders\variableColor.frag" />
     <None Include="shaders\vertexShaders\position.vert" />
     <None Include="shaders\vertexShaders\positionColorNormalTex.vert" />
     <None Include="shaders\vertexShaders\positionColorTex.vert" />
