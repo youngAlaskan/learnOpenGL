@@ -23,8 +23,11 @@ enum DrawingMode {
 class TriangleMesh final : public Entity
 {
 public:
-	TriangleMesh() : m_Light(nullptr), m_Camera(nullptr)
+	TriangleMesh(const Material& material = Material(), Light* light = nullptr, Camera* camera = nullptr)
 	{
+		m_Material = material;
+		m_Light = light;
+		m_Camera = camera;
 		m_Shaders.reserve(DRAWING_MODE_SIZE);
 		m_Shaders.emplace_back("positionColorNormalTex.vert", "variableColor.frag");
 		m_Shaders.emplace_back("positionColorNormalTex.vert", "litObject.frag");
@@ -174,7 +177,7 @@ public:
 
 	}
 	
-	void SetAsAACube(const Material& material) {
+	void SetAsAACube() {
 #if 0
 		5-----6
 	  / |   / |
@@ -183,7 +186,6 @@ public:
 	| /   | /
 	0-----3
 #endif
-		m_Material = material;
 		constexpr unsigned int BLF = 0, TLF = 1, TRF = 2, BRF = 3, BLB = 4, TLB = 5, TRB = 6, BRB = 7;
 		m_TrianglesN = 12;
 		m_VerticesN = 3 * m_TrianglesN;
@@ -311,9 +313,19 @@ public:
 		m_Material = material;
 	}
 
+	void SetLight(Light* light)
+	{
+		m_Light = light;
+	}
+
+	void SetCamera(Camera* camera)
+	{
+		m_Camera = camera;
+	}
+
 	void Draw() override
 	{
-		Shader shader = m_Shaders[m_DrawingMode];
+		const Shader shader = m_Shaders[m_DrawingMode];
 		shader.Use();
 		shader.SetMat4("model", m_Model);
 		shader.SetMat4("view", m_View);
@@ -325,12 +337,10 @@ public:
 		case LIT:
 			shader.SetMat4("modelInv", glm::inverse(m_Model));
 
-			m_Material.sendToShader(shader, m_Light->m_Color);
-
+			m_Material.SendToShader(shader);
 			m_Light->SendToShader(shader);
+			m_Camera->SendToShader(shader);
 
-			shader.SetVec3("lightPos", m_Light->m_Pos);
-			shader.SetVec3("viewPos", m_Camera->m_Position);
 			break;
 		default:
 			break;
@@ -345,7 +355,8 @@ public:
 
 public:
 	Material m_Material;
-	int m_DrawingMode = ISOLATED;
 	Light* m_Light;
 	Camera* m_Camera;
+
+	int m_DrawingMode = ISOLATED;
 };

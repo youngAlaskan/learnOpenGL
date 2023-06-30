@@ -4,6 +4,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "shader.h"
+
 // Defines several possible options for camera movement. Used as abstraction to stay away from window-system specific input methods
 enum CameraMovement {
     FORWARD,
@@ -96,6 +98,11 @@ public:
             m_Zoom = 1.0f;
         if (m_Zoom > 45.0f)
             m_Zoom = 45.0f;
+    }
+
+    void SendToShader(const Shader& shader) const
+    {
+        shader.SetVec3("viewPos", m_Position);
     }
 
 public:

@@ -142,16 +142,21 @@ int main()
 
 	glEnable(GL_DEPTH_TEST);
 
+	InitMaterials();
+
+	Texture containerDiffuse(0), containerSpecular(1);
+	containerDiffuse.SetTexCube(".\\textures\\container2.png");
+	containerSpecular.SetTexCube(".\\textures\\container2_specular.png");
+	Material containerCube(containerDiffuse, containerSpecular, 0.0f);
+
 	// Set up vertex data
 	// ------------------
 	Light light;
 	light.SetAsAACube(glm::vec3(1.2f, 1.0f, 2.0f));
 
-	TriangleMesh cube;
-	cube.SetAsAACube(materials[EMERALD]);
+	TriangleMesh cube(containerCube, &light, &camera);
+	cube.SetAsAACube();
 	cube.m_DrawingMode = LIT;
-	cube.m_Light = &light;
-	cube.m_Camera = &camera;
 
 	auto origin = glm::vec3(0.0f, 0.0f, 0.0f);
 
@@ -212,10 +217,15 @@ int main()
 		// Render objects
 		cube.SetMVP(model, view, proj);
 
-		cube.Draw();
 		model = glm::scale(glm::translate(identity, light.m_Pos), glm::vec3(0.2f));
 		light.SetMVP(model, view, proj);
-		
+		//light.SetColor(glm::vec3(
+		//	static_cast<float>(sin(glfwGetTime() * 2.0)),
+		//	static_cast<float>(sin(glfwGetTime() * 0.7)),
+		//	static_cast<float>(sin(glfwGetTime() * 1.3))
+		//));
+
+		cube.Draw();
 		light.Draw();
 
 		if (renderNormals)

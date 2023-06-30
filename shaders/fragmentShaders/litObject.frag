@@ -1,15 +1,15 @@
 #version 460 core
 struct Material
 {
-    vec3 ambientColor;
-    vec3 diffuseColor;
-    vec3 specularColor;
+    samplerCube diffuse;
+    samplerCube specular;
     float shininess;
 };
 
 struct Light
 {
     vec3 position;
+    vec3 color;
 
     float kA;
     float kD;
@@ -26,14 +26,12 @@ out vec4 FragColor;
 uniform Material material;
 uniform Light light;
 
-uniform vec3 lightPos;
 uniform vec3 viewPos;
 
 void main()
 {
     vec3 norm = normalize(normal);
-    vec3 lightDir = normalize(lightPos - fragPos);
-
+    vec3 lightDir = normalize(light.position - fragPos);
 
     float lambertian = max(dot(norm, lightDir), 0.0);
     float spec = 0.0;
@@ -46,9 +44,9 @@ void main()
         spec = pow(specAngle, material.shininess);
     }
 
-    vec3 ambient  = light.kA * material.ambientColor;
-    vec3 diffuse  = light.kD * lambertian * material.diffuseColor;
-    vec3 specular = light.kS * spec * material.specularColor;
+    vec3 ambient  = light.kA * texture(material.diffuse, texCoord).rgb;
+    vec3 diffuse  = light.kD * lambertian * texture(material.diffuse, texCoord).rgb;
+    vec3 specular = light.kS * (spec * texture(material.specular, texCoord).rgb);
 
-    FragColor = vec4(ambient + diffuse + specular, 1.0);
+    FragColor = vec4((ambient + diffuse + specular) * light.color, 1.0);
 }

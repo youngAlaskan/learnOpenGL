@@ -22,6 +22,7 @@ public:
 	| /     | /
 	0 ----- 3
 #endif
+		m_Pos = position;
 		constexpr unsigned int BLF = 0, TLF = 1, TRF = 2, BRF = 3, BLB = 4, TLB = 5, TRB = 6, BRB = 7;
 		m_TrianglesN = 12;
 		m_VerticesN = 3 * m_TrianglesN;
@@ -173,6 +174,7 @@ public:
 	void SendToShader(const Shader& shader) const
 	{
 		shader.SetVec3("light.position", m_Pos);
+		shader.SetVec3("light.color", m_Color);
 
 		shader.SetFloat("light.kA", m_KA);
 		shader.SetFloat("light.kD", m_KD);
