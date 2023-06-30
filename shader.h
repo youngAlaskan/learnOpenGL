@@ -1,6 +1,7 @@
 #pragma once
 
 #include <glad/glad.h>
+#include <glm/gtc/type_ptr.hpp>
 
 #include <string>
 #include <fstream>
@@ -10,7 +11,7 @@
 class Shader
 {
 public:
-    Shader() {}
+    Shader() = default;
 
     // constructor reads and builds the shader
     Shader(const char* vertexPath, const char* fragmentPath)

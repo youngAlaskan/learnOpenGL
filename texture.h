@@ -20,8 +20,34 @@ public:
 		m_ID = ID;
 	}
 
-	Texture(const int width, const int height, const glm::vec3 color)
+	void Use() const
 	{
+		glActiveTexture(GL_TEXTURE0 + m_ID);
+		glBindTexture(m_Type, m_ID);
+	}
+
+	bool operator==(const Texture& other) const
+	{
+		return m_ID == other.m_ID;
+	}
+
+	virtual ~Texture() {
+		glDeleteTextures(1, &m_ID);
+	}
+
+public:
+	unsigned int m_ID = 0;
+	GLenum m_Type = GL_TEXTURE_2D;
+};
+
+class Tex2D final : public Texture
+{
+public:
+	explicit Tex2D(const glm::vec3 color)
+	{
+		m_Type = GL_TEXTURE_2D;
+
+		constexpr int width = 2, height = 2;
 		// load and create a texture 
 		// -------------------------
 		glGenTextures(1, &m_ID);
@@ -45,32 +71,33 @@ public:
 		}
 
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-		glGenerateMipmap(GL_TEXTURE_2D);
 
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
-	void SetTex2D(const char* filepath)
+	explicit Tex2D(const char* filepath)
 	{
-        // load and create a texture 
-        // -------------------------
-        glGenTextures(1, &m_ID);
-        glBindTexture(GL_TEXTURE_2D, m_ID);
-        
-        // set the texture wrapping parameters
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	// set texture wrapping to GL_REPEAT (default wrapping method)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        
-        // set texture filtering parameters
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        
-        // load image, create texture and generate mipmaps
-        int width, height, nrChannels;
-        
-        unsigned char* data = stbi_load(filepath, &width, &height, &nrChannels, 0);
-        if (data)
-        {
+		m_Type = GL_TEXTURE_2D;
+
+		// load and create a texture 
+		// -------------------------
+		glGenTextures(1, &m_ID);
+		glBindTexture(GL_TEXTURE_2D, m_ID);
+
+		// set the texture wrapping parameters
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	// set texture wrapping to GL_REPEAT (default wrapping method)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+		// set texture filtering parameters
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		// load image, create texture and generate mipmaps
+		int width, height, nrChannels;
+
+		unsigned char* data = stbi_load(filepath, &width, &height, &nrChannels, 0);
+		if (data)
+		{
 			GLint format = GL_RGB;
 			if (nrChannels == 1)
 				format = GL_RED;
@@ -78,19 +105,30 @@ public:
 				format = GL_RGBA;
 
 
-            glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-            glGenerateMipmap(GL_TEXTURE_2D);
-        }
-        else
-        {
-            std::cout << "Failed to load texture" << std::endl;
-        }
+			glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+			glGenerateMipmap(GL_TEXTURE_2D);
+		}
+		else
+		{
+			std::cout << "Failed to load texture" << std::endl;
+		}
 
-        stbi_image_free(data);
+		stbi_image_free(data);
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
-    void SetTexCube(const char* filepath) {
+	static void SetWrap(const GLint sWrap, const GLint tWrap) {
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, sWrap);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, tWrap);
+	}
+};
+
+class TexCube final : public Texture
+{
+public:
+	explicit TexCube(const char* filepath) {
+		m_Type = GL_TEXTURE_CUBE_MAP;
+
 		glGenTextures(1, &m_ID);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, m_ID);
 
@@ -131,9 +169,11 @@ public:
 
 		stbi_image_free(data);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
-    }
+	}
 
-	void SetTexCube(const char** filepaths) {
+	explicit TexCube(const char** filepaths) {
+		m_Type = GL_TEXTURE_CUBE_MAP;
+
 		glGenTextures(1, &m_ID);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, m_ID);
 
@@ -144,10 +184,9 @@ public:
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 		int width, height, channelsN;
-		unsigned char* data;
 		for (unsigned int i = 0; i < 6; i++)
 		{
-			data = stbi_load(filepaths[i], &width, &height, &channelsN, 0);
+			unsigned char* data = stbi_load(filepaths[i], &width, &height, &channelsN, 0);
 			if (data) {
 				GLint format = GL_RGB;
 				if (channelsN == 1)
@@ -163,44 +202,16 @@ public:
 			{
 				std::cout << "Failed to load cube map texture" << std::endl;
 			}
+
+			stbi_image_free(data);
 		}
 
-		stbi_image_free(data);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 	}
 
-	static void SetWrap2D(const GLint sWrap, const GLint tWrap) {
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, sWrap);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, tWrap);
-	}
-
-	static void SetWrap3D(const GLint sWrap, const GLint tWrap, const GLint rWrap) {
+	static void SetWrap(const GLint sWrap, const GLint tWrap, const GLint rWrap) {
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, sWrap);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, tWrap);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, rWrap);
 	}
-
-	void Use2D(const GLint index) const
-	{
-		glActiveTexture(index);
-		glBindTexture(GL_TEXTURE_2D, m_ID);
-	}
-
-	void UseCube(const GLint index) const
-	{
-		glActiveTexture(index);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, m_ID);
-	}
-
-	bool operator==(const Texture& other) const
-	{
-		return m_ID == other.m_ID;
-	}
-
-	~Texture() {
-		glDeleteTextures(1, &m_ID);
-	}
-
-public:
-	unsigned int m_ID = 0;
 };

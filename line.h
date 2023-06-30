@@ -17,9 +17,9 @@
 class Line
 {
 public:
-	Line() {}
+	Line() = default;
 
-	Line(glm::vec3 start, glm::vec3 end)
+	Line(glm::vec3 start, glm::vec3 end): m_View(glm::mat4(1.0f)), m_Proj(glm::mat4(1.0f))
 	{
 		m_Start = start;
 		m_End = end;

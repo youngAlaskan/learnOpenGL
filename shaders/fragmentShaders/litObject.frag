@@ -3,6 +3,7 @@ struct Material
 {
     samplerCube diffuse;
     samplerCube specular;
+    samplerCube emissive;
     float shininess;
 };
 
@@ -15,6 +16,11 @@ struct Light
     float kD;
     float kS;
 };
+  
+uniform Material material;
+uniform Light light;
+
+uniform vec3 viewPos;
 
 in vec3 normal;
 in vec3 fragPos;
@@ -22,11 +28,6 @@ in vec3 color;
 in vec3 texCoord;
 
 out vec4 FragColor;
-  
-uniform Material material;
-uniform Light light;
-
-uniform vec3 viewPos;
 
 void main()
 {
@@ -41,12 +42,17 @@ void main()
         vec3 toViewer = normalize(viewPos - fragPos);
 
         float specAngle = max(dot(toViewer, reflected), 0.0);
-        spec = pow(specAngle, material.shininess);
+        spec = pow(specAngle, material.shininess * 128.0);
     }
 
     vec3 ambient  = light.kA * texture(material.diffuse, texCoord).rgb;
     vec3 diffuse  = light.kD * lambertian * texture(material.diffuse, texCoord).rgb;
     vec3 specular = light.kS * (spec * texture(material.specular, texCoord).rgb);
+    vec3 emissive = vec3(0.0);
+    if (texture(material.specular, texCoord).rgb == vec3(0.0, 0.0, 0.0))
+    {
+        emissive = texture(material.emissive, texCoord).rgb;
+    }
 
-    FragColor = vec4((ambient + diffuse + specular) * light.color, 1.0);
+    FragColor = vec4((ambient + diffuse + specular + emissive) * light.color, 1.0);
 }

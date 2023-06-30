@@ -23,7 +23,7 @@ enum DrawingMode {
 class TriangleMesh final : public Entity
 {
 public:
-	TriangleMesh(const Material& material = Material(), Light* light = nullptr, Camera* camera = nullptr)
+	explicit TriangleMesh(Material* material = nullptr, Light* light = nullptr, Camera* camera = nullptr)
 	{
 		m_Material = material;
 		m_Light = light;
@@ -34,7 +34,7 @@ public:
 	}
 
 	TriangleMesh(const glm::vec3* vertices, const glm::vec3* colors, const glm::vec3* normals,
-		const glm::vec3* texCoords, const int verticesN, const int trianglesN) : m_Light(nullptr), m_Camera(nullptr)
+		const glm::vec3* texCoords, const int verticesN, const int trianglesN) : m_Material(nullptr), m_Light(nullptr), m_Camera(nullptr)
 	{
 		m_TrianglesN = trianglesN;
 		m_VerticesN = verticesN;
@@ -308,7 +308,7 @@ public:
 		glBindVertexArray(0);
 	}
 
-	void SetMaterial(const Material& material)
+	void SetMaterial(Material* material)
 	{
 		m_Material = material;
 	}
@@ -337,7 +337,7 @@ public:
 		case LIT:
 			shader.SetMat4("modelInv", glm::inverse(m_Model));
 
-			m_Material.SendToShader(shader);
+			m_Material->SendToShader(shader);
 			m_Light->SendToShader(shader);
 			m_Camera->SendToShader(shader);
 
@@ -354,7 +354,7 @@ public:
 	}
 
 public:
-	Material m_Material;
+	Material* m_Material;
 	Light* m_Light;
 	Camera* m_Camera;
 

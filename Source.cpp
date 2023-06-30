@@ -1,13 +1,13 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <iostream>
-#include <thread>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+#include <iostream>
+// #define LOCK_FRAMERATE
+#ifdef LOCK_FRAMERATE
+#include <thread>
+#endif
 
 #include "utils.h"
 
@@ -22,7 +22,9 @@
 constexpr unsigned int SCR_WIDTH = 800;
 constexpr unsigned int SCR_HEIGHT = 600;
 
+#ifdef LOCK_FRAMERATE
 constexpr unsigned int DESIRED_FRAME_RATE = 60;
+#endif
 
 bool renderFilled = true;
 bool renderAxis = false;
@@ -35,6 +37,12 @@ Camera camera(glm::vec3(1.0f, 1.0f, 3.0f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
+
+enum Name {
+	EMERALD, JADE, OBSIDIAN, PEARL, RUBY,
+	TURQUOISE, BRASS, BRONZE, CHROME, COPPER,
+	GOLD, SILVER
+};
 
 void FramebufferSizeCallback(GLFWwindow* window, int width, int height)
 {
@@ -142,19 +150,62 @@ int main()
 
 	glEnable(GL_DEPTH_TEST);
 
-	InitMaterials();
+	Tex2D blackEmissive(glm::vec3(0.0f));
 
-	Texture containerDiffuse(0), containerSpecular(1);
-	containerDiffuse.SetTexCube(".\\textures\\container2.png");
-	containerSpecular.SetTexCube(".\\textures\\container2_specular.png");
-	Material containerCube(containerDiffuse, containerSpecular, 0.0f);
+	Tex2D emeraldDiffuse(   glm::vec3(0.0215f,   0.745f,    0.0215f  ));
+	Tex2D emeraldSpecular(  glm::vec3(0.633f,    0.727811f, 0.633f   ));
+	Tex2D jadeDiffuse(      glm::vec3(0.135f,    0.2225f,   0.1575f  ));
+	Tex2D jadeSpecular(     glm::vec3(0.316228f, 0.316228f, 0.316228f));
+	Tex2D obsidianDiffuse(  glm::vec3(0.05375f,  0.05f,     0.06625f ));
+	Tex2D obsidianSpecular( glm::vec3(0.332741f, 0.328634f, 0.346435f));
+	Tex2D pearlDiffuse(     glm::vec3(0.25f,     0.20725f,  0.20725f ));
+	Tex2D pearlSpecular(    glm::vec3(0.296648f, 0.296648f, 0.296648f));
+	Tex2D rubyDiffuse(      glm::vec3(0.1745f,   0.01175f,  0.01175f ));
+	Tex2D rubySpecular(     glm::vec3(0.727811f, 0.626959f, 0.626959f));
+	Tex2D turquoiseDiffuse( glm::vec3(0.1f,      0.18725f,  0.1745f  ));
+	Tex2D turquoiseSpecular(glm::vec3(0.297254f, 0.30829f,  0.306678f));
+	Tex2D brassDiffuse(     glm::vec3(0.329412f, 0.223529f, 0.027451f));
+	Tex2D brassSpecular(    glm::vec3(0.992157f, 0.941176f, 0.807843f));
+	Tex2D bronzeDiffuse(    glm::vec3(0.2125f,   0.1275f,   0.054f   ));
+	Tex2D bronzeSpecular(   glm::vec3(0.393548f, 0.271906f, 0.166721f));
+	Tex2D chromeDiffuse(    glm::vec3(0.25f,     0.25f,     0.25f    ));
+	Tex2D chromeSpecular(   glm::vec3(0.774597f, 0.774597f, 0.774597f));
+	Tex2D copperDiffuse(    glm::vec3(0.19125f,  0.0735f,   0.0225f  ));
+	Tex2D copperSpecular(   glm::vec3(0.25677f,  0.137622f, 0.086014f));
+	Tex2D goldDiffuse(      glm::vec3(0.24725f,  0.1995f,   0.0745f  ));
+	Tex2D goldSpecular(     glm::vec3(0.628281f, 0.555802f, 0.366065f));
+	Tex2D silverDiffuse(    glm::vec3(0.19225f,  0.19225f,  0.19225f ));
+	Tex2D silverSpecular(   glm::vec3(0.508273f, 0.508273f, 0.508273f));
+
+	std::unordered_map<Name, Material> materials = {
+		{EMERALD,   Material(&emeraldDiffuse, &emeraldSpecular, &blackEmissive, 0.6f)},
+		{JADE,      Material(&jadeDiffuse, &jadeSpecular, &blackEmissive,  0.1f)},
+		{OBSIDIAN,  Material(&obsidianDiffuse, &obsidianSpecular, &blackEmissive,  0.3f)},
+		{PEARL,     Material(&pearlDiffuse, &pearlSpecular, &blackEmissive,  0.088f)},
+		{RUBY,      Material(&rubyDiffuse, &rubySpecular, &blackEmissive,  0.6f)},
+		{TURQUOISE, Material(&turquoiseDiffuse, &turquoiseSpecular, &blackEmissive,  0.1f)},
+		{BRASS,     Material(&brassDiffuse, &brassSpecular, &blackEmissive,  0.21794872f)},
+		{BRONZE,    Material(&bronzeDiffuse, &bronzeSpecular, &blackEmissive,  0.2f)},
+		{CHROME,    Material(&chromeDiffuse, &chromeSpecular, &blackEmissive,  0.6f)},
+		{COPPER,    Material(&copperDiffuse, &copperSpecular, &blackEmissive,  0.1f)},
+		{GOLD,      Material(&goldDiffuse, &goldSpecular, &blackEmissive,  0.4f)},
+		{SILVER,    Material(&silverDiffuse, &silverSpecular, &blackEmissive,  0.4f)}
+	};
+
+	TexCube containerDiffuse(".\\textures\\container2.png");
+	TexCube containerSpecular(".\\textures\\container2_specular.png");
+	TexCube containerEmissive(".\\textures\\matrix.jpg");
+	Material containerCube(&containerDiffuse, &containerSpecular, &containerEmissive, 0.5f);
 
 	// Set up vertex data
 	// ------------------
 	Light light;
 	light.SetAsAACube(glm::vec3(1.2f, 1.0f, 2.0f));
+	light.m_KA = 0.2f;
+	light.m_KD = 0.5f;
+	light.m_KS = 1.0f;
 
-	TriangleMesh cube(containerCube, &light, &camera);
+	TriangleMesh cube(&containerCube, &light, &camera);
 	cube.SetAsAACube();
 	cube.m_DrawingMode = LIT;
 
@@ -219,11 +270,6 @@ int main()
 
 		model = glm::scale(glm::translate(identity, light.m_Pos), glm::vec3(0.2f));
 		light.SetMVP(model, view, proj);
-		//light.SetColor(glm::vec3(
-		//	static_cast<float>(sin(glfwGetTime() * 2.0)),
-		//	static_cast<float>(sin(glfwGetTime() * 0.7)),
-		//	static_cast<float>(sin(glfwGetTime() * 1.3))
-		//));
 
 		cube.Draw();
 		light.Draw();
@@ -239,7 +285,9 @@ int main()
 		glfwPollEvents();
 
 		frameCount++;
-		//std::this_thread::sleep_for(std::chrono::nanoseconds((int) (frameCount / currentFrame / (float) DESIRED_FRAME_RATE * 1e7)));
+#ifdef LOCK_FRAMERATE
+		std::this_thread::sleep_for(std::chrono::nanoseconds((int) (frameCount / currentFrame / (float) DESIRED_FRAME_RATE * 1e7)));
+#endif
 		if (firstRun)
 		{
 			std::cout << "First run!" << std::endl;
