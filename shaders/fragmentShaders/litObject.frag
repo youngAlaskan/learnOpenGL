@@ -48,11 +48,7 @@ void main()
     vec3 ambient  = light.kA * texture(material.diffuse, texCoord).rgb;
     vec3 diffuse  = light.kD * lambertian * texture(material.diffuse, texCoord).rgb;
     vec3 specular = light.kS * (spec * texture(material.specular, texCoord).rgb);
-    vec3 emissive = vec3(0.0);
-    if (texture(material.specular, texCoord).rgb == vec3(0.0, 0.0, 0.0))
-    {
-        emissive = texture(material.emissive, texCoord).rgb;
-    }
+    vec3 emissive = texture(material.emissive, texCoord).rgb;
 
     FragColor = vec4((ambient + diffuse + specular + emissive) * light.color, 1.0);
 }
