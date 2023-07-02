@@ -8,15 +8,11 @@
 #include "light.h"
 #include "camera.h"
 
-enum Planes {
-	XY,
-	XZ,
-	YZ
-};
-
 enum DrawingMode {
 	ISOLATED,
-	LIT,
+	LIT_BY_POINT,
+	LIT_BY_DIRECTIONAL,
+	LIT_BY_SPOTLIGHT,
 	DRAWING_MODE_SIZE
 };
 
@@ -30,7 +26,9 @@ public:
 		m_Camera = camera;
 		m_Shaders.reserve(DRAWING_MODE_SIZE);
 		m_Shaders.emplace_back("positionColorNormalTex.vert", "variableColor.frag");
-		m_Shaders.emplace_back("positionColorNormalTex.vert", "litObject.frag");
+		m_Shaders.emplace_back("positionColorNormalTex.vert", "objectLitByPoint.frag");
+		m_Shaders.emplace_back("positionColorNormalTex.vert", "objectLitByDirectional.frag");
+		m_Shaders.emplace_back("positionColorNormalTex.vert", "objectLitBySpotlight.frag");
 	}
 
 	TriangleMesh(const glm::vec3* vertices, const glm::vec3* colors, const glm::vec3* normals,
@@ -99,10 +97,9 @@ public:
 		}
 	}
 
-	// TODO: Implement normals
-	void SetAsAARectangle(int aaPlane, float texCoordScaleFactor = 0.0f) {
+	// TODO: Fix this
+	void SetAsAARectangle(int aaPlane, float texCoordScaleFactor = 1.0f) {
 		if (aaPlane > 2 || aaPlane < 0) return;
-		int index = 0;
 
 		m_VerticesN = 4;
 		m_TrianglesN = 2;
@@ -113,6 +110,7 @@ public:
 		glm::vec3 posTL;
 		glm::vec3 posTR;
 		glm::vec3 posBR;
+		glm::vec3 normal;
 
 		if (aaPlane == XY)
 		{
@@ -120,6 +118,7 @@ public:
 			posTL = glm::vec3(-0.5f,  0.5f, 0.0f);
 			posTR = glm::vec3( 0.5f,  0.5f, 0.0f);
 			posBR = glm::vec3( 0.5f, -0.5f, 0.0f);
+			normal = glm::vec3(0.0f, 0.0f, 1.0f);
 		}
 		else if (aaPlane == XZ)
 		{
@@ -127,6 +126,7 @@ public:
 			posTL = glm::vec3(-0.5f, 0.0f, -0.5f);
 			posTR = glm::vec3( 0.5f, 0.0f, -0.5f);
 			posBR = glm::vec3( 0.5f, 0.0f,  0.5f);
+			normal = glm::vec3(0.0f, 1.0f, 0.0f);
 		}
 		else
 		{
@@ -134,6 +134,7 @@ public:
 			posTL = glm::vec3(0.0f,  0.5f,  0.5f);
 			posTR = glm::vec3(0.5f,  0.5f, -0.5f);
 			posBR = glm::vec3(0.5f, -0.5f, -0.5f);
+			normal = glm::vec3(1.0f, 0.0f, 0.0f);
 		}
 
 		auto colorBL = glm::vec3(1.0f, 0.0f, 0.0f); // Red
@@ -141,33 +142,37 @@ public:
 		auto colorTR = glm::vec3(0.0f, 0.0f, 1.0f); // Blue
 		auto colorBR = glm::vec3(0.0f, 1.0f, 0.0f); // Green
 
-		glm::vec3 texCoordBL = glm::vec3(0.0f, 0.0f, 0.0f) * texCoordScaleFactor;
-		glm::vec3 texCoordTL = glm::vec3(0.0f, 1.0f, 0.0f) * texCoordScaleFactor;
-		glm::vec3 texCoordTR = glm::vec3(1.0f, 1.0f, 0.0f) * texCoordScaleFactor;
-		glm::vec3 texCoordBR = glm::vec3(1.0f, 0.0f, 0.0f) * texCoordScaleFactor;
+		auto texCoordBL = glm::vec3(0.0f, 0.0f, 0.0f) * texCoordScaleFactor;
+		auto texCoordTL = glm::vec3(0.0f, 1.0f, 0.0f) * texCoordScaleFactor;
+		auto texCoordTR = glm::vec3(1.0f, 1.0f, 0.0f) * texCoordScaleFactor;
+		auto texCoordBR = glm::vec3(1.0f, 0.0f, 0.0f) * texCoordScaleFactor;
 
 		// Bottom Left
 		// -----------
 		DataPush3F(m_ConnectivityData, posBL);
 		DataPush3F(m_ConnectivityData, colorBL);
+		DataPush3F(m_ConnectivityData, normal);
 		DataPush3F(m_ConnectivityData, texCoordBL);
 
 		// Top Left
 		// --------
 		DataPush3F(m_ConnectivityData, posTL);
 		DataPush3F(m_ConnectivityData, colorTL);
+		DataPush3F(m_ConnectivityData, normal);
 		DataPush3F(m_ConnectivityData, texCoordTL);
 
 		// Top Right
 		// ---------
 		DataPush3F(m_ConnectivityData, posTR);
 		DataPush3F(m_ConnectivityData, colorTR);
+		DataPush3F(m_ConnectivityData, normal);
 		DataPush3F(m_ConnectivityData, texCoordTR);
 
 		// Bottom Right
 		// ------------
 		DataPush3F(m_ConnectivityData, posBR);
 		DataPush3F(m_ConnectivityData, colorBR);
+		DataPush3F(m_ConnectivityData, normal);
 		DataPush3F(m_ConnectivityData, texCoordBR);
 
 		// Indexing
@@ -175,6 +180,40 @@ public:
 		IndicesPush3I(0, 1, 2);
 		IndicesPush3I(0, 2, 3);
 
+		glGenVertexArrays(1, &m_VAO);
+		glGenBuffers(1, &m_VBO);
+		glGenBuffers(1, &m_EBO);
+		// Bind VAO first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
+		glBindVertexArray(m_VAO);
+
+		glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
+		glBufferData(GL_ARRAY_BUFFER, m_ConnectivityData.size() * sizeof(float), m_ConnectivityData.data(), GL_STATIC_DRAW);
+
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_Indices.size() * sizeof(unsigned int), m_Indices.data(), GL_STATIC_DRAW);
+
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 12 * sizeof(float), static_cast<void*>(nullptr));
+		glEnableVertexAttribArray(0);
+
+		// Unbinds
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindVertexArray(0);
+
+		// Normals
+		// ------------------------------
+
+		glGenVertexArrays(1, &m_NVAO);
+		glGenBuffers(1, &m_NVBO);
+		glBindVertexArray(m_NVAO);
+
+		glBindBuffer(GL_ARRAY_BUFFER, m_NVBO);
+		glBufferData(GL_ARRAY_BUFFER, m_NormalData.size() * sizeof(float), m_NormalData.data(), GL_STATIC_DRAW);
+
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), static_cast<void*>(nullptr));
+		glEnableVertexAttribArray(0);
+
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindVertexArray(0);
 	}
 	
 	void SetAsAACube() {
@@ -334,7 +373,9 @@ public:
 		switch (m_DrawingMode) {
 		case ISOLATED:
 			break;
-		case LIT:
+		case LIT_BY_POINT:
+		case LIT_BY_DIRECTIONAL:
+		case LIT_BY_SPOTLIGHT:
 			shader.SetMat4("modelInv", glm::inverse(m_Model));
 
 			m_Material->SendToShader(shader);

@@ -4,6 +4,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <iostream>
+#include <vector>
 // #define LOCK_FRAMERATE
 #ifdef LOCK_FRAMERATE
 #include <thread>
@@ -190,28 +191,51 @@ int main()
 	auto gold = Material(&goldDiffuse, &goldSpecular, &blackEmissive, 0.4f);
 	auto silver = Material(&silverDiffuse, &silverSpecular, &blackEmissive, 0.4f);
 
-	TexCube containerDiffuse(".\\textures\\container2.png");
-	TexCube containerSpecular(".\\textures\\container2_specular.png");
-	TexCube containerEmissive(".\\textures\\matrix.jpg");
+	auto containerDiffuse = TexCube(".\\textures\\container2.png");
+	auto containerSpecular = TexCube(".\\textures\\container2_specular.png");
+	auto containerEmissive = blackEmissive;
 	Material containerCube(&containerDiffuse, &containerSpecular, &containerEmissive, 0.5f);
 
 	// Set up vertex data
 	// ------------------
-	Light light;
-	light.SetAsAACube(glm::vec3(1.2f, 1.0f, 2.0f));
-	light.m_KA = 0.2f;
-	light.m_KD = 0.5f;
-	light.m_KS = 1.0f;
+	std::vector<Entity*> entities;
 
-	TriangleMesh cube(&pearl, &light, &camera);
-	cube.SetAsAACube();
-	cube.m_DrawingMode = LIT;
+	auto pointLight = new PointLight(100.0f);
+	pointLight->SetAsAACube(glm::vec3(1.2f, 1.0f, 2.0f));
+	pointLight->m_KA = 0.2f;
+	pointLight->m_KD = 0.5f;
+	pointLight->m_KS = 1.0f;
+	entities.emplace_back(pointLight);
+
+	auto directionalLight = new DirectionalLight();
+	directionalLight->SetAsAARectangle(XY);
+	directionalLight->m_KA = 0.2f;
+	directionalLight->m_KD = 0.5f;
+	directionalLight->m_KS = 1.0f;
+	directionalLight->m_Direction = glm::vec3(0.0, 0.0, -1.0);
+	entities.emplace_back(directionalLight);
+
+	auto flashlight = new SpotLight(32.0f);
+	flashlight->m_KA = 0.2f;
+	flashlight->m_KD = 0.5f;
+	flashlight->m_KS = 1.0f;
+	flashlight->m_Theta = 12.5f;
+	entities.emplace_back(flashlight);
+
+	auto cube = new TriangleMesh(&containerCube, flashlight, &camera);
+	cube->SetAsAACube();
+	cube->m_DrawingMode = LIT_BY_SPOTLIGHT;
+	entities.emplace_back(cube);
 
 	auto origin = glm::vec3(0.0f, 0.0f, 0.0f);
 
 	Line xAxis(origin, glm::vec3(10.0f, 0.0f, 0.0f));
 	Line yAxis(origin, glm::vec3(0.0f, 10.0f, 0.0f));
 	Line zAxis(origin, glm::vec3(0.0f, 0.0f, 10.0f));
+
+	xAxis.SetColor(glm::vec3(1.0f, 0.0f, 0.0f));
+	yAxis.SetColor(glm::vec3(0.0f, 1.0f, 0.0f));
+	zAxis.SetColor(glm::vec3(0.0f, 0.0f, 1.0f));
 
 	glm::mat4 model, view, proj;
 	auto identity = glm::mat4(1.0f);
@@ -254,28 +278,36 @@ int main()
 			yAxis.SetMVP(model, view, proj);
 			zAxis.SetMVP(model, view, proj);
 
-			xAxis.SetColor(glm::vec3(1.0f, 0.0f, 0.0f));
-			yAxis.SetColor(glm::vec3(0.0f, 1.0f, 0.0f));
-			zAxis.SetColor(glm::vec3(0.0f, 0.0f, 1.0f));
-
 			xAxis.Draw();
 			yAxis.Draw();
 			zAxis.Draw();
 		}
 
 		// Render objects
-		cube.SetMVP(model, view, proj);
+		cube->SetMVP(model, view, proj);
 
-		model = glm::scale(glm::translate(identity, light.m_Pos), glm::vec3(0.2f));
-		light.SetMVP(model, view, proj);
+		model = glm::scale(glm::translate(identity, pointLight->m_Pos), glm::vec3(0.2f));
+		pointLight->SetMVP(model, view, proj);
 
-		cube.Draw();
-		light.Draw();
+		model = glm::translate(identity, glm::vec3(0.0, 0.0, 10.0));
+		directionalLight->SetMVP(model, view, proj);
+
+		model = identity;
+		flashlight->SetMVP(model, view, proj);
+		flashlight->m_Pos = camera.m_Position;
+		flashlight->m_Direction = camera.m_Front;
+
+		for (Entity* entity : entities)
+		{
+			entity->Draw();
+		}
 
 		if (renderNormals)
 		{
-			cube.DrawNormals(glm::vec3(1.0f, 0.0f, 1.0f));
-			light.DrawNormals(glm::vec3(1.0f, 0.0f, 1.0f));
+			for (Entity* entity : entities)
+			{
+				entity->DrawNormals(glm::vec3(1.0f, 0.0f, 1.0f));
+			}
 		}
 
 		// Check and call events and swap buffers
@@ -291,6 +323,11 @@ int main()
 			std::cout << "First run!" << std::endl;
 			firstRun = false;
 		}
+	}
+
+	for (Entity* entity : entities)
+	{
+		delete entity;
 	}
 
 	glfwTerminate();

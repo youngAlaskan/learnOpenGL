@@ -9,7 +9,7 @@ struct Material
 
 struct Light
 {
-    vec3 position;
+    vec3 direction;
     vec3 color;
 
     float kA;
@@ -32,7 +32,7 @@ out vec4 FragColor;
 void main()
 {
     vec3 norm = normalize(normal);
-    vec3 lightDir = normalize(light.position - fragPos);
+    vec3 lightDir = normalize(-light.direction);
 
     float lambertian = max(dot(norm, lightDir), 0.0);
     float spec = 0.0;
