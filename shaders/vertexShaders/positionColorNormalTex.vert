@@ -16,9 +16,10 @@ out vec3 texCoord;
 
 void main()
 {
-    gl_Position = proj * view * model * vec4(aPos, 1.0f);
-    fragPos = mat3(model) * aPos;
+    fragPos = vec3(model * vec4(aPos, 1.0));
     normal = mat3(transpose(modelInv)) * aNormal;
     color = aColor;
     texCoord = aTexCoord;
+
+    gl_Position = proj * view * vec4(fragPos, 1.0f);
 } 

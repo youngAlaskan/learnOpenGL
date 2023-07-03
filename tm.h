@@ -10,29 +10,24 @@
 
 enum DrawingMode {
 	ISOLATED,
-	LIT_BY_POINT,
-	LIT_BY_DIRECTIONAL,
-	LIT_BY_SPOTLIGHT,
+	LIT,
 	DRAWING_MODE_SIZE
 };
 
 class TriangleMesh final : public Entity
 {
 public:
-	explicit TriangleMesh(Material* material = nullptr, Light* light = nullptr, Camera* camera = nullptr)
+	explicit TriangleMesh(Material* material = nullptr, const std::vector<Light*>& lights = std::vector<Light*>(), Camera* camera = nullptr)
 	{
 		m_Material = material;
-		m_Light = light;
+		m_Lights = lights;
 		m_Camera = camera;
-		m_Shaders.reserve(DRAWING_MODE_SIZE);
 		m_Shaders.emplace_back("positionColorNormalTex.vert", "variableColor.frag");
-		m_Shaders.emplace_back("positionColorNormalTex.vert", "objectLitByPoint.frag");
-		m_Shaders.emplace_back("positionColorNormalTex.vert", "objectLitByDirectional.frag");
-		m_Shaders.emplace_back("positionColorNormalTex.vert", "objectLitBySpotlight.frag");
+		m_Shaders.emplace_back("positionColorNormalTex.vert", "objectLitByVariousLights.frag");
 	}
 
 	TriangleMesh(const glm::vec3* vertices, const glm::vec3* colors, const glm::vec3* normals,
-		const glm::vec3* texCoords, const int verticesN, const int trianglesN) : m_Material(nullptr), m_Light(nullptr), m_Camera(nullptr)
+		const glm::vec3* texCoords, const int verticesN, const int trianglesN) : m_Material(nullptr), m_Lights(std::vector<Light*>()), m_Camera(nullptr)
 	{
 		m_TrianglesN = trianglesN;
 		m_VerticesN = verticesN;
@@ -352,9 +347,9 @@ public:
 		m_Material = material;
 	}
 
-	void SetLight(Light* light)
+	void SetLights(const std::vector<Light*>& lights)
 	{
-		m_Light = light;
+		m_Lights = lights;
 	}
 
 	void SetCamera(Camera* camera)
@@ -373,13 +368,15 @@ public:
 		switch (m_DrawingMode) {
 		case ISOLATED:
 			break;
-		case LIT_BY_POINT:
-		case LIT_BY_DIRECTIONAL:
-		case LIT_BY_SPOTLIGHT:
+		case LIT:
 			shader.SetMat4("modelInv", glm::inverse(m_Model));
 
 			m_Material->SendToShader(shader);
-			m_Light->SendToShader(shader);
+
+			for (const Light* light : m_Lights)
+			{
+				light->SendToShader(shader);
+			}
 			m_Camera->SendToShader(shader);
 
 			break;
@@ -396,7 +393,7 @@ public:
 
 public:
 	Material* m_Material;
-	Light* m_Light;
+	std::vector<Light*> m_Lights;
 	Camera* m_Camera;
 
 	int m_DrawingMode = ISOLATED;

@@ -198,34 +198,58 @@ int main()
 
 	// Set up vertex data
 	// ------------------
+	glm::vec3 cubePositions[] = {
+		glm::vec3(0.0f,  0.0f,  0.0f),
+		glm::vec3(2.0f,  5.0f, -15.0f),
+		glm::vec3(-1.5f, -2.2f, -2.5f),
+		glm::vec3(-3.8f, -2.0f, -12.3f),
+		glm::vec3(2.4f, -0.4f, -3.5f),
+		glm::vec3(-1.7f,  3.0f, -7.5f),
+		glm::vec3(1.3f, -2.0f, -2.5f),
+		glm::vec3(1.5f,  2.0f, -2.5f),
+		glm::vec3(1.5f,  0.2f, -1.5f),
+		glm::vec3(-1.3f,  1.0f, -1.5f)
+	};
+
 	std::vector<Entity*> entities;
+	std::vector<Light*> lights;
 
 	auto pointLight = new PointLight(100.0f);
 	pointLight->SetAsAACube(glm::vec3(1.2f, 1.0f, 2.0f));
 	pointLight->m_KA = 0.2f;
 	pointLight->m_KD = 0.5f;
 	pointLight->m_KS = 1.0f;
+	pointLight->m_Index = 0;
 	entities.emplace_back(pointLight);
+	lights.emplace_back(pointLight);
 
 	auto directionalLight = new DirectionalLight();
-	directionalLight->SetAsAARectangle(XY);
 	directionalLight->m_KA = 0.2f;
 	directionalLight->m_KD = 0.5f;
 	directionalLight->m_KS = 1.0f;
-	directionalLight->m_Direction = glm::vec3(0.0, 0.0, -1.0);
+	directionalLight->m_Direction = glm::normalize(glm::vec3(1.0, -1.0, 1.0));
 	entities.emplace_back(directionalLight);
+	lights.emplace_back(directionalLight);
 
-	auto flashlight = new SpotLight(32.0f);
+	auto flashlight = new SpotLight(12.5f);
 	flashlight->m_KA = 0.2f;
 	flashlight->m_KD = 0.5f;
 	flashlight->m_KS = 1.0f;
-	flashlight->m_Theta = 12.5f;
 	entities.emplace_back(flashlight);
+	lights.emplace_back(flashlight);
 
-	auto cube = new TriangleMesh(&containerCube, flashlight, &camera);
-	cube->SetAsAACube();
-	cube->m_DrawingMode = LIT_BY_SPOTLIGHT;
-	entities.emplace_back(cube);
+	// auto cube = new TriangleMesh(&containerCube, flashlight, &camera);
+	// cube->SetAsAACube();
+	// cube->m_DrawingMode = LIT_BY_SPOTLIGHT;
+	// entities.emplace_back(cube);
+
+	for (int i = 0; i < 10; i++)
+	{
+		auto cube = new TriangleMesh(&containerCube, lights, &camera);
+		cube->SetAsAACube();
+		cube->m_DrawingMode = LIT;
+		entities.emplace_back(cube);
+	}
 
 	auto origin = glm::vec3(0.0f, 0.0f, 0.0f);
 
@@ -284,12 +308,19 @@ int main()
 		}
 
 		// Render objects
-		cube->SetMVP(model, view, proj);
+		for (int i = 3; i < 13; i++)
+		{
+			model = glm::translate(identity, cubePositions[i - 3]);
+			float angle = 20.0f * (float)(i - 3);
+			model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+			entities[i]->SetMVP(model, view, proj);
+		}
+		//cube->SetMVP(model, view, proj);
 
 		model = glm::scale(glm::translate(identity, pointLight->m_Pos), glm::vec3(0.2f));
 		pointLight->SetMVP(model, view, proj);
 
-		model = glm::translate(identity, glm::vec3(0.0, 0.0, 10.0));
+		model = identity;
 		directionalLight->SetMVP(model, view, proj);
 
 		model = identity;

@@ -156,10 +156,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\fragmentShaders\1tex2D.frag" />
-    <None Include="shaders\fragmentShaders\objectLitByDirectional.frag" />
-    <None Include="shaders\fragmentShaders\objectLitBySpotlight.frag" />
+    <None Include="shaders\fragmentShaders\objectLitByVariousLights.frag" />
     <None Include="shaders\fragmentShaders\uniformColor.frag" />
-    <None Include="shaders\fragmentShaders\objectLitByPoint.frag" />
     <None Include="shaders\fragmentShaders\2texCube.frag" />
     <None Include="shaders\fragmentShaders\variableColor.frag" />
     <None Include="shaders\vertexShaders\position.vert" />
