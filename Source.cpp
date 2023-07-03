@@ -277,7 +277,7 @@ int main()
 		currentFrame = static_cast<float>(glfwGetTime());
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
-		// std::cout << "FPS: " << frameCount / currentFrame << '\r';
+		//std::cout << "FPS: " << frameCount / currentFrame << '\r';
 
 		// Input
 		ProcessInput(window);
@@ -311,7 +311,7 @@ int main()
 		for (int i = 3; i < 13; i++)
 		{
 			model = glm::translate(identity, cubePositions[i - 3]);
-			float angle = 20.0f * (float)(i - 3);
+			float angle = 20.0f * static_cast<float>(i - 3);
 			model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
 			entities[i]->SetMVP(model, view, proj);
 		}

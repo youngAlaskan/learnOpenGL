@@ -56,9 +56,11 @@ uniform DirLight dirLight;
 uniform PointLight pointLights[POINT_LIGHT_COUNT];
 uniform SpotLight spotLight;
 
-vec3 CalcDirLight(DirLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
-vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
-vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
+vec3 CalcDirLight(DirLight light, vec3 normal, vec3 fragPos, vec3 viewDir, mat3 texValues);
+vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir, mat3 texValues);
+vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir, mat3 texValues);
+
+float CalcSpec(vec3 fragToLight);
 
 uniform vec3 viewPos;
 
@@ -71,75 +73,63 @@ out vec4 FragColor;
 
 void main()
 {
+    mat3 texValues = mat3(
+        texture(material.diffuse, texCoord).rgb,
+        texture(material.specular, texCoord).rgb,
+        texture(material.emissive, texCoord).rgb);
+
 	vec3 norm = normalize(normal);
     vec3 viewDir = normalize(viewPos - fragPos);
 
     vec3 result = vec3(0.0);
     if (dirLight.direction != vec3(0.0, 0.0, 0.0))
-        result += CalcDirLight(dirLight, norm, fragPos, viewDir);
+        result += CalcDirLight(dirLight, norm, fragPos, viewDir, texValues);
 
     for (int i = 0; i < POINT_LIGHT_COUNT; i++)
     {
-        result += CalcPointLight(pointLights[i], norm, fragPos, viewDir);
+        result += CalcPointLight(pointLights[i], norm, fragPos, viewDir, texValues);
     }
 
     if (spotLight.innerCutOff != 0.0)
-        result += CalcSpotLight(spotLight, norm, fragPos, viewDir);
+        result += CalcSpotLight(spotLight, norm, fragPos, viewDir, texValues);
 
     FragColor = vec4(result, 1.0);
 }
 
-vec3 CalcDirLight(DirLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
+vec3 CalcDirLight(DirLight light, vec3 normal, vec3 fragPos, vec3 viewDir, mat3 texValues)
 {
-	vec3 lightDir = normalize(-light.direction);
+	vec3 fragToLight = normalize(-light.direction);
 
-    float lambertian = max(dot(normal, lightDir), 0.0);
-    float spec = 0.0;
-    if (lambertian > 0.0)
-    {
-        vec3 reflected = reflect(-lightDir, normal);
-        vec3 toViewer = normalize(viewPos - fragPos);
+    float lambertian = max(dot(normal, fragToLight), 0.0);
+    float spec = lambertian > 0.0 ? CalcSpec(fragToLight) : 0.0;
 
-        float specAngle = max(dot(toViewer, reflected), 0.0);
-        spec = pow(specAngle, material.shininess * 128.0);
-    }
-
-    vec3 ambient  = light.kA * texture(material.diffuse, texCoord).rgb;
-    vec3 diffuse  = light.kD * lambertian * texture(material.diffuse, texCoord).rgb;
-    vec3 specular = light.kS * (spec * texture(material.specular, texCoord).rgb);
-    vec3 emissive = texture(material.emissive, texCoord).rgb;
+    vec3 ambient  = texValues[0].rgb * light.kA;
+    vec3 diffuse  = texValues[0].rgb * light.kD * lambertian;
+    vec3 specular = texValues[1].rgb * light.kS * spec;
+    vec3 emissive = texValues[2].rgb;
 
     return (ambient + diffuse + specular + emissive) * light.color;
 }
 
-vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
+vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir, mat3 texValues)
 {
     float distance = length(light.position - fragPos);
     float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
 
-    vec3 norm = normalize(normal);
-    vec3 lightDir = normalize(light.position - fragPos);
+    vec3 fragToLight = normalize(light.position - fragPos);
 
-    float lambertian = max(dot(norm, lightDir), 0.0);
-    float spec = 0.0;
-    if (lambertian > 0.0)
-    {
-        vec3 reflected = reflect(-lightDir, normal);
-        vec3 toViewer = normalize(viewPos - fragPos);
+    float lambertian = max(dot(normal, fragToLight), 0.0);
+    float spec = lambertian > 0.0 ? CalcSpec(fragToLight) : 0.0;
 
-        float specAngle = max(dot(toViewer, reflected), 0.0);
-        spec = pow(specAngle, material.shininess * 128.0);
-    }
-
-    vec3 ambient  = attenuation * light.kA * texture(material.diffuse, texCoord).rgb;
-    vec3 diffuse  = attenuation * light.kD * lambertian * texture(material.diffuse, texCoord).rgb;
-    vec3 specular = attenuation * light.kS * (spec * texture(material.specular, texCoord).rgb);
-    vec3 emissive = texture(material.emissive, texCoord).rgb;
+    vec3 ambient  = texValues[0].rgb * light.kA * attenuation;
+    vec3 diffuse  = texValues[0].rgb * light.kD * attenuation * lambertian;
+    vec3 specular = texValues[1].rgb * light.kS * attenuation * spec;
+    vec3 emissive = texValues[2].rgb;
 
     return (ambient + diffuse + specular + emissive) * light.color;
 }
 
-vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
+vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir, mat3 texValues)
 {
 
     vec3 fragToLight = normalize(light.position - fragPos);
@@ -148,26 +138,25 @@ vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
     float epsilon = light.innerCutOff - light.outerCutOff;
     float intensity = clamp((phi - light.outerCutOff) / epsilon, 0.0, 1.0);
 
-    vec3 norm = normalize(normal);
-
-    float lambertian = max(dot(norm, fragToLight), 0.0);
-    float spec = 0.0;
-    if (lambertian > 0.0)
-    {
-        vec3 reflected = reflect(-fragToLight, normal);
-        vec3 toViewer = normalize(viewPos - fragPos);
-
-        float specAngle = max(dot(toViewer, reflected), 0.0);
-        spec = pow(specAngle, material.shininess * 128.0);
-    }
+    float lambertian = max(dot(normal, fragToLight), 0.0);
+    float spec = lambertian > 0.0 ? CalcSpec(fragToLight) : 0.0;
     
     float distance = length(light.position - fragPos);
     float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
 
-    vec3 ambient  = light.kA * texture(material.diffuse, texCoord).rgb;
-    vec3 diffuse  = intensity * attenuation * light.kD * lambertian * texture(material.diffuse, texCoord).rgb;
-    vec3 specular = intensity * attenuation * light.kS * (spec * texture(material.specular, texCoord).rgb);
-    vec3 emissive = texture(material.emissive, texCoord).rgb;
+    vec3 ambient  = texValues[0].rgb * light.kA;
+    vec3 diffuse  = texValues[0].rgb * light.kD * intensity * attenuation * lambertian;
+    vec3 specular = texValues[1].rgb * light.kS * intensity * attenuation * spec;
+    vec3 emissive = texValues[2].rgb;
 
     return (ambient + diffuse + specular + emissive) * light.color;
+}
+
+float CalcSpec(vec3 fragToLight)
+{
+    vec3 reflected = reflect(-fragToLight, normal);
+    vec3 toViewer = normalize(viewPos - fragPos);
+
+    float specAngle = max(dot(toViewer, reflected), 0.0);
+    return pow(specAngle, material.shininess * 128.0);
 }
