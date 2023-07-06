@@ -11,14 +11,15 @@
 #endif
 
 #include "utils.h"
+#include "Scene/Scene.h"
 
-#include "shader.h"
-#include "material.h"
-#include "camera.h"
+#include "Shader.h"
+#include "Material.h"
+#include "Camera.h"
 
-#include "line.h"
-#include "tm.h"
-#include "light.h"
+#include "Line.h"
+#include "TM.h"
+#include "Light.h"
 
 constexpr unsigned int SCR_WIDTH = 800;
 constexpr unsigned int SCR_HEIGHT = 600;
@@ -178,23 +179,23 @@ int main()
 	auto silverDiffuse = TexCube(glm::vec3(0.19225f, 0.19225f, 0.19225f));
 	auto silverSpecular = TexCube(glm::vec3(0.508273f, 0.508273f, 0.508273f));
 
-	auto emerald = Material(&emeraldDiffuse, &emeraldSpecular, &blackEmissive, 0.6f);
-	auto jade = Material(&jadeDiffuse, &jadeSpecular, &blackEmissive, 0.1f);
-	auto obsidian = Material(&obsidianDiffuse, &obsidianSpecular, &blackEmissive, 0.3f);
-	auto pearl = Material(&pearlDiffuse, &pearlSpecular, &blackEmissive, 0.088f);
-	auto ruby = Material(&rubyDiffuse, &rubySpecular, &blackEmissive, 0.6f);
-	auto turquoise = Material(&turquoiseDiffuse, &turquoiseSpecular, &blackEmissive, 0.1f);
-	auto brass = Material(&brassDiffuse, &brassSpecular, &blackEmissive, 0.21794872f);
-	auto bronze = Material(&bronzeDiffuse, &bronzeSpecular, &blackEmissive, 0.2f);
-	auto chrome = Material(&chromeDiffuse, &chromeSpecular, &blackEmissive, 0.6f);
-	auto copper = Material(&copperDiffuse, &copperSpecular, &blackEmissive, 0.1f);
-	auto gold = Material(&goldDiffuse, &goldSpecular, &blackEmissive, 0.4f);
-	auto silver = Material(&silverDiffuse, &silverSpecular, &blackEmissive, 0.4f);
+	auto emerald = Material(std::make_shared<TexCube>(emeraldDiffuse), std::make_shared<TexCube>(emeraldSpecular), std::make_shared<TexCube>(blackEmissive), 0.6f);
+	auto jade = Material(std::make_shared<TexCube>(jadeDiffuse), std::make_shared<TexCube>(jadeSpecular), std::make_shared<TexCube>(blackEmissive), 0.1f);
+	auto obsidian = Material(std::make_shared<TexCube>(obsidianDiffuse), std::make_shared<TexCube>(obsidianSpecular), std::make_shared<TexCube>(blackEmissive), 0.3f);
+	auto pearl = Material(std::make_shared<TexCube>(pearlDiffuse), std::make_shared<TexCube>(pearlSpecular), std::make_shared<TexCube>(blackEmissive), 0.088f);
+	auto ruby = Material(std::make_shared<TexCube>(rubyDiffuse), std::make_shared<TexCube>(rubySpecular), std::make_shared<TexCube>(blackEmissive), 0.6f);
+	auto turquoise = Material(std::make_shared<TexCube>(turquoiseDiffuse), std::make_shared<TexCube>(turquoiseSpecular), std::make_shared<TexCube>(blackEmissive), 0.1f);
+	auto brass = Material(std::make_shared<TexCube>(brassDiffuse), std::make_shared<TexCube>(brassSpecular), std::make_shared<TexCube>(blackEmissive), 0.21794872f);
+	auto bronze = Material(std::make_shared<TexCube>(bronzeDiffuse), std::make_shared<TexCube>(bronzeSpecular), std::make_shared<TexCube>(blackEmissive), 0.2f);
+	auto chrome = Material(std::make_shared<TexCube>(chromeDiffuse), std::make_shared<TexCube>(chromeSpecular), std::make_shared<TexCube>(blackEmissive), 0.6f);
+	auto copper = Material(std::make_shared<TexCube>(copperDiffuse), std::make_shared<TexCube>(copperSpecular), std::make_shared<TexCube>(blackEmissive), 0.1f);
+	auto gold = Material(std::make_shared<TexCube>(goldDiffuse), std::make_shared<TexCube>(goldSpecular), std::make_shared<TexCube>(blackEmissive), 0.4f);
+	auto silver = Material(std::make_shared<TexCube>(silverDiffuse), std::make_shared<TexCube>(silverSpecular), std::make_shared<TexCube>(blackEmissive), 0.4f);
 
 	auto containerDiffuse = TexCube(".\\textures\\container2.png");
 	auto containerSpecular = TexCube(".\\textures\\container2_specular.png");
 	auto containerEmissive = blackEmissive;
-	Material containerCube(&containerDiffuse, &containerSpecular, &containerEmissive, 0.5f);
+	Material containerCube(std::make_shared<TexCube>(containerDiffuse), std::make_shared<TexCube>(containerSpecular), std::make_shared<TexCube>(containerEmissive), 0.5f);
 
 	// Set up vertex data
 	// ------------------
@@ -211,55 +212,68 @@ int main()
 		glm::vec3(-1.3f,  1.0f, -1.5f)
 	};
 
-	std::vector<Entity*> entities;
-	std::vector<Light*> lights;
+	Scene scene;
+	auto pointLightComponents = std::vector<std::shared_ptr<PointLight>>();
 
-	auto pointLight = new PointLight(100.0f);
-	pointLight->SetAsAACube(glm::vec3(1.2f, 1.0f, 2.0f));
-	pointLight->m_KA = 0.2f;
-	pointLight->m_KD = 0.5f;
-	pointLight->m_KS = 1.0f;
-	pointLight->m_Index = 0;
-	entities.emplace_back(pointLight);
-	lights.emplace_back(pointLight);
+	// Point Light
+	// ------------------
+	auto pointLight = scene.m_Registry.create();
 
-	auto directionalLight = new DirectionalLight();
-	directionalLight->m_KA = 0.2f;
-	directionalLight->m_KD = 0.5f;
-	directionalLight->m_KS = 1.0f;
-	directionalLight->m_Direction = glm::normalize(glm::vec3(1.0, -1.0, 1.0));
-	entities.emplace_back(directionalLight);
-	lights.emplace_back(directionalLight);
+	auto& pointLightComponent = scene.m_Registry.emplace<PointLight>(pointLight, 100.0f);
+	// pointLight->SetAsAACube(glm::vec3(1.2f, 1.0f, 2.0f));
+	pointLightComponent.m_KA = 0.2f;
+	pointLightComponent.m_KD = 0.5f;
+	pointLightComponent.m_KS = 1.0f;
+	pointLightComponent.m_Index = 0;
+	pointLightComponents.emplace_back(std::make_shared<PointLight>(pointLightComponent));
 
-	auto flashlight = new SpotLight(12.5f);
-	flashlight->m_KA = 0.2f;
-	flashlight->m_KD = 0.5f;
-	flashlight->m_KS = 1.0f;
-	entities.emplace_back(flashlight);
-	lights.emplace_back(flashlight);
+	auto& pointLightMeshComponent = scene.m_Registry.emplace<TriangleMesh>(pointLight);
+	pointLightMeshComponent.SetAsAACube();
+
+	// Directional Light
+
+	auto directionalLight = scene.m_Registry.create();
+	auto& directionalLightComponent = scene.m_Registry.emplace<DirectionalLight>(directionalLight);
+	directionalLightComponent.m_KA = 0.2f;
+	directionalLightComponent.m_KD = 0.5f;
+	directionalLightComponent.m_KS = 1.0f;
+	directionalLightComponent.m_Direction = glm::normalize(glm::vec3(1.0, -1.0, 1.0));
+
+	auto flashlight = scene.m_Registry.create();
+	auto& spotLightComponent = scene.m_Registry.emplace<SpotLight>(flashlight, 12.5f);
+	spotLightComponent.m_KA = 0.2f;
+	spotLightComponent.m_KD = 0.5f;
+	spotLightComponent.m_KS = 1.0f;
 
 	// auto cube = new TriangleMesh(&containerCube, flashlight, &camera);
 	// cube->SetAsAACube();
 	// cube->m_DrawingMode = LIT_BY_SPOTLIGHT;
 	// entities.emplace_back(cube);
 
+	std::vector<TriangleMesh&> cubeMeshComponents;
+
 	for (int i = 0; i < 10; i++)
 	{
-		auto cube = new TriangleMesh(&containerCube, lights, &camera);
-		cube->SetAsAACube();
-		cube->m_DrawingMode = LIT;
-		entities.emplace_back(cube);
+		auto cube = scene.m_Registry.create();
+		auto& triangleMeshComponent = scene.m_Registry.emplace<TriangleMesh>(cube, std::make_shared<Material>(containerCube), pointLightComponents, directionalLightComponent, spotLightComponent, std::make_shared<Camera>(camera));
+		triangleMeshComponent.SetAsAACube();
+		triangleMeshComponent.m_DrawingMode = LIT;
+		cubeMeshComponents.emplace_back(triangleMeshComponent);
 	}
 
 	auto origin = glm::vec3(0.0f, 0.0f, 0.0f);
 
-	Line xAxis(origin, glm::vec3(10.0f, 0.0f, 0.0f));
-	Line yAxis(origin, glm::vec3(0.0f, 10.0f, 0.0f));
-	Line zAxis(origin, glm::vec3(0.0f, 0.0f, 10.0f));
+	auto xAxis = scene.m_Registry.create();
+	auto yAxis = scene.m_Registry.create();
+	auto zAxis = scene.m_Registry.create();
 
-	xAxis.SetColor(glm::vec3(1.0f, 0.0f, 0.0f));
-	yAxis.SetColor(glm::vec3(0.0f, 1.0f, 0.0f));
-	zAxis.SetColor(glm::vec3(0.0f, 0.0f, 1.0f));
+	auto& xAxisLineComponent = scene.m_Registry.emplace<Line>(xAxis, origin, glm::vec3(10.0f, 0.0f, 0.0f));
+	auto& yAxisLineComponent = scene.m_Registry.emplace<Line>(yAxis, origin, glm::vec3(0.0f, 10.0f, 0.0f));
+	auto& zAxisLineComponent = scene.m_Registry.emplace<Line>(zAxis, origin, glm::vec3(0.0f, 0.0f, 10.0f));
+
+	xAxisLineComponent.SetColor(glm::vec3(1.0f, 0.0f, 0.0f));
+	yAxisLineComponent.SetColor(glm::vec3(0.0f, 1.0f, 0.0f));
+	zAxisLineComponent.SetColor(glm::vec3(0.0f, 0.0f, 1.0f));
 
 	glm::mat4 model, view, proj;
 	auto identity = glm::mat4(1.0f);
@@ -298,47 +312,35 @@ int main()
 
 		if (renderAxis)
 		{
-			xAxis.SetMVP(model, view, proj);
-			yAxis.SetMVP(model, view, proj);
-			zAxis.SetMVP(model, view, proj);
+			xAxisLineComponent.SetMVP(model, view, proj);
+			yAxisLineComponent.SetMVP(model, view, proj);
+			zAxisLineComponent.SetMVP(model, view, proj);
 
-			xAxis.Draw();
-			yAxis.Draw();
-			zAxis.Draw();
+			xAxisLineComponent.Draw();
+			yAxisLineComponent.Draw();
+			zAxisLineComponent.Draw();
 		}
 
 		// Render objects
-		for (int i = 3; i < 13; i++)
+		for (int i = 0; i < 10; i++)
 		{
-			model = glm::translate(identity, cubePositions[i - 3]);
-			float angle = 20.0f * static_cast<float>(i - 3);
+			model = glm::translate(identity, cubePositions[i]);
+			float angle = 20.0f * static_cast<float>(i);
 			model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-			entities[i]->SetMVP(model, view, proj);
+			cubeMeshComponents.at(i).SetMVP(model, view, proj);
 		}
-		//cube->SetMVP(model, view, proj);
 
 		model = glm::scale(glm::translate(identity, pointLight->m_Pos), glm::vec3(0.2f));
-		pointLight->SetMVP(model, view, proj);
+		pointLightMeshComponent.SetMVP(model, view, proj);
 
-		model = identity;
-		directionalLight->SetMVP(model, view, proj);
+		spotLightComponent.m_Pos = camera.m_Position;
+		spotLightComponent.m_Direction = camera.m_Front;
 
-		model = identity;
-		flashlight->SetMVP(model, view, proj);
-		flashlight->m_Pos = camera.m_Position;
-		flashlight->m_Direction = camera.m_Front;
-
-		for (Entity* entity : entities)
-		{
-			entity->Draw();
-		}
+		// TODO: Draw stuff
 
 		if (renderNormals)
 		{
-			for (Entity* entity : entities)
-			{
-				entity->DrawNormals(glm::vec3(1.0f, 0.0f, 1.0f));
-			}
+			//TODO: Render Normals
 		}
 
 		// Check and call events and swap buffers
