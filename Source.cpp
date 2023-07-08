@@ -12,13 +12,13 @@
 
 #include "utils.h"
 
-#include "shader.h"
-#include "material.h"
-#include "camera.h"
+#include "Shader.h"
+#include "Material.h"
+#include "Camera.h"
 
-#include "line.h"
-#include "tm.h"
-#include "light.h"
+#include "Line.h"
+#include "TM.h"
+#include "Light.h"
 
 constexpr unsigned int SCR_WIDTH = 800;
 constexpr unsigned int SCR_HEIGHT = 600;
@@ -215,11 +215,12 @@ int main()
 	std::vector<Light*> lights;
 
 	auto pointLight = new PointLight(100.0f);
-	pointLight->SetAsAACube(glm::vec3(1.2f, 1.0f, 2.0f));
+	pointLight->SetAsAACube();
 	pointLight->m_KA = 0.2f;
 	pointLight->m_KD = 0.5f;
 	pointLight->m_KS = 1.0f;
 	pointLight->m_Index = 0;
+	pointLight->m_Pos = glm::vec3(1.2f, 1.0f, 2.0f);
 	entities.emplace_back(pointLight);
 	lights.emplace_back(pointLight);
 
@@ -288,7 +289,7 @@ int main()
 		proj = glm::perspective(glm::radians(camera.m_Zoom),
 			static_cast<float>(SCR_WIDTH) / static_cast<float>(SCR_HEIGHT), 0.1f, 100.0f);
 
-		//light.m_Pos = glm::vec3(1.0f + sin(currentFrame), light.m_Pos.y, 1.0f + sin(currentFrame));
+		pointLight->m_Pos = glm::vec3(1.0f + sin(currentFrame), pointLight->m_Pos.y, 1.0f + sin(currentFrame));
 
 		// Render
 		// ------

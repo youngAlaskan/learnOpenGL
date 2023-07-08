@@ -6,13 +6,8 @@
 
 #include "utils.h"
 
-#include "shader.h"
-
-enum Planes {
-	XY,
-	XZ,
-	YZ
-};
+#include "Shader.h"
+#include "Vertex.h"
 
 class Entity
 {
@@ -59,49 +54,10 @@ public:
 		CheckForErrors("ERROR::DRAW_NORMALS: ");
 	}
 
-	void PrintConnectivity(const int start = 0, const int end = 0) const {
-		std::cout << "Number of Triangles = " << m_TrianglesN << std::endl;
-
-		for (int i = start; i < 36 * m_TrianglesN && i < 36 * end; i++)
-		{
-			if (i == start)
-			{
-				std::cout << "Triangle: " << start << std::endl << '<';
-			}
-			else if (i % 36 == 0)
-			{
-				std::cout << '>' << std::endl << "Triangle: " << i / 36 << std::endl << '<';
-			}
-			else if (i % 12 == 0)
-			{
-				std::cout << '>' << std::endl << '<';
-			}
-			else if (i % 12 == 3 || i % 12 == 6 || i % 12 == 9)
-			{
-				std::cout << ">, <";
-			}
-			else
-			{
-				std::cout << ", ";
-			}
-
-			if (m_ConnectivityData[i] >= 0.0f)
-				std::cout << ' ';
-			std::cout << m_ConnectivityData[i];
-		}
-
-		std::cout << '>' << std::endl;
-	}
-
 	bool operator==(const Entity& other) const
 	{
 		return m_ConnectivityData == other.m_ConnectivityData &&
-			m_NormalData == other.m_NormalData &&
 			m_Indices == other.m_Indices &&
-			m_Positions == other.m_Positions &&
-			m_Colors == other.m_Colors &&
-			m_Normals == other.m_Normals &&
-			m_TexCoords == other.m_TexCoords &&
 			m_Shaders == other.m_Shaders &&
 			m_TrianglesN == other.m_TrianglesN &&
 			m_VerticesN == other.m_VerticesN &&
@@ -134,9 +90,8 @@ public:
 	}
 
 protected:
-	std::vector<float> m_ConnectivityData, m_NormalData;
+	std::vector<Vertex> m_ConnectivityData;
 	std::vector<unsigned int> m_Indices;
-	std::vector<glm::vec3> m_Positions, m_Colors, m_Normals, m_TexCoords;
 	std::vector<Shader> m_Shaders;
 	int m_TrianglesN = 0, m_VerticesN = 0;
 	Shader m_ShaderProgramNormals = Shader("position.vert", "uniformColor.frag");

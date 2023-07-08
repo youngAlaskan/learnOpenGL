@@ -7,7 +7,7 @@
 
 #include "utils.h"
 
-#include "shader.h"
+#include "Shader.h"
 
 /* Largely based on the work of jackw11111
 * in his response to the following question:

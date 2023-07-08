@@ -2,7 +2,7 @@
 
 #include "utils.h"
 
-#include "entity.h"
+#include "Entity.h"
 
 class Light : public Entity
 {
@@ -44,21 +44,12 @@ public:
 		m_Shaders.emplace_back("position.vert", "uniformColor.frag");
 	}
 
-	void SetAsAACube(const glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f))
+	void SetAsAACube()
 	{
-#if 0
-		5 ----- 6
-	  / |     / |
-	1 --+-- 2   |
-	|   4 --+-- 7
-	| /     | /
-	0 ----- 3
-#endif
-		m_Pos = position;
 		constexpr unsigned int BLF = 0, TLF = 1, TRF = 2, BRF = 3, BLB = 4, TLB = 5, TRB = 6, BRB = 7;
 		m_TrianglesN = 12;
 		m_VerticesN = 3 * m_TrianglesN;
-		m_ConnectivityData.reserve(12 * m_VerticesN);
+		m_ConnectivityData.reserve(sizeof(Vertex) * 12 * m_VerticesN);
 		m_Indices.reserve(m_VerticesN);
 
 		// Front
@@ -85,54 +76,20 @@ public:
 		IndicesPush3I(TRF, TRB, TLB);
 		IndicesPush3I(TRF, TLB, TLF);
 
-		m_Positions.emplace_back(-0.5f, -0.5f,  0.5f); // BLF
-		m_Positions.emplace_back(-0.5f,  0.5f,  0.5f); // TLF
-		m_Positions.emplace_back( 0.5f,  0.5f,  0.5f); // TRF
-		m_Positions.emplace_back( 0.5f, -0.5f,  0.5f); // BRF
-		m_Positions.emplace_back(-0.5f, -0.5f, -0.5f); // BLB
-		m_Positions.emplace_back(-0.5f,  0.5f, -0.5f); // TLB
-		m_Positions.emplace_back( 0.5f,  0.5f, -0.5f); // TRB
-		m_Positions.emplace_back( 0.5f, -0.5f, -0.5f); // BRB
+		std::vector<glm::vec3> positions;
 
-		for (glm::vec3& pos : m_Positions)
-		{
-			pos += position;
-		}
-
-		m_Colors.emplace_back(1.0f, 0.0f, 0.0f); // BLF - Red
-		m_Colors.emplace_back(1.0f, 1.0f, 0.0f); // TLF - Yellow
-		m_Colors.emplace_back(0.0f, 0.0f, 1.0f); // TRF - Blue
-		m_Colors.emplace_back(0.0f, 1.0f, 0.0f); // BRF - Green
-		m_Colors.emplace_back(1.0f, 0.0f, 0.0f); // BLB - Red
-		m_Colors.emplace_back(1.0f, 1.0f, 0.0f); // TLB - Yellow
-		m_Colors.emplace_back(0.0f, 0.0f, 1.0f); // TRB - Blue
-		m_Colors.emplace_back(0.0f, 1.0f, 0.0f); // BRB - Green
-
-		m_Normals.emplace_back(0.0f,  0.0f,  1.0f); // POS Z
-		m_Normals.emplace_back(1.0f,  0.0f,  0.0f); // POS X
-		m_Normals.emplace_back(0.0f,  0.0f, -1.0f); // NEG Z
-		m_Normals.emplace_back(-1.0f,  0.0f,  0.0f); // NEG X
-		m_Normals.emplace_back(0.0f, -1.0f,  0.0f); // NEG Y
-		m_Normals.emplace_back(0.0f,  1.0f,  0.0f); // POS Y
-
-		m_TexCoords.emplace_back(-1.0f, -1.0f,  1.0f); // BLF
-		m_TexCoords.emplace_back(-1.0f,  1.0f,  1.0f); // TLF
-		m_TexCoords.emplace_back(1.0f,  1.0f,  1.0f); // TRF
-		m_TexCoords.emplace_back(1.0f, -1.0f,  1.0f); // BRF
-		m_TexCoords.emplace_back(-1.0f, -1.0f, -1.0f); // BLB
-		m_TexCoords.emplace_back(-1.0f,  1.0f, -1.0f); // TLB
-		m_TexCoords.emplace_back(1.0f,  1.0f, -1.0f); // TRB
-		m_TexCoords.emplace_back(1.0f, -1.0f, -1.0f); // BRB
+		positions.emplace_back(-0.5f, -0.5f, 0.5f); // BLF
+		positions.emplace_back(-0.5f, 0.5f, 0.5f); // TLF
+		positions.emplace_back(0.5f, 0.5f, 0.5f); // TRF
+		positions.emplace_back(0.5f, -0.5f, 0.5f); // BRF
+		positions.emplace_back(-0.5f, -0.5f, -0.5f); // BLB
+		positions.emplace_back(-0.5f, 0.5f, -0.5f); // TLB
+		positions.emplace_back(0.5f, 0.5f, -0.5f); // TRB
+		positions.emplace_back(0.5f, -0.5f, -0.5f);  // BRB
 
 		for (int i = 0; i < m_VerticesN; i++) {
 			const unsigned int corner = m_Indices[i];
-			DataPush3F(m_ConnectivityData, m_Positions[corner]);
-			DataPush3F(m_ConnectivityData, m_Colors[corner]);
-			DataPush3F(m_ConnectivityData, m_Normals[i / 6]);
-			DataPush3F(m_ConnectivityData, m_TexCoords[corner]);
-
-			DataPush3F(m_NormalData, m_Positions[corner]);
-			DataPush3F(m_NormalData, m_Positions[corner] + m_Normals[i / 6]);
+			m_ConnectivityData.emplace_back(positions[corner], glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(0.0f));
 		}
 
 		for (int i = 0; i < m_VerticesN; i++) {
@@ -146,13 +103,12 @@ public:
 		glBindVertexArray(m_VAO);
 
 		glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
-		glBufferData(GL_ARRAY_BUFFER, m_ConnectivityData.size() * sizeof(float), m_ConnectivityData.data(), GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, m_ConnectivityData.size() * sizeof(Vertex), m_ConnectivityData.data(), GL_STATIC_DRAW);
 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_Indices.size() * sizeof(unsigned int), m_Indices.data(), GL_STATIC_DRAW);
 
-		const int stride = static_cast<int>(m_ConnectivityData.size()) / static_cast<int>(m_Indices.size()) * sizeof(float);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, static_cast<void*>(nullptr));
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 12 * sizeof(float), (void*)0);
 		glEnableVertexAttribArray(0);
 
 		// Unbinds
@@ -160,16 +116,28 @@ public:
 		glBindVertexArray(0);
 
 		// Normals
-		// ------------------------------
+		// ------------------
+		std::vector<float> normalData;
+
+		for (const auto& vertex : m_ConnectivityData)
+		{
+			normalData.emplace_back(vertex.Position.x);
+			normalData.emplace_back(vertex.Position.y);
+			normalData.emplace_back(vertex.Position.z);
+
+			normalData.emplace_back(vertex.Position.x + vertex.Normal.x);
+			normalData.emplace_back(vertex.Position.y + vertex.Normal.y);
+			normalData.emplace_back(vertex.Position.z + vertex.Normal.z);
+		}
 
 		glGenVertexArrays(1, &m_NVAO);
 		glGenBuffers(1, &m_NVBO);
 		glBindVertexArray(m_NVAO);
 
 		glBindBuffer(GL_ARRAY_BUFFER, m_NVBO);
-		glBufferData(GL_ARRAY_BUFFER, m_NormalData.size() * sizeof(float), m_NormalData.data(), GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, normalData.size() * sizeof(float), normalData.data(), GL_STATIC_DRAW);
 
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), static_cast<void*>(nullptr));
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)nullptr);
 		glEnableVertexAttribArray(0);
 
 		glBindBuffer(GL_ARRAY_BUFFER, 0);

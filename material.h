@@ -1,10 +1,7 @@
 #pragma once
 
-#include <glm/glm.hpp>
-#include <unordered_map>
-
-#include "shader.h"
-#include "texture.h"
+#include "Shader.h"
+#include "Texture.h"
 
 class Material
 {
