@@ -1,12 +1,15 @@
 #include "Line.h"
 
+#include "utils.h"
+
 Line::Line(glm::vec3 start, glm::vec3 end)
-	: m_View(glm::mat4(1.0f)), m_Proj(glm::mat4(1.0f))
 {
 	m_Start = start;
 	m_End = end;
 	m_Color = glm::vec3(1.0f, 1.0f, 1.0f);
 	m_Model = glm::mat4(1.0f);
+	m_View = glm::mat4(1.0f);
+	m_Proj = glm::mat4(1.0f);
 
 	m_ShaderProgram = Shader("position.vert", "uniformColor.frag");
 

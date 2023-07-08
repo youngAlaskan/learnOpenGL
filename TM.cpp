@@ -9,6 +9,7 @@ TriangleMesh::TriangleMesh(const std::shared_ptr<Material>& material, const std:
 	m_Camera = camera;
 	m_Shaders.emplace_back("positionColorNormalTex.vert", "variableColor.frag");            // ISOLATED
 	m_Shaders.emplace_back("positionColorNormalTex.vert", "objectLitByVariousLights.frag"); // LIT
+	m_Shaders.emplace_back("position.vert", "uniformColor.frag");                           // LIGHT
 	m_Shaders.emplace_back("position.vert", "uniformColor.frag");                           // NORMALS
 }
 
@@ -104,16 +105,17 @@ void TriangleMesh::SetAsAARectangle(int aaPlane, float texCoordScaleFactor)
 
 	// Normals
 	// ------------------------------
+	std::vector<float> normalData;
 
 	for (const auto& vertex : m_ConnectivityData)
 	{
-		m_NormalData.emplace_back(vertex.m_Position.x);
-		m_NormalData.emplace_back(vertex.m_Position.y);
-		m_NormalData.emplace_back(vertex.m_Position.z);
+		normalData.emplace_back(vertex.m_Position.x);
+		normalData.emplace_back(vertex.m_Position.y);
+		normalData.emplace_back(vertex.m_Position.z);
 
-		m_NormalData.emplace_back(vertex.m_Position.x + vertex.m_Normal.x);
-		m_NormalData.emplace_back(vertex.m_Position.y + vertex.m_Normal.y);
-		m_NormalData.emplace_back(vertex.m_Position.z + vertex.m_Normal.z);
+		normalData.emplace_back(vertex.m_Position.x + vertex.m_Normal.x);
+		normalData.emplace_back(vertex.m_Position.y + vertex.m_Normal.y);
+		normalData.emplace_back(vertex.m_Position.z + vertex.m_Normal.z);
 	}
 
 	glGenVertexArrays(1, &m_NVAO);
@@ -121,7 +123,7 @@ void TriangleMesh::SetAsAARectangle(int aaPlane, float texCoordScaleFactor)
 	glBindVertexArray(m_NVAO);
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_NVBO);
-	glBufferData(GL_ARRAY_BUFFER, m_NormalData.size() * sizeof(float), m_NormalData.data(), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, normalData.size() * sizeof(float), normalData.data(), GL_STATIC_DRAW);
 
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), static_cast<void*>(nullptr));
 	glEnableVertexAttribArray(0);
@@ -241,16 +243,17 @@ void TriangleMesh::SetAsAACube()
 
 	// Normals
 	// ------------------
+	std::vector<float> normalData;
 
 	for (const auto& vertex : m_ConnectivityData)
 	{
-		m_NormalData.emplace_back(vertex.m_Position.x);
-		m_NormalData.emplace_back(vertex.m_Position.y);
-		m_NormalData.emplace_back(vertex.m_Position.z);
+		normalData.emplace_back(vertex.m_Position.x);
+		normalData.emplace_back(vertex.m_Position.y);
+		normalData.emplace_back(vertex.m_Position.z);
 
-		m_NormalData.emplace_back(vertex.m_Position.x + vertex.m_Normal.x);
-		m_NormalData.emplace_back(vertex.m_Position.y + vertex.m_Normal.y);
-		m_NormalData.emplace_back(vertex.m_Position.z + vertex.m_Normal.z);
+		normalData.emplace_back(vertex.m_Position.x + vertex.m_Normal.x);
+		normalData.emplace_back(vertex.m_Position.y + vertex.m_Normal.y);
+		normalData.emplace_back(vertex.m_Position.z + vertex.m_Normal.z);
 	}
 
 	glGenVertexArrays(1, &m_NVAO);
@@ -258,7 +261,145 @@ void TriangleMesh::SetAsAACube()
 	glBindVertexArray(m_NVAO);
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_NVBO);
-	glBufferData(GL_ARRAY_BUFFER, m_NormalData.size() * sizeof(float), m_NormalData.data(), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, normalData.size() * sizeof(float), normalData.data(), GL_STATIC_DRAW);
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)nullptr);
+	glEnableVertexAttribArray(0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+}
+
+void TriangleMesh::SetAsAACube(glm::vec3 color)
+{
+	constexpr unsigned int BLF = 0, TLF = 1, TRF = 2, BRF = 3, BLB = 4, TLB = 5, TRB = 6, BRB = 7;
+	m_TrianglesN = 12;
+	m_VerticesN = 3 * m_TrianglesN;
+	m_ConnectivityData.reserve(sizeof(Vertex) * 12 * m_VerticesN);
+	m_Indices.reserve(m_VerticesN);
+
+	// Front
+	IndicesPush3I(BLF, TLF, TRF);
+	IndicesPush3I(BLF, TRF, BRF);
+
+	// Right
+	IndicesPush3I(BRF, TRF, TRB);
+	IndicesPush3I(BRF, TRB, BRB);
+
+	// Back
+	IndicesPush3I(BRB, TRB, TLB);
+	IndicesPush3I(BRB, TLB, BLB);
+
+	// Left
+	IndicesPush3I(BLB, TLB, TLF);
+	IndicesPush3I(BLB, TLF, BLF);
+
+	// Bottom
+	IndicesPush3I(BRF, BRB, BLB);
+	IndicesPush3I(BRF, BLB, BLF);
+
+	// Top
+	IndicesPush3I(TRF, TRB, TLB);
+	IndicesPush3I(TRF, TLB, TLF);
+
+	std::vector<glm::vec3> positions;
+	std::vector<glm::vec3> colors;
+	std::vector<glm::vec3> normals;
+	std::vector<glm::vec3> texCoords;
+
+	positions.emplace_back(-0.5f, -0.5f, 0.5f); // BLF
+	positions.emplace_back(-0.5f, 0.5f, 0.5f); // TLF
+	positions.emplace_back(0.5f, 0.5f, 0.5f); // TRF
+	positions.emplace_back(0.5f, -0.5f, 0.5f); // BRF
+	positions.emplace_back(-0.5f, -0.5f, -0.5f); // BLB
+	positions.emplace_back(-0.5f, 0.5f, -0.5f); // TLB
+	positions.emplace_back(0.5f, 0.5f, -0.5f); // TRB
+	positions.emplace_back(0.5f, -0.5f, -0.5f);  // BRB
+
+	colors.emplace_back(color); // BLF
+	colors.emplace_back(color); // TLF
+	colors.emplace_back(color); // TRF
+	colors.emplace_back(color); // BRF
+	colors.emplace_back(color); // BLB
+	colors.emplace_back(color); // TLB
+	colors.emplace_back(color); // TRB
+	colors.emplace_back(color); // BRB
+
+	normals.emplace_back(0.0f, 0.0f, 1.0f); // POS Z
+	normals.emplace_back(1.0f, 0.0f, 0.0f); // POS X
+	normals.emplace_back(0.0f, 0.0f, -1.0f); // NEG Z
+	normals.emplace_back(-1.0f, 0.0f, 0.0f); // NEG X
+	normals.emplace_back(0.0f, -1.0f, 0.0f); // NEG Y
+	normals.emplace_back(0.0f, 1.0f, 0.0f); // POS Y
+
+	texCoords.emplace_back(-1.0f, -1.0f, 1.0f); // BLF
+	texCoords.emplace_back(-1.0f, 1.0f, 1.0f); // TLF
+	texCoords.emplace_back(1.0f, 1.0f, 1.0f); // TRF
+	texCoords.emplace_back(1.0f, -1.0f, 1.0f); // BRF
+	texCoords.emplace_back(-1.0f, -1.0f, -1.0f); // BLB
+	texCoords.emplace_back(-1.0f, 1.0f, -1.0f); // TLB
+	texCoords.emplace_back(1.0f, 1.0f, -1.0f); // TRB
+	texCoords.emplace_back(1.0f, -1.0f, -1.0f); // BRB
+
+	for (int i = 0; i < m_VerticesN; i++) {
+		const unsigned int corner = m_Indices[i];
+		m_ConnectivityData.emplace_back(positions[corner], colors[corner], normals[i / 6], texCoords[corner]);
+	}
+
+	for (int i = 0; i < m_VerticesN; i++) {
+		m_Indices[i] = i;
+	}
+
+	glGenVertexArrays(1, &m_VAO);
+	glGenBuffers(1, &m_VBO);
+	glGenBuffers(1, &m_EBO);
+	// Bind VAO first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
+	glBindVertexArray(m_VAO);
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
+	glBufferData(GL_ARRAY_BUFFER, m_ConnectivityData.size() * sizeof(Vertex), m_ConnectivityData.data(), GL_STATIC_DRAW);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_Indices.size() * sizeof(unsigned int), m_Indices.data(), GL_STATIC_DRAW);
+
+	const int stride = static_cast<int>(m_ConnectivityData.size()) / static_cast<int>(m_Indices.size()) * sizeof(float);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)0);
+	glEnableVertexAttribArray(0);
+
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, stride, (void*)(6 * sizeof(float)));
+	glEnableVertexAttribArray(2);
+
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, stride, (void*)(9 * sizeof(float)));
+	glEnableVertexAttribArray(3);
+
+	// Unbinds
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+
+	// Normals
+	// ------------------
+	std::vector<float> normalData;
+
+	for (const auto& vertex : m_ConnectivityData)
+	{
+		normalData.emplace_back(vertex.m_Position.x);
+		normalData.emplace_back(vertex.m_Position.y);
+		normalData.emplace_back(vertex.m_Position.z);
+
+		normalData.emplace_back(vertex.m_Position.x + vertex.m_Normal.x);
+		normalData.emplace_back(vertex.m_Position.y + vertex.m_Normal.y);
+		normalData.emplace_back(vertex.m_Position.z + vertex.m_Normal.z);
+	}
+
+	glGenVertexArrays(1, &m_NVAO);
+	glGenBuffers(1, &m_NVBO);
+	glBindVertexArray(m_NVAO);
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_NVBO);
+	glBufferData(GL_ARRAY_BUFFER, normalData.size() * sizeof(float), normalData.data(), GL_STATIC_DRAW);
 
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)nullptr);
 	glEnableVertexAttribArray(0);
@@ -299,6 +440,9 @@ void TriangleMesh::Draw() const
 			m_Camera->SendToShader(shader);
 
 		break;
+	case LIGHT:
+		shader.SetVec3("color", glm::vec3(1.0f));
+		break;
 	default:
 		break;
 	}
@@ -329,7 +473,6 @@ void TriangleMesh::DrawNormals(const glm::vec3& color) const
 bool TriangleMesh::operator==(const TriangleMesh& other) const
 {
 	return m_ConnectivityData == other.m_ConnectivityData &&
-		m_NormalData == other.m_NormalData &&
 		m_Indices == other.m_Indices &&
 		m_Shaders == other.m_Shaders &&
 		m_TrianglesN == other.m_TrianglesN &&

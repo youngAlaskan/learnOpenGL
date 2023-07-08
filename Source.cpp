@@ -12,9 +12,12 @@
 
 #include "utils.h"
 #include "Scene/Scene.h"
+#include "Scene/Entity.h"
+#include "entt/include/entt.hpp"
 
 #include "Shader.h"
 #include "Material.h"
+#include "Texture.h"
 #include "Camera.h"
 
 #include "Line.h"
@@ -217,30 +220,31 @@ int main()
 
 	// Point Light
 	// ------------------
-	auto pointLight = scene.m_Registry.create();
+	auto pointLight = scene.CreateEntity();
 
-	auto& pointLightComponent = scene.m_Registry.emplace<PointLight>(pointLight, 100.0f);
-	// pointLight->SetAsAACube(glm::vec3(1.2f, 1.0f, 2.0f));
-	pointLightComponent.m_KA = 0.2f;
-	pointLightComponent.m_KD = 0.5f;
-	pointLightComponent.m_KS = 1.0f;
-	pointLightComponent.m_Index = 0;
+	auto& pointLightComponent = pointLight.AddComponent<PointLight>(100.0f);
+	pointLightComponent.KA = 0.2f;
+	pointLightComponent.KD = 0.5f;
+	pointLightComponent.KS = 1.0f;
+	pointLightComponent.Index = 0;
+	pointLightComponent.Pos = glm::vec3(1.2f, 1.0f, 2.0f);
 	pointLightComponents.emplace_back(std::make_shared<PointLight>(pointLightComponent));
 
-	auto& pointLightMeshComponent = scene.m_Registry.emplace<TriangleMesh>(pointLight);
-	pointLightMeshComponent.SetAsAACube();
+	auto& pointLightMeshComponent = pointLight.AddComponent<TriangleMesh>();
+	pointLightMeshComponent.SetAsAACube(pointLightComponent.Color);
+	pointLightMeshComponent.m_DrawingMode = LIGHT;
 
 	// Directional Light
 
-	auto directionalLight = scene.m_Registry.create();
-	auto& directionalLightComponent = scene.m_Registry.emplace<DirectionalLight>(directionalLight);
+	auto directionalLight = scene.CreateEntity();
+	auto& directionalLightComponent = directionalLight.AddComponent<DirectionalLight>();
 	directionalLightComponent.m_KA = 0.2f;
 	directionalLightComponent.m_KD = 0.5f;
 	directionalLightComponent.m_KS = 1.0f;
-	directionalLightComponent.m_Direction = glm::normalize(glm::vec3(1.0, -1.0, 1.0));
+	directionalLightComponent.Direction = glm::normalize(glm::vec3(1.0, -1.0, 1.0));
 
-	auto flashlight = scene.m_Registry.create();
-	auto& spotLightComponent = scene.m_Registry.emplace<SpotLight>(flashlight, 12.5f);
+	auto flashlight = scene.CreateEntity();
+	auto& spotLightComponent = flashlight.AddComponent<SpotLight>(12.5f);
 	spotLightComponent.m_KA = 0.2f;
 	spotLightComponent.m_KD = 0.5f;
 	spotLightComponent.m_KS = 1.0f;
@@ -250,12 +254,12 @@ int main()
 	// cube->m_DrawingMode = LIT_BY_SPOTLIGHT;
 	// entities.emplace_back(cube);
 
-	std::vector<TriangleMesh&> cubeMeshComponents;
+	std::vector<TriangleMesh> cubeMeshComponents;
 
 	for (int i = 0; i < 10; i++)
 	{
-		auto cube = scene.m_Registry.create();
-		auto& triangleMeshComponent = scene.m_Registry.emplace<TriangleMesh>(cube, std::make_shared<Material>(containerCube), pointLightComponents, directionalLightComponent, spotLightComponent, std::make_shared<Camera>(camera));
+		auto cube = scene.CreateEntity();
+		auto& triangleMeshComponent = cube.AddComponent<TriangleMesh>(std::make_shared<Material>(containerCube), pointLightComponents, std::make_shared<DirectionalLight>(directionalLightComponent), std::make_shared<SpotLight>(spotLightComponent), std::make_shared<Camera>(camera));
 		triangleMeshComponent.SetAsAACube();
 		triangleMeshComponent.m_DrawingMode = LIT;
 		cubeMeshComponents.emplace_back(triangleMeshComponent);
@@ -263,13 +267,13 @@ int main()
 
 	auto origin = glm::vec3(0.0f, 0.0f, 0.0f);
 
-	auto xAxis = scene.m_Registry.create();
-	auto yAxis = scene.m_Registry.create();
-	auto zAxis = scene.m_Registry.create();
+	auto xAxis = scene.CreateEntity();
+	auto yAxis = scene.CreateEntity();
+	auto zAxis = scene.CreateEntity();
 
-	auto& xAxisLineComponent = scene.m_Registry.emplace<Line>(xAxis, origin, glm::vec3(10.0f, 0.0f, 0.0f));
-	auto& yAxisLineComponent = scene.m_Registry.emplace<Line>(yAxis, origin, glm::vec3(0.0f, 10.0f, 0.0f));
-	auto& zAxisLineComponent = scene.m_Registry.emplace<Line>(zAxis, origin, glm::vec3(0.0f, 0.0f, 10.0f));
+	auto& xAxisLineComponent = xAxis.AddComponent<Line>(origin, glm::vec3(10.0f, 0.0f, 0.0f));
+	auto& yAxisLineComponent = yAxis.AddComponent<Line>(origin, glm::vec3(0.0f, 10.0f, 0.0f));
+	auto& zAxisLineComponent = zAxis.AddComponent<Line>(origin, glm::vec3(0.0f, 0.0f, 10.0f));
 
 	xAxisLineComponent.SetColor(glm::vec3(1.0f, 0.0f, 0.0f));
 	yAxisLineComponent.SetColor(glm::vec3(0.0f, 1.0f, 0.0f));
@@ -330,17 +334,19 @@ int main()
 			cubeMeshComponents.at(i).SetMVP(model, view, proj);
 		}
 
-		model = glm::scale(glm::translate(identity, pointLight->m_Pos), glm::vec3(0.2f));
+		model = glm::scale(glm::translate(identity, pointLightComponent.Pos), glm::vec3(0.2f));
 		pointLightMeshComponent.SetMVP(model, view, proj);
 
 		spotLightComponent.m_Pos = camera.m_Position;
 		spotLightComponent.m_Direction = camera.m_Front;
 
-		// TODO: Draw stuff
-
-		if (renderNormals)
+		auto renderableView = scene.GetAllEntitiesWith<TriangleMesh>();
+		for (auto& entity : renderableView)
 		{
-			//TODO: Render Normals
+			auto meshComponent = ((Entity&)entity).GetComponent<TriangleMesh>();
+			meshComponent.Draw();
+			if (renderNormals)
+				meshComponent.DrawNormals(glm::vec3(1.0, 0.0, 1.0));
 		}
 
 		// Check and call events and swap buffers
@@ -356,11 +362,6 @@ int main()
 			std::cout << "First run!" << std::endl;
 			firstRun = false;
 		}
-	}
-
-	for (Entity* entity : entities)
-	{
-		delete entity;
 	}
 
 	glfwTerminate();

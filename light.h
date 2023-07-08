@@ -12,9 +12,9 @@ public:
 	PointLight(const PointLight& pointLight) = default;
 
 	explicit PointLight(const float distance)
-		: m_Pos(glm::vec3(0.0f)), m_Distance(distance), m_Linear(4.48882f / distance), m_Quadratic(75.5817f / (distance * distance)) {}
+		: Distance(distance), Linear(4.48882f / distance), Quadratic(75.5817f / (distance * distance)) {}
 
-	void SetPos(const glm::vec3 pos) { m_Pos = pos; }
+	void SetPos(const glm::vec3 pos) { Pos = pos; }
 
 	void SendToShader(const Shader& shader) const;
 
@@ -23,12 +23,12 @@ public:
 	~PointLight() = default;
 
 public:
-	glm::vec3 m_Pos = glm::vec3(0.0f);
-	float m_Distance = 0.0f;
-	glm::vec3 m_Color = glm::vec3(1.0f, 1.0f, 1.0f);
-	float m_KA = 0.0f, m_KD = 0.0f, m_KS = 0.0f;
-	float m_Constant = 1.0f, m_Linear = 0.0f, m_Quadratic = 0.0f;
-	int m_Index = 0;
+	glm::vec3 Pos = glm::vec3(0.0f);
+	float Distance = 0.0f;
+	glm::vec3 Color = glm::vec3(1.0f, 1.0f, 1.0f);
+	float KA = 0.0f, KD = 0.0f, KS = 0.0f;
+	float Constant = 1.0f, Linear = 0.0f, Quadratic = 0.0f;
+	int Index = 0;
 };
 
 struct DirectionalLight
@@ -45,7 +45,7 @@ public:
 	~DirectionalLight() = default;
 
 public:
-	glm::vec3 m_Direction = glm::vec3(0.0f);
+	glm::vec3 Direction = glm::vec3(0.0f);
 	glm::vec3 m_Color = glm::vec3(1.0f, 1.0f, 1.0f);
 	float m_KA = 0.0f, m_KD = 0.0f, m_KS = 0.0f;
 };

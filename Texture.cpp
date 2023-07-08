@@ -1,4 +1,8 @@
 #include "Texture.h"
+#include <iostream>
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 Tex2D::Tex2D(const glm::vec3& color)
 {

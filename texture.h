@@ -3,13 +3,6 @@
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 
-#include <iostream>
-
-#ifndef STB_IMAGE_IMPLEMENTATION
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
-#endif
-
 class Texture
 {
 public:
