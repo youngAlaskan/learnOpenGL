@@ -1,16 +1,9 @@
 #pragma once
 
-#include "utils.h"
-
-#include "Entity.h"
-
-class Light : public Entity
+class Light
 {
 public:
-	Light()
-	{
-		m_Shaders.emplace_back("position.vert", "uniformColor.frag");
-	}
+	Light() = default;
 
 	explicit Light(const glm::vec3 color)
 	{
@@ -21,8 +14,6 @@ public:
 	{
 		m_Color = color;
 	}
-
-	void Draw() override {}
 
 	virtual void SendToShader(const Shader& shader) const {}
 
@@ -41,129 +32,11 @@ public:
 		m_Distance = distance;
 		m_Linear = 4.48882f / distance;
 		m_Quadratic = 75.5817f / (distance * distance);
-		m_Shaders.emplace_back("position.vert", "uniformColor.frag");
-	}
-
-	void SetAsAACube()
-	{
-		constexpr unsigned int BLF = 0, TLF = 1, TRF = 2, BRF = 3, BLB = 4, TLB = 5, TRB = 6, BRB = 7;
-		m_TrianglesN = 12;
-		m_VerticesN = 3 * m_TrianglesN;
-		m_ConnectivityData.reserve(sizeof(Vertex) * 12 * m_VerticesN);
-		m_Indices.reserve(m_VerticesN);
-
-		// Front
-		IndicesPush3I(BLF, TLF, TRF);
-		IndicesPush3I(BLF, TRF, BRF);
-
-		// Right
-		IndicesPush3I(BRF, TRF, TRB);
-		IndicesPush3I(BRF, TRB, BRB);
-
-		// Back
-		IndicesPush3I(BRB, TRB, TLB);
-		IndicesPush3I(BRB, TLB, BLB);
-
-		// Left
-		IndicesPush3I(BLB, TLB, TLF);
-		IndicesPush3I(BLB, TLF, BLF);
-
-		// Bottom
-		IndicesPush3I(BRF, BRB, BLB);
-		IndicesPush3I(BRF, BLB, BLF);
-
-		// Top
-		IndicesPush3I(TRF, TRB, TLB);
-		IndicesPush3I(TRF, TLB, TLF);
-
-		std::vector<glm::vec3> positions;
-
-		positions.emplace_back(-0.5f, -0.5f, 0.5f); // BLF
-		positions.emplace_back(-0.5f, 0.5f, 0.5f); // TLF
-		positions.emplace_back(0.5f, 0.5f, 0.5f); // TRF
-		positions.emplace_back(0.5f, -0.5f, 0.5f); // BRF
-		positions.emplace_back(-0.5f, -0.5f, -0.5f); // BLB
-		positions.emplace_back(-0.5f, 0.5f, -0.5f); // TLB
-		positions.emplace_back(0.5f, 0.5f, -0.5f); // TRB
-		positions.emplace_back(0.5f, -0.5f, -0.5f);  // BRB
-
-		for (int i = 0; i < m_VerticesN; i++) {
-			const unsigned int corner = m_Indices[i];
-			m_ConnectivityData.emplace_back(positions[corner], glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(0.0f));
-		}
-
-		for (int i = 0; i < m_VerticesN; i++) {
-			m_Indices[i] = i;
-		}
-
-		glGenVertexArrays(1, &m_VAO);
-		glGenBuffers(1, &m_VBO);
-		glGenBuffers(1, &m_EBO);
-		// Bind VAO first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
-		glBindVertexArray(m_VAO);
-
-		glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
-		glBufferData(GL_ARRAY_BUFFER, m_ConnectivityData.size() * sizeof(Vertex), m_ConnectivityData.data(), GL_STATIC_DRAW);
-
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_Indices.size() * sizeof(unsigned int), m_Indices.data(), GL_STATIC_DRAW);
-
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 12 * sizeof(float), (void*)0);
-		glEnableVertexAttribArray(0);
-
-		// Unbinds
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		glBindVertexArray(0);
-
-		// Normals
-		// ------------------
-		std::vector<float> normalData;
-
-		for (const auto& vertex : m_ConnectivityData)
-		{
-			normalData.emplace_back(vertex.Position.x);
-			normalData.emplace_back(vertex.Position.y);
-			normalData.emplace_back(vertex.Position.z);
-
-			normalData.emplace_back(vertex.Position.x + vertex.Normal.x);
-			normalData.emplace_back(vertex.Position.y + vertex.Normal.y);
-			normalData.emplace_back(vertex.Position.z + vertex.Normal.z);
-		}
-
-		glGenVertexArrays(1, &m_NVAO);
-		glGenBuffers(1, &m_NVBO);
-		glBindVertexArray(m_NVAO);
-
-		glBindBuffer(GL_ARRAY_BUFFER, m_NVBO);
-		glBufferData(GL_ARRAY_BUFFER, normalData.size() * sizeof(float), normalData.data(), GL_STATIC_DRAW);
-
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)nullptr);
-		glEnableVertexAttribArray(0);
-
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		glBindVertexArray(0);
 	}
 
 	void SetPos(const glm::vec3 pos)
 	{
 		m_Pos = pos;
-	}
-
-	void Draw() override
-	{
-		const Shader shader = m_Shaders.at(0);
-		shader.Use();
-		shader.SetMat4("model", m_Model);
-		shader.SetMat4("view", m_View);
-		shader.SetMat4("proj", m_Proj);
-
-		shader.SetVec3("color", m_Color);
-
-		glBindVertexArray(m_VAO);
-		glDrawElements(GL_TRIANGLES, m_VerticesN, GL_UNSIGNED_INT, nullptr);
-		glBindVertexArray(0);
-
-		CheckForErrors("ERROR::POINT_LIGHT::DRAW: ");
 	}
 
 	void SendToShader(const Shader& shader) const override
@@ -192,10 +65,6 @@ class DirectionalLight final : public Light
 {
 public:
 	DirectionalLight() = default;
-
-	void Draw() override {}
-
-	void DrawNormals(const glm::vec3& color) const override {}
 
 	void SendToShader(const Shader& shader) const override
 	{
@@ -242,19 +111,6 @@ public:
 
 		shader.SetFloat("spotLight.innerCutOff", m_InnerCutOff);
 		shader.SetFloat("spotLight.outerCutOff", m_OuterCutOff);
-	}
-
-	void Draw() override {}
-
-	void DrawNormals(const glm::vec3& color) const override {}
-
-	~SpotLight() override
-	{
-		while (!m_Shaders.empty())
-		{
-			glDeleteProgram(m_Shaders.back().m_ID);
-			m_Shaders.pop_back();
-		}
 	}
 
 public:

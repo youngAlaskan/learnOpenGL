@@ -211,33 +211,31 @@ int main()
 		glm::vec3(-1.3f,  1.0f, -1.5f)
 	};
 
-	std::vector<Entity*> entities;
-	std::vector<Light*> lights;
+	std::vector<std::shared_ptr<TriangleMesh>> meshes;
+	std::vector<std::shared_ptr<PointLight>> pointLights;
 
-	auto pointLight = new PointLight(100.0f);
-	pointLight->SetAsAACube();
+	auto pointLight = std::make_shared<PointLight>(100.0f);
 	pointLight->m_KA = 0.2f;
 	pointLight->m_KD = 0.5f;
 	pointLight->m_KS = 1.0f;
 	pointLight->m_Index = 0;
 	pointLight->m_Pos = glm::vec3(1.2f, 1.0f, 2.0f);
-	entities.emplace_back(pointLight);
-	lights.emplace_back(pointLight);
+	pointLights.emplace_back(pointLight);
 
-	auto directionalLight = new DirectionalLight();
+	auto pointLightMesh = std::make_shared<TriangleMesh>();
+	pointLightMesh->SetAsAACube(pointLight->m_Color);
+	meshes.emplace_back(pointLightMesh);
+
+	auto directionalLight = std::make_shared<DirectionalLight>();
 	directionalLight->m_KA = 0.2f;
 	directionalLight->m_KD = 0.5f;
 	directionalLight->m_KS = 1.0f;
 	directionalLight->m_Direction = glm::normalize(glm::vec3(1.0, -1.0, 1.0));
-	entities.emplace_back(directionalLight);
-	lights.emplace_back(directionalLight);
 
-	auto flashlight = new SpotLight(12.5f);
+	auto flashlight = std::make_shared<SpotLight>(12.5f);
 	flashlight->m_KA = 0.2f;
 	flashlight->m_KD = 0.5f;
 	flashlight->m_KS = 1.0f;
-	entities.emplace_back(flashlight);
-	lights.emplace_back(flashlight);
 
 	// auto cube = new TriangleMesh(&containerCube, flashlight, &camera);
 	// cube->SetAsAACube();
@@ -246,10 +244,10 @@ int main()
 
 	for (int i = 0; i < 10; i++)
 	{
-		auto cube = new TriangleMesh(&containerCube, lights, &camera);
+		auto cube = std::make_shared<TriangleMesh>(std::make_shared<Material>(containerCube), pointLights, directionalLight, flashlight, std::make_shared<Camera>(camera));
 		cube->SetAsAACube();
 		cube->m_DrawingMode = LIT;
-		entities.emplace_back(cube);
+		meshes.emplace_back(cube);
 	}
 
 	auto origin = glm::vec3(0.0f, 0.0f, 0.0f);
@@ -309,37 +307,26 @@ int main()
 		}
 
 		// Render objects
-		for (int i = 3; i < 13; i++)
+		for (int i = 1; i < 11; i++)
 		{
-			model = glm::translate(identity, cubePositions[i - 3]);
-			float angle = 20.0f * static_cast<float>(i - 3);
+			model = glm::translate(identity, cubePositions[i - 1]);
+			float angle = 20.0f * static_cast<float>(i - 1);
 			model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-			entities[i]->SetMVP(model, view, proj);
+			meshes.at(i)->SetMVP(model, view, proj);
 		}
 		//cube->SetMVP(model, view, proj);
 
 		model = glm::scale(glm::translate(identity, pointLight->m_Pos), glm::vec3(0.2f));
-		pointLight->SetMVP(model, view, proj);
-
-		model = identity;
-		directionalLight->SetMVP(model, view, proj);
-
-		model = identity;
-		flashlight->SetMVP(model, view, proj);
+		pointLightMesh->SetMVP(model, view, proj);
+		
 		flashlight->m_Pos = camera.m_Position;
 		flashlight->m_Direction = camera.m_Front;
 
-		for (Entity* entity : entities)
+		for (const auto& mesh : meshes)
 		{
-			entity->Draw();
-		}
-
-		if (renderNormals)
-		{
-			for (Entity* entity : entities)
-			{
-				entity->DrawNormals(glm::vec3(1.0f, 0.0f, 1.0f));
-			}
+			mesh->Draw();
+			if (renderNormals)
+				mesh->DrawNormals(glm::vec3(1.0f, 0.0f, 1.0f));
 		}
 
 		// Check and call events and swap buffers
@@ -355,11 +342,6 @@ int main()
 			std::cout << "First run!" << std::endl;
 			firstRun = false;
 		}
-	}
-
-	for (Entity* entity : entities)
-	{
-		delete entity;
 	}
 
 	glfwTerminate();
