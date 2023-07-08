@@ -20,15 +20,26 @@ class TriangleMesh
 public:
 	TriangleMesh()
 	{
-		m_Shaders.emplace_back("positionColorNormalTex.vert", "variableColor.frag");
-		m_Shaders.emplace_back("positionColorNormalTex.vert", "objectLitByVariousLights.frag");
+		SetUp();
 	}
 
 	TriangleMesh(std::shared_ptr<Material> material, std::vector<std::shared_ptr<PointLight>> lights, std::shared_ptr<DirectionalLight> directionalLight, std::shared_ptr<SpotLight> spotLight, std::shared_ptr<Camera> camera)
 		: m_Material(std::move(material)), m_PointLights(std::move(lights)), m_DirectionalLight(std::move(directionalLight)), m_SpotLight(std::move(spotLight)), m_Camera(std::move(camera))
 	{
+		SetUp();
+	}
+
+	void SetUp()
+	{
 		m_Shaders.emplace_back("positionColorNormalTex.vert", "variableColor.frag");
 		m_Shaders.emplace_back("positionColorNormalTex.vert", "objectLitByVariousLights.frag");
+
+		glGenVertexArrays(1, &m_VAO);
+		glGenBuffers(1, &m_VBO);
+		glGenBuffers(1, &m_EBO);
+
+		glGenVertexArrays(1, &m_NVAO);
+		glGenBuffers(1, &m_NVBO);
 	}
 
 	void SetModel(const glm::mat4& model)
@@ -56,10 +67,10 @@ public:
 	// TODO: Fix this
 	void SetAsAARectangle()
 	{
-		m_VerticesN = 4;
-		m_TrianglesN = 2;
-		m_Indices.reserve(m_TrianglesN * 3);
-		m_ConnectivityData.reserve(12 * m_VerticesN);
+		m_VertexCount = 4;
+		m_TriangleCount = 2;
+		m_Indices.reserve(m_TriangleCount * 3);
+		m_ConnectivityData.reserve(12 * m_VertexCount);
 		
 		auto posBL = glm::vec3(-0.5f, -0.5f, 0.0f);
 		auto posTL = glm::vec3(-0.5f, 0.5f, 0.0f);
@@ -87,9 +98,6 @@ public:
 		IndicesPush3I(0, 1, 2);
 		IndicesPush3I(0, 2, 3);
 
-		glGenVertexArrays(1, &m_VAO);
-		glGenBuffers(1, &m_VBO);
-		glGenBuffers(1, &m_EBO);
 		// Bind VAO first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
 		glBindVertexArray(m_VAO);
 
@@ -121,8 +129,6 @@ public:
 			normalData.emplace_back(vertex.Position.z + vertex.Normal.z);
 		}
 
-		glGenVertexArrays(1, &m_NVAO);
-		glGenBuffers(1, &m_NVBO);
 		glBindVertexArray(m_NVAO);
 
 		glBindBuffer(GL_ARRAY_BUFFER, m_NVBO);
@@ -137,10 +143,10 @@ public:
 	
 	void SetAsAACube() {
 		constexpr unsigned int BLF = 0, TLF = 1, TRF = 2, BRF = 3, BLB = 4, TLB = 5, TRB = 6, BRB = 7;
-		m_TrianglesN = 12;
-		m_VerticesN = 3 * m_TrianglesN;
-		m_ConnectivityData.reserve(sizeof(Vertex) * 12 * m_VerticesN);
-		m_Indices.reserve(m_VerticesN);
+		m_TriangleCount = 12;
+		m_VertexCount = 3 * m_TriangleCount;
+		m_ConnectivityData.reserve(sizeof(Vertex) * 12 * m_VertexCount);
+		m_Indices.reserve(m_VertexCount);
 
 		// Front
 		IndicesPush3I(BLF, TLF, TRF);
@@ -205,18 +211,15 @@ public:
 		texCoords.emplace_back(1.0f, 1.0f, -1.0f); // TRB
 		texCoords.emplace_back(1.0f, -1.0f, -1.0f); // BRB
 
-		for (int i = 0; i < m_VerticesN; i++) {
+		for (int i = 0; i < m_VertexCount; i++) {
 			const unsigned int corner = m_Indices[i];
 			m_ConnectivityData.emplace_back(positions[corner], colors[corner], normals[i / 6], texCoords[corner]);
 		}
 
-		for (int i = 0; i < m_VerticesN; i++) {
+		for (int i = 0; i < m_VertexCount; i++) {
 			m_Indices[i] = i;
 		}
 
-		glGenVertexArrays(1, &m_VAO);
-		glGenBuffers(1, &m_VBO);
-		glGenBuffers(1, &m_EBO);
 		// Bind VAO first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
 		glBindVertexArray(m_VAO);
 
@@ -258,8 +261,6 @@ public:
 			normalData.emplace_back(vertex.Position.z + vertex.Normal.z);
 		}
 
-		glGenVertexArrays(1, &m_NVAO);
-		glGenBuffers(1, &m_NVBO);
 		glBindVertexArray(m_NVAO);
 
 		glBindBuffer(GL_ARRAY_BUFFER, m_NVBO);
@@ -275,10 +276,10 @@ public:
 	void SetAsAACube(glm::vec3 color)
 	{
 		constexpr unsigned int BLF = 0, TLF = 1, TRF = 2, BRF = 3, BLB = 4, TLB = 5, TRB = 6, BRB = 7;
-		m_TrianglesN = 12;
-		m_VerticesN = 3 * m_TrianglesN;
-		m_ConnectivityData.reserve(sizeof(Vertex) * 12 * m_VerticesN);
-		m_Indices.reserve(m_VerticesN);
+		m_TriangleCount = 12;
+		m_VertexCount = 3 * m_TriangleCount;
+		m_ConnectivityData.reserve(sizeof(Vertex) * 12 * m_VertexCount);
+		m_Indices.reserve(m_VertexCount);
 
 		// Front
 		IndicesPush3I(BLF, TLF, TRF);
@@ -343,18 +344,15 @@ public:
 		texCoords.emplace_back(1.0f, 1.0f, -1.0f); // TRB
 		texCoords.emplace_back(1.0f, -1.0f, -1.0f); // BRB
 
-		for (int i = 0; i < m_VerticesN; i++) {
+		for (int i = 0; i < m_VertexCount; i++) {
 			const unsigned int corner = m_Indices[i];
 			m_ConnectivityData.emplace_back(positions[corner], colors[corner], normals[i / 6], texCoords[corner]);
 		}
 
-		for (int i = 0; i < m_VerticesN; i++) {
+		for (int i = 0; i < m_VertexCount; i++) {
 			m_Indices[i] = i;
 		}
 
-		glGenVertexArrays(1, &m_VAO);
-		glGenBuffers(1, &m_VBO);
-		glGenBuffers(1, &m_EBO);
 		// Bind VAO first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
 		glBindVertexArray(m_VAO);
 
@@ -396,8 +394,6 @@ public:
 			normalData.emplace_back(vertex.Position.z + vertex.Normal.z);
 		}
 
-		glGenVertexArrays(1, &m_NVAO);
-		glGenBuffers(1, &m_NVBO);
 		glBindVertexArray(m_NVAO);
 
 		glBindBuffer(GL_ARRAY_BUFFER, m_NVBO);
@@ -451,7 +447,7 @@ public:
 		}
 
 		glBindVertexArray(m_VAO);
-		glDrawElements(GL_TRIANGLES, m_VerticesN, GL_UNSIGNED_INT, nullptr);
+		glDrawElements(GL_TRIANGLES, m_VertexCount, GL_UNSIGNED_INT, nullptr);
 		glBindVertexArray(0);
 
 		CheckForErrors("ERROR::TM::DRAW: ");
@@ -467,7 +463,7 @@ public:
 		m_ShaderProgramNormals.SetVec3("color", color);
 
 		glBindVertexArray(m_NVAO);
-		glDrawArrays(GL_LINES, 0, 72);
+		glDrawArrays(GL_LINES, 0, m_VertexCount * 2);
 		glBindVertexArray(0);
 
 		CheckForErrors("ERROR::DRAW_NORMALS: ");
@@ -480,7 +476,6 @@ public:
 		glDeleteBuffers(1, &m_EBO);
 		glDeleteVertexArrays(1, &m_NVAO);
 		glDeleteBuffers(1, &m_NVBO);
-		glDeleteBuffers(1, &m_NEBO);
 
 		while (!m_Shaders.empty())
 		{
@@ -507,13 +502,13 @@ private:
 	}
 
 private:
-	std::vector<Vertex> m_ConnectivityData;
-	std::vector<unsigned int> m_Indices;
-	std::vector<Shader> m_Shaders;
-	int m_TrianglesN = 0, m_VerticesN = 0;
+	std::vector<Vertex> m_ConnectivityData = std::vector<Vertex>();
+	std::vector<unsigned int> m_Indices = std::vector<unsigned int>();
+	std::vector<Shader> m_Shaders = std::vector<Shader>();
+	int m_TriangleCount = 0, m_VertexCount = 0;
 	Shader m_ShaderProgramNormals = Shader("position.vert", "uniformColor.frag");
 	unsigned int m_VAO = 0, m_VBO = 0, m_EBO = 0;
-	unsigned int m_NVAO = 0, m_NVBO = 0, m_NEBO = 0;
+	unsigned int m_NVAO = 0, m_NVBO = 0;
 	glm::mat4 m_Model = glm::mat4(1.0f);
 	glm::mat4 m_View = glm::mat4(1.0f);
 	glm::mat4 m_Proj = glm::mat4(1.0f);
