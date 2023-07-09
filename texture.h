@@ -9,6 +9,7 @@
 #endif
 
 #include <iostream>
+#include <string>
 
 class Texture
 {
@@ -18,6 +19,7 @@ public:
 	explicit Texture(const int ID)
 	{
 		m_ID = ID;
+		glGenTextures(1, &m_ID);
 	}
 
 	void Use() const
@@ -28,7 +30,9 @@ public:
 
 	bool operator==(const Texture& other) const
 	{
-		return m_ID == other.m_ID;
+		return m_ID == other.m_ID &&
+			m_Type == other.m_Type &&
+			m_Tag == other.m_Tag;
 	}
 
 	virtual ~Texture() {
@@ -36,8 +40,9 @@ public:
 	}
 
 public:
-	unsigned int m_ID = 0;
-	GLenum m_Type = GL_TEXTURE_2D;
+	GLuint m_ID = 0;
+	GLenum m_Type = 0;
+	std::string m_Tag = std::string();
 };
 
 class Tex2D final : public Texture
@@ -49,7 +54,6 @@ public:
 
 		// load and create a texture 
 		// -------------------------
-		glGenTextures(1, &m_ID);
 		glBindTexture(GL_TEXTURE_2D, m_ID);
 
 		// set the texture wrapping parameters
@@ -77,7 +81,6 @@ public:
 
 		// load and create a texture 
 		// -------------------------
-		glGenTextures(1, &m_ID);
 		glBindTexture(GL_TEXTURE_2D, m_ID);
 
 		// set the texture wrapping parameters
@@ -125,7 +128,6 @@ public:
 	explicit TexCube(const char* filepath) {
 		m_Type = GL_TEXTURE_CUBE_MAP;
 
-		glGenTextures(1, &m_ID);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, m_ID);
 
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -170,7 +172,6 @@ public:
 	explicit TexCube(const char** filepaths) {
 		m_Type = GL_TEXTURE_CUBE_MAP;
 
-		glGenTextures(1, &m_ID);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, m_ID);
 
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -209,7 +210,6 @@ public:
 	{
 		m_Type = GL_TEXTURE_CUBE_MAP;
 
-		glGenTextures(1, &m_ID);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, m_ID);
 
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);

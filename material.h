@@ -8,49 +8,33 @@ class Material
 public:
     Material() = default;
 
-    Material(Texture* diffuseMap, Texture* specularMap, Texture* emissiveMap, const float shininess)
-    {
-        m_DiffuseMap = diffuseMap;
-        m_SpecularMap = specularMap;
-        m_EmissiveMap = emissiveMap;
-        m_Shininess = shininess;
-    }
+    Material(std::vector<std::shared_ptr<Texture>> textures, const float shininess)
+        : m_Textures(std::move(textures)), m_Shininess(shininess) {}
 
-    float GetShininess() const
-    {
-        return m_Shininess;
-    }
+    void SetTextures(const std::vector<std::shared_ptr<Texture>>& textures) { m_Textures = textures; }
+    void SetShininess(const float shininess) { m_Shininess = shininess; }
+    std::vector<std::shared_ptr<Texture>> GetTextures() const { return m_Textures; }
+    float GetShininess() const { return m_Shininess; }
 
-    void SetDiffuseTexture(Texture* diffuseMap)
+    std::shared_ptr<Texture> GetTexture(const std::string& tag)
     {
-        m_DiffuseMap = diffuseMap;
-    }
+        for (auto& texture : m_Textures)
+            if (texture->m_Tag == tag) return texture;
 
-    void SetSpecularColor(Texture* specularMap)
-    {
-        m_SpecularMap = specularMap;
-    }
-
-    void SetShininess(const float shininess)
-    {
-        m_Shininess = shininess;
+        return nullptr;
     }
 
     void SendToShader(const Shader& shader) const
     {
-        m_DiffuseMap->Use();
-        m_SpecularMap->Use();
-        m_EmissiveMap->Use();
+        for (auto& texture : m_Textures) {
+            texture->Use();
+            shader.SetInt("material." + texture->m_Tag, static_cast<int>(texture->m_ID));
+        }
 
-        shader.SetInt("material.diffuse", static_cast<int>(m_DiffuseMap->m_ID));
-        shader.SetInt("material.specular", static_cast<int>(m_SpecularMap->m_ID));
-        shader.SetInt("material.emissive", static_cast<int>(m_EmissiveMap->m_ID));
         shader.SetFloat("material.shininess", m_Shininess);
     }
 
 public:
-    Texture* m_DiffuseMap;
-    Texture* m_SpecularMap;
-    Texture* m_EmissiveMap;
+    std::vector<std::shared_ptr<Texture>> m_Textures;
     float m_Shininess = 1.0f;
 };
