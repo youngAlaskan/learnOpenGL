@@ -11,13 +11,10 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "stb_image.h"
-
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
-#include "Shader.h"
 #include "TM.h"
 #include "Texture.h"
 #include "Vertex.h"
@@ -40,7 +37,7 @@ public:
 
 public:
     // model data 
-    std::vector<Texture> m_TexturesLoaded;	// stores all the textures loaded so far, optimization to make sure textures aren't loaded more than once.
+    std::vector<std::shared_ptr<Texture>> m_TexturesLoaded;	// stores all the textures loaded so far, optimization to make sure textures aren't loaded more than once.
     std::vector<TriangleMesh> m_Meshes;
     std::string m_Directory;
     bool m_GammaCorrection;
@@ -89,7 +86,7 @@ private:
         // data to fill
         std::vector<Vertex> vertices;
         std::vector<unsigned int> indices;
-        std::vector<Texture> textures;
+        std::vector<std::shared_ptr<Texture>> textures;
 
         // walk through each of the mesh's vertices
         for (unsigned int i = 0; i < mesh->mNumVertices; i++)
@@ -105,16 +102,8 @@ private:
                 // a vertex can contain up to 8 different texture coordinates. We thus make the assumption that we won't 
                 // use models where a vertex can have multiple texture coordinates so we always take the first set (0).
                 vertex.TexCoord = glm::vec3(mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y, mesh->mTextureCoords[0][i].z);
-                // tangent
-                // vector.x = mesh->mTangents[i].x;
-                // vector.y = mesh->mTangents[i].y;
-                // vector.z = mesh->mTangents[i].z;
-                // vertex.Tangent = vector;
-                // bitangent
-                // vector.x = mesh->mBitangents[i].x;
-                // vector.y = mesh->mBitangents[i].y;
-                // vector.z = mesh->mBitangents[i].z;
-                // vertex.Bitangent = vector;
+
+                // Note: tangent and bi-tangent thrown away for the moment
             }
             else
                 vertex.TexCoord = glm::vec3(0.0f);
@@ -139,30 +128,33 @@ private:
         // normal: texture_normalN
 
         // 1. diffuse maps
-        std::vector<Texture> diffuseMaps = LoadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
+        std::vector<std::shared_ptr<Texture>> diffuseMaps = LoadMaterialTextures(material, aiTextureType_DIFFUSE, "diffuse");
         textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
         // 2. specular maps
-        std::vector<Texture> specularMaps = LoadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
+        std::vector<std::shared_ptr<Texture>> specularMaps = LoadMaterialTextures(material, aiTextureType_SPECULAR, "specular");
         textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
         // 3. normal maps
-        std::vector<Texture> normalMaps = LoadMaterialTextures(material, aiTextureType_HEIGHT, "texture_normal");
+        std::vector<std::shared_ptr<Texture>> normalMaps = LoadMaterialTextures(material, aiTextureType_HEIGHT, "normal");
         textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
         // 4. height maps
-        std::vector<Texture> heightMaps = LoadMaterialTextures(material, aiTextureType_AMBIENT, "texture_height");
+        std::vector<std::shared_ptr<Texture>> heightMaps = LoadMaterialTextures(material, aiTextureType_AMBIENT, "height");
         textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
         // 5. height maps
-        std::vector<Texture> emissiveMaps = LoadMaterialTextures(material, aiTextureType_EMISSIVE, "texture_emissive");
+        std::vector<std::shared_ptr<Texture>> emissiveMaps = LoadMaterialTextures(material, aiTextureType_EMISSIVE, "emissive");
         textures.insert(textures.end(), emissiveMaps.begin(), emissiveMaps.end());
 
+        auto meshMaterial = std::make_shared<Material>();
+        meshMaterial->SetTextures(textures);
+
         // return a mesh object created from the extracted mesh data
-        return TriangleMesh(vertices, indices, textures);
+        return {vertices, indices, meshMaterial};
     }
 
     // checks all material textures of a given type and loads the textures if they're not loaded yet.
-    // the required info is returned as a Texture struct.
-    std::vector<Texture> LoadMaterialTextures(const aiMaterial* mat, const aiTextureType type, const std::string& typeName)
+    // the required info is returned as a Tex2D struct.
+    std::vector<std::shared_ptr<Texture>> LoadMaterialTextures(const aiMaterial* mat, const aiTextureType type, const std::string& typeName)
     {
-        std::vector<Texture> textures;
+        std::vector<std::shared_ptr<Texture>> textures;
         for (unsigned int i = 0; i < mat->GetTextureCount(type); i++)
         {
             aiString str;
@@ -171,7 +163,7 @@ private:
             bool skip = false;
             for (auto& texture : m_TexturesLoaded)
             {
-                if (std::strcmp(texture.path.data(), str.C_Str()) == 0)
+                if (std::strcmp(texture->m_Path.data(), str.C_Str()) == 0)
                 {
                     textures.emplace_back(texture);
                     skip = true; // a texture with the same filepath has already been loaded, continue to next one. (optimization)
@@ -180,10 +172,9 @@ private:
             }
             if (!skip)
             {   // if texture hasn't been loaded already, load it
-                Texture texture;
-                texture.m_ID =;
-                texture.m_Type = typeName;
-                texture.path = str.C_Str();
+                auto texture = std::make_shared<Tex2D>(str.C_Str());
+                texture->m_Tag = typeName;
+                texture->m_Path = str.C_Str();
                 textures.emplace_back(texture);
                 m_TexturesLoaded.emplace_back(texture);  // store it as texture loaded for entire model, to ensure we won't unnecessary load duplicate textures.
             }

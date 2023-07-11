@@ -50,7 +50,10 @@
     <ClInclude Include="utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="entity.h">
+    <ClInclude Include="Model.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Vertex.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -62,6 +65,8 @@
     <None Include="shaders\fragmentShaders\uniformColor.frag" />
     <None Include="shaders\vertexShaders\positionColorNormalTex.vert" />
     <None Include="shaders\fragmentShaders\variableColor.frag" />
+    <None Include="shaders\fragmentShaders\cubeLitByVariousLights.frag" />
+    <None Include="README.md" />
     <None Include="shaders\fragmentShaders\objectLitByVariousLights.frag" />
   </ItemGroup>
 </Project>

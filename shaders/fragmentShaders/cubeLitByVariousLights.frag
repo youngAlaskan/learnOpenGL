@@ -52,7 +52,7 @@ struct SpotLight
 };
 
 #define TEXTURE_CAPACITY 16
-uniform sampler2D textures[TEXTURE_CAPACITY];
+uniform samplerCube textures[TEXTURE_CAPACITY];
 
 uniform Material material;
 
@@ -185,15 +185,15 @@ void SetValues(out vec3 ambient, out vec3 diffuse, out vec3 specular, out vec3 e
     // Iterate through diffuse textures
     for (int i = 0; i < material.diffuseEnd && i < TEXTURE_CAPACITY; i++)
     {
-        ambient  += texture(textures[i], texCoord.st).rgb;
-        diffuse  += texture(textures[i], texCoord.st).rgb;
+        ambient  += texture(textures[i], texCoord.stp).rgb;
+        diffuse  += texture(textures[i], texCoord.stp).rgb;
     }
 
     // Iterate through specular textures
     for (int i = material.diffuseEnd; i < material.specularEnd && i < TEXTURE_CAPACITY; i++)
-        specular += texture(textures[i], texCoord.st).rgb;
+        specular += texture(textures[i], texCoord.stp).rgb;
 
     // Iterate through emissive textures
     for (int i = material.specularEnd; i < material.emissiveEnd && i < TEXTURE_CAPACITY; i++)
-        emissive += texture(textures[i], texCoord.st).rgb;
+        emissive += texture(textures[i], texCoord.stp).rgb;
 }

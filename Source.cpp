@@ -151,50 +151,66 @@ int main()
 
 	glEnable(GL_DEPTH_TEST);
 
-	auto blackEmissive = TexCube(glm::vec3(0.0f));
+	auto blackEmissive = std::make_shared<TexCube>(glm::vec3(0.0f));
+	blackEmissive->SetTagEmissive();
 
-	auto emeraldDiffuse = TexCube(glm::vec3(0.0215f, 0.745f, 0.0215f));
-	auto emeraldSpecular = TexCube(glm::vec3(0.633f, 0.727811f, 0.633f));
-	auto jadeDiffuse = TexCube(glm::vec3(0.135f, 0.2225f, 0.1575f));
-	auto jadeSpecular = TexCube(glm::vec3(0.316228f, 0.316228f, 0.316228f));
-	auto obsidianDiffuse = TexCube(glm::vec3(0.05375f, 0.05f, 0.06625f));
-	auto obsidianSpecular = TexCube(glm::vec3(0.332741f, 0.328634f, 0.346435f));
-	auto pearlDiffuse = TexCube(glm::vec3(0.25f, 0.20725f, 0.20725f));
-	auto pearlSpecular = TexCube(glm::vec3(0.296648f, 0.296648f, 0.296648f));
-	auto rubyDiffuse = TexCube(glm::vec3(0.1745f, 0.01175f, 0.01175f));
-	auto rubySpecular = TexCube(glm::vec3(0.727811f, 0.626959f, 0.626959f));
-	auto turquoiseDiffuse = TexCube(glm::vec3(0.1f, 0.18725f, 0.1745f));
-	auto turquoiseSpecular = TexCube(glm::vec3(0.297254f, 0.30829f, 0.306678f));
-	auto brassDiffuse = TexCube(glm::vec3(0.329412f, 0.223529f, 0.027451f));
-	auto brassSpecular = TexCube(glm::vec3(0.992157f, 0.941176f, 0.807843f));
-	auto bronzeDiffuse = TexCube(glm::vec3(0.2125f, 0.1275f, 0.054f));
-	auto bronzeSpecular = TexCube(glm::vec3(0.393548f, 0.271906f, 0.166721f));
-	auto chromeDiffuse = TexCube(glm::vec3(0.25f, 0.25f, 0.25f));
-	auto chromeSpecular = TexCube(glm::vec3(0.774597f, 0.774597f, 0.774597f));
-	auto copperDiffuse = TexCube(glm::vec3(0.19125f, 0.0735f, 0.0225f));
-	auto copperSpecular = TexCube(glm::vec3(0.25677f, 0.137622f, 0.086014f));
-	auto goldDiffuse = TexCube(glm::vec3(0.24725f, 0.1995f, 0.0745f));
-	auto goldSpecular = TexCube(glm::vec3(0.628281f, 0.555802f, 0.366065f));
-	auto silverDiffuse = TexCube(glm::vec3(0.19225f, 0.19225f, 0.19225f));
-	auto silverSpecular = TexCube(glm::vec3(0.508273f, 0.508273f, 0.508273f));
+	// TODO: Add tags to the below items
+	// auto emeraldDiffuse = std::make_shared<TexCube>(glm::vec3(0.0215f, 0.745f, 0.0215f));
+	// auto emeraldSpecular = std::make_shared<TexCube>(glm::vec3(0.633f, 0.727811f, 0.633f));
+	// auto emeraldTextures = std::vector<std::shared_ptr<Texture>>{emeraldDiffuse, emeraldSpecular};
+	// auto jadeDiffuse = std::make_shared<TexCube>(glm::vec3(0.135f, 0.2225f, 0.1575f));
+	// auto jadeSpecular = std::make_shared<TexCube>(glm::vec3(0.316228f, 0.316228f, 0.316228f));
+	// auto jadeTextures = std::vector<std::shared_ptr<Texture>>{ jadeDiffuse, jadeSpecular, blackEmissive };
+	// auto obsidianDiffuse = std::make_shared<TexCube>(glm::vec3(0.05375f, 0.05f, 0.06625f));
+	// auto obsidianSpecular = std::make_shared<TexCube>(glm::vec3(0.332741f, 0.328634f, 0.346435f));
+	// auto obsidianTextures = std::vector<std::shared_ptr<Texture>>{ obsidianDiffuse, obsidianSpecular, blackEmissive };
+	// auto pearlDiffuse = std::make_shared<TexCube>(glm::vec3(0.25f, 0.20725f, 0.20725f));
+	// auto pearlSpecular = std::make_shared<TexCube>(glm::vec3(0.296648f, 0.296648f, 0.296648f));
+	// auto pearlTextures = std::vector<std::shared_ptr<Texture>>{ pearlDiffuse, pearlSpecular, blackEmissive };
+	// auto rubyDiffuse = std::make_shared<TexCube>(glm::vec3(0.1745f, 0.01175f, 0.01175f));
+	// auto rubySpecular = std::make_shared<TexCube>(glm::vec3(0.727811f, 0.626959f, 0.626959f));
+	// auto rubyTextures = std::vector<std::shared_ptr<Texture>>{ rubyDiffuse, rubySpecular, blackEmissive };
+	// auto turquoiseDiffuse = std::make_shared<TexCube>(glm::vec3(0.1f, 0.18725f, 0.1745f));
+	// auto turquoiseSpecular = std::make_shared<TexCube>(glm::vec3(0.297254f, 0.30829f, 0.306678f));
+	// auto turquoiseTextures = std::vector<std::shared_ptr<Texture>>{ turquoiseDiffuse, turquoiseSpecular, blackEmissive };
+	// auto brassDiffuse = std::make_shared<TexCube>(glm::vec3(0.329412f, 0.223529f, 0.027451f));
+	// auto brassSpecular = std::make_shared<TexCube>(glm::vec3(0.992157f, 0.941176f, 0.807843f));
+	// auto brassTextures = std::vector<std::shared_ptr<Texture>>{ brassDiffuse, brassSpecular, blackEmissive };
+	// auto bronzeDiffuse = std::make_shared<TexCube>(glm::vec3(0.2125f, 0.1275f, 0.054f));
+	// auto bronzeSpecular = std::make_shared<TexCube>(glm::vec3(0.393548f, 0.271906f, 0.166721f));
+	// auto bronzeTextures = std::vector<std::shared_ptr<Texture>>{ bronzeDiffuse, bronzeSpecular, blackEmissive };
+	// auto chromeDiffuse = std::make_shared<TexCube>(glm::vec3(0.25f, 0.25f, 0.25f));
+	// auto chromeSpecular = std::make_shared<TexCube>(glm::vec3(0.774597f, 0.774597f, 0.774597f));
+	// auto chromeTextures = std::vector<std::shared_ptr<Texture>>{ chromeDiffuse, chromeSpecular, blackEmissive };
+	// auto copperDiffuse = std::make_shared<TexCube>(glm::vec3(0.19125f, 0.0735f, 0.0225f));
+	// auto copperSpecular = std::make_shared<TexCube>(glm::vec3(0.25677f, 0.137622f, 0.086014f));
+	// auto copperTextures = std::vector<std::shared_ptr<Texture>>{ copperDiffuse, copperSpecular, blackEmissive };
+	// auto goldDiffuse = std::make_shared<TexCube>(glm::vec3(0.24725f, 0.1995f, 0.0745f));
+	// auto goldSpecular = std::make_shared<TexCube>(glm::vec3(0.628281f, 0.555802f, 0.366065f));
+	// auto goldTextures = std::vector<std::shared_ptr<Texture>>{ goldDiffuse, goldSpecular, blackEmissive };
+	// auto silverDiffuse = std::make_shared<TexCube>(glm::vec3(0.19225f, 0.19225f, 0.19225f));
+	// auto silverSpecular = std::make_shared<TexCube>(glm::vec3(0.508273f, 0.508273f, 0.508273f));
+	// auto silverTextures = std::vector<std::shared_ptr<Texture>>{ silverDiffuse, silverSpecular, blackEmissive };
+	// 
+	// auto emerald = Material(emeraldTextures, 0.6f);
+	// auto jade = Material(jadeTextures, 0.1f);
+	// auto obsidian = Material(obsidianTextures, 0.3f);
+	// auto pearl = Material(pearlTextures, 0.088f);
+	// auto ruby = Material(rubyTextures, 0.6f);
+	// auto turquoise = Material(turquoiseTextures, 0.1f);
+	// auto brass = Material(brassTextures, 0.21794872f);
+	// auto bronze = Material(bronzeTextures, 0.2f);
+	// auto chrome = Material(chromeTextures, 0.6f);
+	// auto copper = Material(copperTextures, 0.1f);
+	// auto gold = Material(goldTextures, 0.4f);
+	// auto silver = Material(silverTextures, 0.4f);
 
-	auto emerald = Material(&emeraldDiffuse, &emeraldSpecular, &blackEmissive, 0.6f);
-	auto jade = Material(&jadeDiffuse, &jadeSpecular, &blackEmissive, 0.1f);
-	auto obsidian = Material(&obsidianDiffuse, &obsidianSpecular, &blackEmissive, 0.3f);
-	auto pearl = Material(&pearlDiffuse, &pearlSpecular, &blackEmissive, 0.088f);
-	auto ruby = Material(&rubyDiffuse, &rubySpecular, &blackEmissive, 0.6f);
-	auto turquoise = Material(&turquoiseDiffuse, &turquoiseSpecular, &blackEmissive, 0.1f);
-	auto brass = Material(&brassDiffuse, &brassSpecular, &blackEmissive, 0.21794872f);
-	auto bronze = Material(&bronzeDiffuse, &bronzeSpecular, &blackEmissive, 0.2f);
-	auto chrome = Material(&chromeDiffuse, &chromeSpecular, &blackEmissive, 0.6f);
-	auto copper = Material(&copperDiffuse, &copperSpecular, &blackEmissive, 0.1f);
-	auto gold = Material(&goldDiffuse, &goldSpecular, &blackEmissive, 0.4f);
-	auto silver = Material(&silverDiffuse, &silverSpecular, &blackEmissive, 0.4f);
-
-	auto containerDiffuse = TexCube(".\\textures\\container2.png");
-	auto containerSpecular = TexCube(".\\textures\\container2_specular.png");
-	auto containerEmissive = blackEmissive;
-	Material containerCube(&containerDiffuse, &containerSpecular, &containerEmissive, 0.5f);
+	auto containerDiffuse = std::make_shared<TexCube>(".\\textures\\container2.png");
+	containerDiffuse->SetTagDiffuse();
+	auto containerSpecular = std::make_shared<TexCube>(".\\textures\\container2_specular.png");
+	containerSpecular->SetTagSpecular();
+	auto containerTextures = std::vector<std::shared_ptr<Texture>>{ containerDiffuse, containerSpecular, blackEmissive };
+	auto containerCube = Material(containerTextures, 0.5f);
 
 	// Set up vertex data
 	// ------------------

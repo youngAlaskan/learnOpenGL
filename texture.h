@@ -22,17 +22,18 @@ public:
 		glGenTextures(1, &m_ID);
 	}
 
-	void Use() const
-	{
-		glActiveTexture(GL_TEXTURE0 + m_ID);
-		glBindTexture(m_Type, m_ID);
-	}
+	void SetTagDiffuse() { m_Tag = std::string("diffuse"); }
+	void SetTagSpecular() { m_Tag = std::string("specular"); }
+	void SetTagEmissive() { m_Tag = std::string("emissive"); }
+	void SetTagCustom(const std::string& name) { m_Tag = name; }
+
+	virtual void Use() const = 0;
 
 	bool operator==(const Texture& other) const
 	{
 		return m_ID == other.m_ID &&
-			m_Type == other.m_Type &&
-			m_Tag == other.m_Tag;
+			m_Tag == other.m_Tag &&
+			m_Path == other.m_Path;
 	}
 
 	virtual ~Texture() {
@@ -41,8 +42,8 @@ public:
 
 public:
 	GLuint m_ID = 0;
-	GLenum m_Type = 0;
 	std::string m_Tag = std::string();
+	std::string m_Path = std::string();
 };
 
 class Tex2D final : public Texture
@@ -50,8 +51,6 @@ class Tex2D final : public Texture
 public:
 	explicit Tex2D(const glm::vec3 color)
 	{
-		m_Type = GL_TEXTURE_2D;
-
 		// load and create a texture 
 		// -------------------------
 		glBindTexture(GL_TEXTURE_2D, m_ID);
@@ -77,8 +76,6 @@ public:
 
 	explicit Tex2D(const char* filepath)
 	{
-		m_Type = GL_TEXTURE_2D;
-
 		// load and create a texture 
 		// -------------------------
 		glBindTexture(GL_TEXTURE_2D, m_ID);
@@ -120,14 +117,18 @@ public:
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, sWrap);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, tWrap);
 	}
+
+	void Use() const override
+	{
+		glActiveTexture(GL_TEXTURE0 + m_ID);
+		glBindTexture(GL_TEXTURE_2D, m_ID);
+	}
 };
 
 class TexCube final : public Texture
 {
 public:
 	explicit TexCube(const char* filepath) {
-		m_Type = GL_TEXTURE_CUBE_MAP;
-
 		glBindTexture(GL_TEXTURE_CUBE_MAP, m_ID);
 
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -170,8 +171,6 @@ public:
 	}
 
 	explicit TexCube(const char** filepaths) {
-		m_Type = GL_TEXTURE_CUBE_MAP;
-
 		glBindTexture(GL_TEXTURE_CUBE_MAP, m_ID);
 
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -208,8 +207,6 @@ public:
 
 	explicit TexCube(const glm::vec3 color)
 	{
-		m_Type = GL_TEXTURE_CUBE_MAP;
-
 		glBindTexture(GL_TEXTURE_CUBE_MAP, m_ID);
 
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -243,8 +240,14 @@ public:
 	}
 
 	static void SetWrap(const GLint sWrap, const GLint tWrap, const GLint rWrap) {
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, sWrap);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, tWrap);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, rWrap);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, sWrap);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, tWrap);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, rWrap);
+	}
+
+	void Use() const override
+	{
+		glActiveTexture(GL_TEXTURE0 + m_ID);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, m_ID);
 	}
 };

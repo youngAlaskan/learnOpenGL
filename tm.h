@@ -8,6 +8,7 @@
 
 #include "Light.h"
 #include "Camera.h"
+#include "Material.h"
 
 enum DrawingMode {
 	ISOLATED,
@@ -29,6 +30,15 @@ public:
 		SetUp();
 	}
 
+	TriangleMesh(std::vector<Vertex> connectivityData, std::vector<unsigned int> indices, std::shared_ptr<Material> material)
+		: m_Material(std::move(material)), m_ConnectivityData(std::move(connectivityData)), m_Indices(std::move(indices))
+	{
+		SetUp();
+		SetVAOData();
+		SetNVAOData();
+	}
+
+	// Init shaders and generate VertexArrays and Buffers
 	void SetUp()
 	{
 		m_Shaders.emplace_back("positionColorNormalTex.vert", "variableColor.frag");
@@ -69,78 +79,41 @@ public:
 	{
 		m_VertexCount = 4;
 		m_TriangleCount = 2;
-		m_Indices.reserve(m_TriangleCount * 3);
-		m_ConnectivityData.reserve(12 * m_VertexCount);
+		m_Indices.reserve(sizeof(unsigned int) * m_TriangleCount * 3);
+		m_ConnectivityData.reserve(sizeof(Vertex) * m_VertexCount);
 		
 		auto posBL = glm::vec3(-0.5f, -0.5f, 0.0f);
 		auto posTL = glm::vec3(-0.5f, 0.5f, 0.0f);
 		auto posTR = glm::vec3(0.5f, 0.5f, 0.0f);
 		auto posBR = glm::vec3(0.5f, -0.5f, 0.0f);
-		auto normal = glm::vec3(0.0f, 0.0f, 1.0f);
 
 		auto colorBL = glm::vec3(1.0f, 0.0f, 0.0f); // Red
 		auto colorTL = glm::vec3(1.0f, 1.0f, 0.0f); // Yellow
 		auto colorTR = glm::vec3(0.0f, 0.0f, 1.0f); // Blue
 		auto colorBR = glm::vec3(0.0f, 1.0f, 0.0f); // Green
 
+		auto normal = glm::vec3(0.0f, 0.0f, 1.0f);
+
 		auto texCoordBL = glm::vec3(0.0f, 0.0f, 0.0f);
 		auto texCoordTL = glm::vec3(0.0f, 1.0f, 0.0f);
 		auto texCoordTR = glm::vec3(1.0f, 1.0f, 0.0f);
 		auto texCoordBR = glm::vec3(1.0f, 0.0f, 0.0f);
 
-		m_ConnectivityData.emplace_back(posBL, colorBL, normal, texCoordBL);
-		m_ConnectivityData.emplace_back(posTL, colorTL, normal, texCoordTL);
-		m_ConnectivityData.emplace_back(posTR, colorTR, normal, texCoordTR);
-		m_ConnectivityData.emplace_back(posBR, colorBR, normal, texCoordBR);
+		m_ConnectivityData.emplace_back(posBL, colorBL, normal, texCoordBL); // BL
+		m_ConnectivityData.emplace_back(posTL, colorTL, normal, texCoordTL); // TL
+		m_ConnectivityData.emplace_back(posTR, colorTR, normal, texCoordTR); // TR
+		m_ConnectivityData.emplace_back(posBR, colorBR, normal, texCoordBR); // BR
 
 		// Indexing
 		// --------
 		IndicesPush3I(0, 1, 2);
 		IndicesPush3I(0, 2, 3);
 
-		// Bind VAO first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
-		glBindVertexArray(m_VAO);
-
-		glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
-		glBufferData(GL_ARRAY_BUFFER, m_ConnectivityData.size() * sizeof(Vertex), m_ConnectivityData.data(), GL_STATIC_DRAW);
-
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_Indices.size() * sizeof(unsigned int), m_Indices.data(), GL_STATIC_DRAW);
-
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 12 * sizeof(float), static_cast<void*>(nullptr));
-		glEnableVertexAttribArray(0);
-
-		// Unbinds
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		glBindVertexArray(0);
-
-		// Normals
-		// ------------------------------
-		std::vector<float> normalData;
-
-		for (const auto& vertex : m_ConnectivityData)
-		{
-			normalData.emplace_back(vertex.Position.x);
-			normalData.emplace_back(vertex.Position.y);
-			normalData.emplace_back(vertex.Position.z);
-
-			normalData.emplace_back(vertex.Position.x + vertex.Normal.x);
-			normalData.emplace_back(vertex.Position.y + vertex.Normal.y);
-			normalData.emplace_back(vertex.Position.z + vertex.Normal.z);
-		}
-
-		glBindVertexArray(m_NVAO);
-
-		glBindBuffer(GL_ARRAY_BUFFER, m_NVBO);
-		glBufferData(GL_ARRAY_BUFFER, normalData.size() * sizeof(float), normalData.data(), GL_STATIC_DRAW);
-
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), static_cast<void*>(nullptr));
-		glEnableVertexAttribArray(0);
-
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		glBindVertexArray(0);
+		SetVAOData();
+		SetNVAOData();
 	}
-	
+
+	// Set Mesh as Axis-Aligned Cube
 	void SetAsAACube() {
 		constexpr unsigned int BLF = 0, TLF = 1, TRF = 2, BRF = 3, BLB = 4, TLB = 5, TRB = 6, BRB = 7;
 		m_TriangleCount = 12;
@@ -177,14 +150,14 @@ public:
 		std::vector<glm::vec3> normals;
 		std::vector<glm::vec3> texCoords;
 
-		positions.emplace_back(-0.5f, -0.5f, 0.5f); // BLF
-		positions.emplace_back(-0.5f, 0.5f, 0.5f); // TLF
-		positions.emplace_back(0.5f, 0.5f, 0.5f); // TRF
-		positions.emplace_back(0.5f, -0.5f, 0.5f); // BRF
+		positions.emplace_back(-0.5f, -0.5f,  0.5f); // BLF
+		positions.emplace_back(-0.5f,  0.5f,  0.5f); // TLF
+		positions.emplace_back( 0.5f,  0.5f,  0.5f); // TRF
+		positions.emplace_back( 0.5f, -0.5f,  0.5f); // BRF
 		positions.emplace_back(-0.5f, -0.5f, -0.5f); // BLB
-		positions.emplace_back(-0.5f, 0.5f, -0.5f); // TLB
-		positions.emplace_back(0.5f, 0.5f, -0.5f); // TRB
-		positions.emplace_back(0.5f, -0.5f, -0.5f);  // BRB
+		positions.emplace_back(-0.5f,  0.5f, -0.5f); // TLB
+		positions.emplace_back( 0.5f,  0.5f, -0.5f); // TRB
+		positions.emplace_back( 0.5f, -0.5f, -0.5f); // BRB
 
 		colors.emplace_back(1.0f, 0.0f, 0.0f); // BLF - Red
 		colors.emplace_back(1.0f, 1.0f, 0.0f); // TLF - Yellow
@@ -211,66 +184,14 @@ public:
 		texCoords.emplace_back(1.0f, 1.0f, -1.0f); // TRB
 		texCoords.emplace_back(1.0f, -1.0f, -1.0f); // BRB
 
-		for (int i = 0; i < m_VertexCount; i++) {
-			const unsigned int corner = m_Indices[i];
-			m_ConnectivityData.emplace_back(positions[corner], colors[corner], normals[i / 6], texCoords[corner]);
-		}
+		for (int i = 0; i < m_VertexCount; i++)
+			m_ConnectivityData.emplace_back(positions[m_Indices[i]], colors[m_Indices[i]], normals[i / 6], texCoords[m_Indices[i]]);
 
-		for (int i = 0; i < m_VertexCount; i++) {
+		for (int i = 0; i < m_VertexCount; i++)
 			m_Indices[i] = i;
-		}
 
-		// Bind VAO first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
-		glBindVertexArray(m_VAO);
-
-		glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
-		glBufferData(GL_ARRAY_BUFFER, m_ConnectivityData.size() * sizeof(Vertex), m_ConnectivityData.data(), GL_STATIC_DRAW);
-
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_Indices.size() * sizeof(unsigned int), m_Indices.data(), GL_STATIC_DRAW);
-
-		constexpr int stride = 12 * sizeof(float);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Position));
-		glEnableVertexAttribArray(0);
-
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Color));
-		glEnableVertexAttribArray(1);
-
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Normal));
-		glEnableVertexAttribArray(2);
-
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, TexCoord));
-		glEnableVertexAttribArray(3);
-
-		// Unbinds
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		glBindVertexArray(0);
-
-		// Normals
-		// ------------------
-		std::vector<float> normalData;
-
-		for (const auto& vertex : m_ConnectivityData)
-		{
-			normalData.emplace_back(vertex.Position.x);
-			normalData.emplace_back(vertex.Position.y);
-			normalData.emplace_back(vertex.Position.z);
-
-			normalData.emplace_back(vertex.Position.x + vertex.Normal.x);
-			normalData.emplace_back(vertex.Position.y + vertex.Normal.y);
-			normalData.emplace_back(vertex.Position.z + vertex.Normal.z);
-		}
-
-		glBindVertexArray(m_NVAO);
-
-		glBindBuffer(GL_ARRAY_BUFFER, m_NVBO);
-		glBufferData(GL_ARRAY_BUFFER, normalData.size() * sizeof(float), normalData.data(), GL_STATIC_DRAW);
-
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)nullptr);
-		glEnableVertexAttribArray(0);
-
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		glBindVertexArray(0);
+		SetVAOData();
+		SetNVAOData();
 	}
 
 	void SetAsAACube(glm::vec3 color)
@@ -344,66 +265,15 @@ public:
 		texCoords.emplace_back(1.0f, 1.0f, -1.0f); // TRB
 		texCoords.emplace_back(1.0f, -1.0f, -1.0f); // BRB
 
-		for (int i = 0; i < m_VertexCount; i++) {
-			const unsigned int corner = m_Indices[i];
-			m_ConnectivityData.emplace_back(positions[corner], colors[corner], normals[i / 6], texCoords[corner]);
-		}
+		for (int i = 0; i < m_VertexCount; i++)
+			m_ConnectivityData.emplace_back(positions[m_Indices[i]], colors[m_Indices[i]], normals[i / 6], texCoords[m_Indices[i]]);
 
-		for (int i = 0; i < m_VertexCount; i++) {
+		for (int i = 0; i < m_VertexCount; i++)
 			m_Indices[i] = i;
-		}
 
-		// Bind VAO first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
-		glBindVertexArray(m_VAO);
+		SetVAOData();
 
-		glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
-		glBufferData(GL_ARRAY_BUFFER, m_ConnectivityData.size() * sizeof(Vertex), m_ConnectivityData.data(), GL_STATIC_DRAW);
-
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_Indices.size() * sizeof(unsigned int), m_Indices.data(), GL_STATIC_DRAW);
-
-		constexpr int stride = 12 * sizeof(float);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Position));
-		glEnableVertexAttribArray(0);
-
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Color));
-		glEnableVertexAttribArray(1);
-
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Normal));
-		glEnableVertexAttribArray(2);
-
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, TexCoord));
-		glEnableVertexAttribArray(3);
-
-		// Unbinds
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		glBindVertexArray(0);
-
-		// Normals
-		// ------------------
-		std::vector<float> normalData;
-
-		for (const auto& vertex : m_ConnectivityData)
-		{
-			normalData.emplace_back(vertex.Position.x);
-			normalData.emplace_back(vertex.Position.y);
-			normalData.emplace_back(vertex.Position.z);
-
-			normalData.emplace_back(vertex.Position.x + vertex.Normal.x);
-			normalData.emplace_back(vertex.Position.y + vertex.Normal.y);
-			normalData.emplace_back(vertex.Position.z + vertex.Normal.z);
-		}
-
-		glBindVertexArray(m_NVAO);
-
-		glBindBuffer(GL_ARRAY_BUFFER, m_NVBO);
-		glBufferData(GL_ARRAY_BUFFER, normalData.size() * sizeof(float), normalData.data(), GL_STATIC_DRAW);
-
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)nullptr);
-		glEnableVertexAttribArray(0);
-
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		glBindVertexArray(0);
+		SetNVAOData();
 	}
 
 	void SetMaterial(const std::shared_ptr<Material>& material) { m_Material = material; }
@@ -453,7 +323,7 @@ public:
 		CheckForErrors("ERROR::TM::DRAW: ");
 	}
 
-	virtual void DrawNormals(const glm::vec3& color) const
+	void DrawNormals(const glm::vec3& color) const
 	{
 		m_ShaderProgramNormals.Use();
 		m_ShaderProgramNormals.SetMat4("model", m_Model);
@@ -499,6 +369,70 @@ private:
 		m_Indices.push_back(x);
 		m_Indices.push_back(y);
 		m_Indices.push_back(z);
+	}
+
+	// Sets VAO attribute pointers using connectivity data and indices
+	void SetVAOData() const
+	{
+		if (m_ConnectivityData.empty()) return;
+
+		// Bind VAO first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
+		glBindVertexArray(m_VAO);
+
+		glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
+		glBufferData(GL_ARRAY_BUFFER, m_ConnectivityData.size() * sizeof(Vertex), m_ConnectivityData.data(), GL_STATIC_DRAW);
+
+		if (!m_Indices.empty())
+		{
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_Indices.size() * sizeof(unsigned int), m_Indices.data(), GL_STATIC_DRAW);
+		}
+
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Position));
+		glEnableVertexAttribArray(0);
+
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Color));
+		glEnableVertexAttribArray(1);
+
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Normal));
+		glEnableVertexAttribArray(2);
+
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, TexCoord));
+		glEnableVertexAttribArray(3);
+
+		// Unbinds
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindVertexArray(0);
+	}
+
+	// Sets NVAO using connectivity data
+	void SetNVAOData() const
+	{
+		if (m_ConnectivityData.empty()) return;
+
+		std::vector<float> normalData;
+
+		for (const auto& vertex : m_ConnectivityData)
+		{
+			normalData.emplace_back(vertex.Position.x);
+			normalData.emplace_back(vertex.Position.y);
+			normalData.emplace_back(vertex.Position.z);
+
+			normalData.emplace_back(vertex.Position.x + vertex.Normal.x);
+			normalData.emplace_back(vertex.Position.y + vertex.Normal.y);
+			normalData.emplace_back(vertex.Position.z + vertex.Normal.z);
+		}
+
+		glBindVertexArray(m_NVAO);
+
+		glBindBuffer(GL_ARRAY_BUFFER, m_NVBO);
+		glBufferData(GL_ARRAY_BUFFER, normalData.size() * sizeof(float), normalData.data(), GL_STATIC_DRAW);
+
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), static_cast<void*>(nullptr));
+		glEnableVertexAttribArray(0);
+
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindVertexArray(0);
 	}
 
 private:
