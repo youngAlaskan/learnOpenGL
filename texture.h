@@ -14,12 +14,11 @@
 class Texture
 {
 public:
-	Texture() = default;
+	Texture() { glGenTextures(1, &m_ID); }
 
 	explicit Texture(const int ID)
 	{
 		m_ID = ID;
-		glGenTextures(1, &m_ID);
 	}
 
 	void SetTagDiffuse() { m_Tag = std::string("diffuse"); }

@@ -12,7 +12,8 @@
 
 enum DrawingMode {
 	ISOLATED,
-	LIT,
+	LIT_CUBE,
+	LIT_OBJECT,
 	DRAWING_MODE_SIZE
 };
 
@@ -42,6 +43,7 @@ public:
 	void SetUp()
 	{
 		m_Shaders.emplace_back("positionColorNormalTex.vert", "variableColor.frag");
+		m_Shaders.emplace_back("positionColorNormalTex.vert", "cubeLitByVariousLights.frag");
 		m_Shaders.emplace_back("positionColorNormalTex.vert", "objectLitByVariousLights.frag");
 
 		glGenVertexArrays(1, &m_VAO);
@@ -194,6 +196,7 @@ public:
 		SetNVAOData();
 	}
 
+	// Set Mesh as Axis-Aligned Cube with a solid color
 	void SetAsAACube(glm::vec3 color)
 	{
 		constexpr unsigned int BLF = 0, TLF = 1, TRF = 2, BRF = 3, BLB = 4, TLB = 5, TRB = 6, BRB = 7;
@@ -287,20 +290,19 @@ public:
 		shader.SetMat4("model", m_Model);
 		shader.SetMat4("view", m_View);
 		shader.SetMat4("proj", m_Proj);
+		shader.SetMat4("modelInv", glm::inverse(m_Model));
 
-		switch (m_DrawingMode) {
+		switch (m_DrawingMode)
+		{
 		case ISOLATED:
 			break;
-		case LIT:
-			shader.SetMat4("modelInv", glm::inverse(m_Model));
-
+		case LIT_CUBE:
+		case LIT_OBJECT:
 			if (m_Material)
 				m_Material->SendToShader(shader);
 
 			for (const auto& pointLight : m_PointLights)
-			{
 				pointLight->SendToShader(shader);
-			}
 
 			if (m_DirectionalLight)
 				m_DirectionalLight->SendToShader(shader);
@@ -336,7 +338,7 @@ public:
 		glDrawArrays(GL_LINES, 0, m_VertexCount * 2);
 		glBindVertexArray(0);
 
-		CheckForErrors("ERROR::DRAW_NORMALS: ");
+		CheckForErrors("ERROR::TM::DRAW_NORMALS: ");
 	}
 
 	~TriangleMesh()
@@ -388,16 +390,16 @@ private:
 			glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_Indices.size() * sizeof(unsigned int), m_Indices.data(), GL_STATIC_DRAW);
 		}
 
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Position));
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Position));
 		glEnableVertexAttribArray(0);
 
 		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Color));
 		glEnableVertexAttribArray(1);
 
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Normal));
+		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Normal));
 		glEnableVertexAttribArray(2);
 
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, TexCoord));
+		glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, TexCoord));
 		glEnableVertexAttribArray(3);
 
 		// Unbinds

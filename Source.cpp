@@ -5,7 +5,7 @@
 
 #include <iostream>
 #include <vector>
-// #define LOCK_FRAMERATE
+//#define LOCK_FRAMERATE
 #ifdef LOCK_FRAMERATE
 #include <thread>
 #endif
@@ -53,22 +53,16 @@ void FramebufferSizeCallback(GLFWwindow* window, int width, int height)
 void ProcessInput(GLFWwindow* window)
 {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-	{
 		glfwSetWindowShouldClose(window, true);
-	}
 
 	renderAxis = glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS;
 
 	renderNormals = glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS;
 
 	if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS)
-	{
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	}
 	else
-	{
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	}
 
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 		camera.ProcessKeyboard(FORWARD, deltaTime);
@@ -84,8 +78,8 @@ void ProcessInput(GLFWwindow* window)
 
 void MouseCallback(GLFWwindow* window, double xPosIn, double yPosIn)
 {
-	auto xPos = static_cast<float>(xPosIn);
-	auto yPos = static_cast<float>(yPosIn);
+	const auto xPos = static_cast<float>(xPosIn);
+	const auto yPos = static_cast<float>(yPosIn);
 
 	if (firstMouse)
 	{
@@ -94,8 +88,8 @@ void MouseCallback(GLFWwindow* window, double xPosIn, double yPosIn)
 		firstMouse = false;
 	}
 
-	float xOffset = xPos - lastX;
-	float yOffset = lastY - yPos; // reversed since y-coordinates go from bottom to top
+	const float xOffset = xPos - lastX;
+	const float yOffset = lastY - yPos; // reversed since y-coordinates go from bottom to top
 
 	lastX = xPos;
 	lastY = yPos;
@@ -262,7 +256,7 @@ int main()
 	{
 		auto cube = std::make_shared<TriangleMesh>(std::make_shared<Material>(containerCube), pointLights, directionalLight, flashlight, std::make_shared<Camera>(camera));
 		cube->SetAsAACube();
-		cube->m_DrawingMode = LIT;
+		cube->m_DrawingMode = LIT_CUBE;
 		meshes.emplace_back(cube);
 	}
 
@@ -279,20 +273,28 @@ int main()
 	glm::mat4 model, view, proj;
 	auto identity = glm::mat4(1.0f);
 
-	float frameCount = 0.0f;
 	float currentFrame = 0.0f;
-	bool firstRun = true;
 
 	CheckForErrors("ERROR::SOURCE::MAIN: ");
+
+	constexpr int frameHistoryCount = 10;
+	auto frameRateHistory = std::vector<int>(frameHistoryCount, 0);
 
 	// Render Loop
 	std::cout << "Starting render loop" << std::endl;
 	while (!glfwWindowShouldClose(window))
 	{
+		// Calculate Frame Rate
 		currentFrame = static_cast<float>(glfwGetTime());
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
-		//std::cout << "FPS: " << frameCount / currentFrame << '\r';
+		frameRateHistory.pop_back();
+		frameRateHistory.insert(frameRateHistory.begin(), static_cast<int>(1.0f / deltaTime));
+		int averageFrameRate = 0;
+		for (int rate : frameRateHistory)
+			averageFrameRate += rate;
+		averageFrameRate /= static_cast<int>(frameRateHistory.size());
+		glfwSetWindowTitle(window, ("LearnOpenGL FPS: " + std::to_string(averageFrameRate)).c_str());
 
 		// Input
 		ProcessInput(window);
@@ -306,7 +308,7 @@ int main()
 		pointLight->m_Pos = glm::vec3(1.0f + sin(currentFrame), pointLight->m_Pos.y, 1.0f + sin(currentFrame));
 
 		// Render
-		// ------
+		// -------
 		// Set Background
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f); // RGBA
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -348,16 +350,10 @@ int main()
 		// Check and call events and swap buffers
 		glfwSwapBuffers(window);
 		glfwPollEvents();
-
-		frameCount++;
+		
 #ifdef LOCK_FRAMERATE
-		std::this_thread::sleep_for(std::chrono::nanoseconds((int)(frameCount / currentFrame / (float)DESIRED_FRAME_RATE * 1e7)));
+		std::this_thread::sleep_for(std::chrono::nanoseconds(static_cast<int>(static_cast<float>(averageFrameRate) / static_cast<float>(DESIRED_FRAME_RATE) * 1e7f)));
 #endif
-		if (firstRun)
-		{
-			std::cout << "First run!" << std::endl;
-			firstRun = false;
-		}
 	}
 
 	glfwTerminate();
