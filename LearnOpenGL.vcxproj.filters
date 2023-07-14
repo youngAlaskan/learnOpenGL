@@ -68,5 +68,6 @@
     <None Include="shaders\fragmentShaders\cubeLitByVariousLights.frag" />
     <None Include="README.md" />
     <None Include="shaders\fragmentShaders\objectLitByVariousLights.frag" />
+    <None Include="shaders\fragmentShaders\model.frag" />
   </ItemGroup>
 </Project>

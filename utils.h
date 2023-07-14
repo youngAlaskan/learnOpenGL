@@ -4,7 +4,7 @@
 #include <iostream>
 #include <unordered_map>
 
-std::unordered_map<GLenum, std::string> errorMessages {
+inline std::unordered_map<GLenum, std::string> errorMessages {
 	{ GL_INVALID_ENUM, "INVALID_ENUM, 0x0500" },
 	{ GL_INVALID_VALUE, "INVALID_VALUE, 0x0501" },
 	{ GL_INVALID_OPERATION, "INVALID_OPERATION, 0x0502" },

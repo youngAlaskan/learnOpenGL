@@ -1,19 +1,16 @@
 #pragma once
 #include <string>
-#include <fstream>
-#include <sstream>
 #include <iostream>
 #include <map>
 #include <vector>
 
-#include <glad/glad.h> 
-
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
+
+#include "utils.h"
 
 #include "TM.h"
 #include "Texture.h"
@@ -23,7 +20,8 @@ class Model
 {
 public:
     // constructor, expects a filepath to a 3D model.
-    explicit Model(std::string const& path, const bool gamma = false) : m_GammaCorrection(gamma)
+    explicit Model(std::string const& path, const bool correctGamma = false)
+        : m_GammaCorrection(correctGamma)
     {
         LoadModel(path);
     }
@@ -47,7 +45,7 @@ private:
     void LoadModel(const std::string& path)
     {
         // read file via ASSIMP
-        Assimp::Importer importer;
+        auto importer = Assimp::Importer();
         const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
         // check for errors
         if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) // if is Not Zero
@@ -56,7 +54,7 @@ private:
             return;
         }
         // retrieve the directory path of the filepath
-        m_Directory = path.substr(0, path.find_last_of('/'));
+        m_Directory = path.substr(0, path.find_last_of('\\'));
 
         // process ASSIMP's root node recursively
         ProcessNode(scene->mRootNode, scene);
@@ -71,14 +69,16 @@ private:
             // the node object only contains indices to index the actual objects in the scene. 
             // the scene contains all the data, node is just to keep stuff organized (like relations between nodes).
             aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-            m_Meshes.emplace_back(ProcessMesh(mesh, scene));
+            auto convertedMesh = ProcessMesh(mesh, scene);
+            convertedMesh.m_DrawingMode = MODEL;
+            convertedMesh.SetVertexCount(mesh->mNumVertices);
+            m_Meshes.emplace_back(convertedMesh);
         }
         // after we've processed all of the meshes (if any) we then recursively process each of the children nodes
         for (unsigned int i = 0; i < node->mNumChildren; i++)
         {
             ProcessNode(node->mChildren[i], scene);
         }
-
     }
 
     TriangleMesh ProcessMesh(aiMesh* mesh, const aiScene* scene)
@@ -98,13 +98,10 @@ private:
                 vertex.Normal = glm::vec3(mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z);
             
             if (mesh->mTextureCoords[0])
-            {
                 // a vertex can contain up to 8 different texture coordinates. We thus make the assumption that we won't 
                 // use models where a vertex can have multiple texture coordinates so we always take the first set (0).
                 vertex.TexCoord = glm::vec3(mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y, mesh->mTextureCoords[0][i].z);
-
                 // Note: tangent and bi-tangent thrown away for the moment
-            }
             else
                 vertex.TexCoord = glm::vec3(0.0f);
 
@@ -120,12 +117,6 @@ private:
         }
         // process materials
         aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
-        // we assume a convention for sampler names in the shaders. Each diffuse texture should be named
-        // as 'texture_diffuseN' where N is a sequential number ranging from 1 to MAX_SAMPLER_NUMBER. 
-        // Same applies to other texture as the following list summarizes:
-        // diffuse: texture_diffuseN
-        // specular: texture_specularN
-        // normal: texture_normalN
 
         // 1. diffuse maps
         std::vector<std::shared_ptr<Texture>> diffuseMaps = LoadMaterialTextures(material, aiTextureType_DIFFUSE, "diffuse");
@@ -151,7 +142,7 @@ private:
     }
 
     // checks all material textures of a given type and loads the textures if they're not loaded yet.
-    // the required info is returned as a Tex2D struct.
+    // the required info is returned as a texture struct.
     std::vector<std::shared_ptr<Texture>> LoadMaterialTextures(const aiMaterial* mat, const aiTextureType type, const std::string& typeName)
     {
         std::vector<std::shared_ptr<Texture>> textures;
@@ -163,7 +154,7 @@ private:
             bool skip = false;
             for (auto& texture : m_TexturesLoaded)
             {
-                if (std::strcmp(texture->m_Path.data(), str.C_Str()) == 0)
+                if (std::strcmp(texture->m_Path.c_str(), str.C_Str()) == 0)
                 {
                     textures.emplace_back(texture);
                     skip = true; // a texture with the same filepath has already been loaded, continue to next one. (optimization)
@@ -172,13 +163,14 @@ private:
             }
             if (!skip)
             {   // if texture hasn't been loaded already, load it
-                auto texture = std::make_shared<Tex2D>(str.C_Str());
+                auto texture = std::make_shared<Tex2D>((m_Directory + std::string("\\") + std::string(str.C_Str())).c_str());
                 texture->m_Tag = typeName;
                 texture->m_Path = str.C_Str();
                 textures.emplace_back(texture);
                 m_TexturesLoaded.emplace_back(texture);  // store it as texture loaded for entire model, to ensure we won't unnecessary load duplicate textures.
             }
         }
+
         return textures;
     }
 };
