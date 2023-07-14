@@ -31,7 +31,7 @@ void main()
 
     SetValues(ambient, diffuse, specular, emissive);
 
-    FragColor = vec4(ambient + diffuse + specular + emissive, 1.0);
+    FragColor = vec4(diffuse + specular + emissive, 1.0);
 }
 
 void SetValues(out vec3 ambient, out vec3 diffuse, out vec3 specular, out vec3 emissive)

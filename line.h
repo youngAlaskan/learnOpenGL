@@ -74,8 +74,6 @@ public:
 		glBindVertexArray(m_VAO);
 		glDrawArrays(GL_LINES, 0, 2);
 		glBindVertexArray(0);
-
-		CheckForErrors("ERROR while drawing Line: ");
 	}
 
 	bool operator==(const Line& other) const

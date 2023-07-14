@@ -246,8 +246,6 @@ public:
 		glBindVertexArray(m_VAO);
 		glDrawElements(GL_TRIANGLES, static_cast<int>(m_VertexCount), GL_UNSIGNED_INT, nullptr);
 		glBindVertexArray(0);
-
-		CheckForErrors("ERROR::TM::DRAW: ");
 	}
 
 	void DrawNormals(const glm::vec3& color) const
@@ -262,8 +260,6 @@ public:
 		glBindVertexArray(m_NVAO);
 		glDrawArrays(GL_LINES, 0, m_VertexCount * 2);
 		glBindVertexArray(0);
-
-		CheckForErrors("ERROR::TM::DRAW_NORMALS: ");
 	}
 
 	~TriangleMesh()
@@ -273,12 +269,6 @@ public:
 		glDeleteBuffers(1, &m_EBO);
 		glDeleteVertexArrays(1, &m_NVAO);
 		glDeleteBuffers(1, &m_NVBO);
-
-		while (!m_Shaders.empty())
-		{
-			glDeleteProgram(m_Shaders.back().m_ID);
-			m_Shaders.pop_back();
-		}
 	}
 
 public:

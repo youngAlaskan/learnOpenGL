@@ -18,19 +18,10 @@ inline std::unordered_map<GLenum, std::string> errorMessages {
 inline void CheckForErrors(const char* message)
 {
 	GLenum error;
-	bool first = true;
 	while ((error = glGetError()) != GL_NO_ERROR)
-	{
-		if (first)
-		{
-			std::cout << "-----------------------------------------------" << std::endl;
-			first = false;
-		}
-		std::cout << message << errorMessages[error] << std::endl;
-	}
+		std::cerr << message << errorMessages[error] << std::endl;
 }
 
-// Not using currently
 inline void GLAPIENTRY MessageCallback(GLenum source,
                                        GLenum type,
                                        GLuint id,

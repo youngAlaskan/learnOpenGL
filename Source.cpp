@@ -5,7 +5,7 @@
 
 #include <iostream>
 #include <vector>
-#define LOCK_FRAMERATE
+// #define LOCK_FRAMERATE
 #ifdef LOCK_FRAMERATE
 #include <thread>
 #endif
@@ -26,7 +26,7 @@ constexpr unsigned int SCR_WIDTH = 800;
 constexpr unsigned int SCR_HEIGHT = 600;
 
 #ifdef LOCK_FRAMERATE
-constexpr unsigned int DESIRED_FRAME_RATE = 6;
+constexpr unsigned int DESIRED_FRAME_RATE = 60;
 #endif
 
 bool renderFilled = true;
@@ -142,8 +142,8 @@ int main()
 		return -1;
 	}
 
-	// glEnable(GL_DEBUG_OUTPUT);
-	// glDebugMessageCallback(MessageCallback, 0);
+	glEnable(GL_DEBUG_OUTPUT);
+	glDebugMessageCallback(MessageCallback, nullptr);
 
 	glEnable(GL_DEPTH_TEST);
 
@@ -211,6 +211,8 @@ int main()
 			yAxis.Draw();
 			zAxis.Draw();
 		}
+
+		backpack.SetMVP(model, view, proj);
 
 		backpack.Draw();
 

@@ -11,7 +11,10 @@
 class Shader
 {
 public:
-    Shader() = default;
+    Shader()
+    {
+        CreateProgram();
+    }
 
     // constructor reads and builds the shader
     Shader(const char* vertexPath, const char* fragmentPath)
@@ -47,19 +50,18 @@ public:
         const char* vShaderCode = vertexCode.c_str();
         const char* fShaderCode = fragmentCode.c_str();
         // 2. compile shaders
-        unsigned int vertex, fragment;
         // vertex shader
-        vertex = glCreateShader(GL_VERTEX_SHADER);
+        unsigned int vertex = glCreateShader(GL_VERTEX_SHADER);
         glShaderSource(vertex, 1, &vShaderCode, nullptr);
         glCompileShader(vertex);
         CheckCompileErrors(vertex, "VERTEX");
         // fragment Shader
-        fragment = glCreateShader(GL_FRAGMENT_SHADER);
+        unsigned int fragment = glCreateShader(GL_FRAGMENT_SHADER);
         glShaderSource(fragment, 1, &fShaderCode, nullptr);
         glCompileShader(fragment);
         CheckCompileErrors(fragment, "FRAGMENT");
         // shader Program
-        m_ID = glCreateProgram();
+        CreateProgram();
         glAttachShader(m_ID, vertex);
         glAttachShader(m_ID, fragment);
         glLinkProgram(m_ID);
@@ -67,6 +69,14 @@ public:
         // delete the shaders as they're linked into our program now and no longer necessary
         glDeleteShader(vertex);
         glDeleteShader(fragment);
+    }
+
+    void CreateProgram()
+    {
+        if (!m_ID)
+            m_ID = glCreateProgram();
+        else
+            std::cerr << "ERROR::SHADER::CREATE_PROGRAM: PROGRAM_IS_ALREADY_CREATED!" << std::endl;
     }
 
     // use/activate the shader
@@ -118,9 +128,15 @@ public:
         return m_ID == other.m_ID;
     }
 
+    ~Shader()
+    {
+        if (!m_ID)
+            glDeleteProgram(m_ID);
+    }
+
 public:
     // the program m_ID
-    unsigned int m_ID;
+    unsigned int m_ID = 0;
 
 private:
     // utility function for checking shader compilation/linking errors.

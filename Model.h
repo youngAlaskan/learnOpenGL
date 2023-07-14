@@ -26,17 +26,24 @@ public:
         LoadModel(path);
     }
 
+    // sets the model, view, and projection matrices of each mesh
+    void SetMVP(const glm::mat4& model, const glm::mat4& view, const glm::mat4& proj) const
+    {
+        for (auto& mesh : m_Meshes)
+            mesh->SetMVP(model, view, proj);
+    }
+
     // draws the model, and thus all its meshes
     void Draw() const
     {
         for (auto& mesh : m_Meshes)
-            mesh.Draw();
+            mesh->Draw();
     }
 
 public:
     // model data 
     std::vector<std::shared_ptr<Texture>> m_TexturesLoaded;	// stores all the textures loaded so far, optimization to make sure textures aren't loaded more than once.
-    std::vector<TriangleMesh> m_Meshes;
+    std::vector<std::shared_ptr<TriangleMesh>> m_Meshes;
     std::string m_Directory;
     bool m_GammaCorrection;
 
@@ -70,18 +77,16 @@ private:
             // the scene contains all the data, node is just to keep stuff organized (like relations between nodes).
             aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
             auto convertedMesh = ProcessMesh(mesh, scene);
-            convertedMesh.m_DrawingMode = MODEL;
-            convertedMesh.SetVertexCount(mesh->mNumVertices);
+            convertedMesh->m_DrawingMode = MODEL;
+            convertedMesh->SetVertexCount(mesh->mNumVertices);
             m_Meshes.emplace_back(convertedMesh);
         }
         // after we've processed all of the meshes (if any) we then recursively process each of the children nodes
         for (unsigned int i = 0; i < node->mNumChildren; i++)
-        {
             ProcessNode(node->mChildren[i], scene);
-        }
     }
 
-    TriangleMesh ProcessMesh(aiMesh* mesh, const aiScene* scene)
+    std::shared_ptr<TriangleMesh> ProcessMesh(aiMesh* mesh, const aiScene* scene)
     {
         // data to fill
         std::vector<Vertex> vertices;
@@ -119,26 +124,26 @@ private:
         aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
         // 1. diffuse maps
-        std::vector<std::shared_ptr<Texture>> diffuseMaps = LoadMaterialTextures(material, aiTextureType_DIFFUSE, "diffuse");
+        auto diffuseMaps = LoadMaterialTextures(material, aiTextureType_DIFFUSE, "diffuse");
         textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
         // 2. specular maps
-        std::vector<std::shared_ptr<Texture>> specularMaps = LoadMaterialTextures(material, aiTextureType_SPECULAR, "specular");
+        auto specularMaps = LoadMaterialTextures(material, aiTextureType_SPECULAR, "specular");
         textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
         // 3. normal maps
-        std::vector<std::shared_ptr<Texture>> normalMaps = LoadMaterialTextures(material, aiTextureType_HEIGHT, "normal");
+        auto normalMaps = LoadMaterialTextures(material, aiTextureType_HEIGHT, "normal");
         textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
         // 4. height maps
-        std::vector<std::shared_ptr<Texture>> heightMaps = LoadMaterialTextures(material, aiTextureType_AMBIENT, "height");
+        auto heightMaps = LoadMaterialTextures(material, aiTextureType_AMBIENT, "height");
         textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
         // 5. height maps
-        std::vector<std::shared_ptr<Texture>> emissiveMaps = LoadMaterialTextures(material, aiTextureType_EMISSIVE, "emissive");
+        auto emissiveMaps = LoadMaterialTextures(material, aiTextureType_EMISSIVE, "emissive");
         textures.insert(textures.end(), emissiveMaps.begin(), emissiveMaps.end());
 
         auto meshMaterial = std::make_shared<Material>();
         meshMaterial->SetTextures(textures);
 
         // return a mesh object created from the extracted mesh data
-        return {vertices, indices, meshMaterial};
+        return std::make_shared<TriangleMesh>(vertices, indices, meshMaterial);
     }
 
     // checks all material textures of a given type and loads the textures if they're not loaded yet.
