@@ -87,7 +87,7 @@ public:
 
 	explicit SpotLight(const float theta)
 	: m_InnerCutOff(glm::cos(glm::radians(std::max(theta * 0.875f, 0.0f)))),
-	m_OuterCutOff(glm::cos(glm::radians(std::max(theta * 1.125f, 0.0f)))) {}
+	  m_OuterCutOff(glm::cos(glm::radians(std::max(theta * 1.125f, 0.0f)))) {}
 
 	void SetCutOff(const float thetaDegrees)
 	{
@@ -115,5 +115,5 @@ public:
 
 public:
 	glm::vec3 m_Direction = glm::vec3(0.0f);
-	float m_InnerCutOff = 0.0f, m_OuterCutOff;
+	float m_InnerCutOff = 0.0f, m_OuterCutOff = 0.0f;
 };

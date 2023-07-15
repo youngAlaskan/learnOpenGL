@@ -131,9 +131,9 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
 
     SetValues(ambient, diffuse, specular, emissive);
 
-    ambient  *= light.kA;
-    diffuse  *= light.kD * lambertian;
-    specular *= light.kS * spec;
+    ambient  *= light.kA * attenuation;
+    diffuse  *= light.kD * attenuation * lambertian;
+    specular *= light.kS * attenuation * spec;
 
     return (ambient + diffuse + specular + emissive) * light.color;
 }
@@ -153,13 +153,13 @@ vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
     float distance = length(light.position - fragPos);
     float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
 
-   vec3 ambient, diffuse, specular, emissive;
+    vec3 ambient, diffuse, specular, emissive;
 
     SetValues(ambient, diffuse, specular, emissive);
 
     ambient  *= light.kA;
-    diffuse  *= light.kD * lambertian;
-    specular *= light.kS * spec;
+    diffuse  *= light.kD * intensity * attenuation * lambertian;
+    specular *= light.kS * intensity * attenuation * spec;
 
     return (ambient + diffuse + specular + emissive) * light.color;
 }

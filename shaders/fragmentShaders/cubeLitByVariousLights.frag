@@ -100,7 +100,7 @@ void main()
     FragColor = vec4(result, 1.0);
 }
 
-vec3 CalcDirLight(in DirLight light, in vec3 normal, in vec3 viewDir)
+vec3 CalcDirLight(DirLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
 {
 	vec3 fragToLight = normalize(-light.direction);
 
@@ -118,7 +118,7 @@ vec3 CalcDirLight(in DirLight light, in vec3 normal, in vec3 viewDir)
     return (ambient + diffuse + specular + emissive) * light.color;
 }
 
-vec3 CalcPointLight(in PointLight light, in vec3 normal, in vec3 viewDir)
+vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
 {
     float distance = length(light.position - fragPos);
     float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
@@ -132,14 +132,14 @@ vec3 CalcPointLight(in PointLight light, in vec3 normal, in vec3 viewDir)
 
     SetValues(ambient, diffuse, specular, emissive);
 
-    ambient  *= light.kA;
-    diffuse  *= light.kD * lambertian;
-    specular *= light.kS * spec;
+    ambient  *= light.kA * attenuation;
+    diffuse  *= light.kD * attenuation * lambertian;
+    specular *= light.kS * attenuation * spec;
 
     return (ambient + diffuse + specular + emissive) * light.color;
 }
 
-vec3 CalcSpotLight(in SpotLight light, in vec3 normal, in vec3 viewDir)
+vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
 {
 
     vec3 fragToLight = normalize(light.position - fragPos);
@@ -159,13 +159,13 @@ vec3 CalcSpotLight(in SpotLight light, in vec3 normal, in vec3 viewDir)
     SetValues(ambient, diffuse, specular, emissive);
 
     ambient  *= light.kA;
-    diffuse  *= light.kD * lambertian;
-    specular *= light.kS * spec;
+    diffuse  *= light.kD * intensity * attenuation * lambertian;
+    specular *= light.kS * intensity * attenuation * spec;
 
     return (ambient + diffuse + specular + emissive) * light.color;
 }
 
-float CalcSpec(in vec3 fragToLight)
+float CalcSpec(vec3 fragToLight)
 {
     vec3 reflected = reflect(-fragToLight, normal);
     vec3 toViewer = normalize(viewPos - fragPos);

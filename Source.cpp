@@ -41,6 +41,8 @@ float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
 
+std::vector<int> frameRateHistory(10, 0);
+
 enum Name {
 	EMERALD, JADE, OBSIDIAN, PEARL, RUBY,
 	TURQUOISE, BRASS, BRONZE, CHROME, COPPER,
@@ -104,7 +106,7 @@ void ScrollCallback(GLFWwindow* window, double xOffset, double yOffset)
 	camera.ProcessMouseScroll(static_cast<float>(yOffset));
 }
 
-int main()
+GLFWwindow* Init()
 {
 	// Initialize GLFW to use OpenGL 4.6
 	// ---------------------------------
@@ -120,7 +122,7 @@ int main()
 	{
 		std::cout << "Failed to create GLFW window" << std::endl;
 		glfwTerminate();
-		return -1;
+		return nullptr;
 	}
 
 	glfwMakeContextCurrent(window);
@@ -139,7 +141,7 @@ int main()
 	if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)))
 	{
 		std::cout << "Failed to initialize GLAD" << std::endl;
-		return -1;
+		return nullptr;
 	}
 
 	glEnable(GL_DEBUG_OUTPUT);
@@ -147,10 +149,65 @@ int main()
 
 	glEnable(GL_DEPTH_TEST);
 
+	return window;
+}
+
+void UpdateFrameRate(GLFWwindow* window)
+{
+	// Calculate Frame Rate
+	const auto currentFrame = static_cast<float>(glfwGetTime());
+	deltaTime = currentFrame - lastFrame;
+	lastFrame = currentFrame;
+	frameRateHistory.pop_back();
+	frameRateHistory.insert(frameRateHistory.begin(), static_cast<int>(1.0f / deltaTime));
+	int averageFrameRate = 0;
+	for (const int rate : frameRateHistory)
+		averageFrameRate += rate;
+	averageFrameRate /= static_cast<int>(frameRateHistory.size());
+	glfwSetWindowTitle(window, ("LearnOpenGL FPS: " + std::to_string(averageFrameRate)).c_str());
+}
+
+int main()
+{
+	GLFWwindow* window = Init();
+	if (!window)
+		return -1;
+
+	std::vector<std::shared_ptr<PointLight>> pointLights;
+	auto pointLight = std::make_shared<PointLight>(100.0f);
+	pointLight->m_KA = 0.2f;
+	pointLight->m_KD = 0.5f;
+	pointLight->m_KS = 0.99f;
+	pointLight->m_Index = 0;
+	pointLight->m_Pos = glm::vec3(2.0f, 1.0f, 3.0f);
+	pointLights.emplace_back(pointLight);
+
+	auto pointLightMesh = std::make_shared<TriangleMesh>();
+	pointLightMesh->SetAsAACube(pointLight->m_Color);
+	
+	auto directionalLight = std::make_shared<DirectionalLight>();
+	directionalLight->m_KA = 0.2f;
+	directionalLight->m_KD = 0.5f;
+	directionalLight->m_KS = 1.0f;
+	directionalLight->m_Direction = glm::normalize(glm::vec3(1.0, -1.0, 1.0));
+
+	auto flashlight = std::make_shared<SpotLight>(12.5f);
+	flashlight->m_KA = 0.2f;
+	flashlight->m_KD = 0.5f;
+	flashlight->m_KS = 1.0f;
+
 	auto start = glfwGetTime();
 	auto backpack = Model("C:\\Dev\\LearnOpenGL\\assets\\backpack.obj");
 	auto end = glfwGetTime();
 	std::cout << "Model load time: " << end - start << " seconds" << std::endl;
+
+	for (auto& mesh : backpack.m_Meshes)
+	{
+		mesh->m_DirectionalLight = directionalLight;
+		mesh->m_PointLights = pointLights;
+		mesh->m_SpotLight = flashlight;
+		mesh->m_Camera = std::make_shared<Camera>(camera);
+	}
 
 	auto origin = glm::vec3(0.0f, 0.0f, 0.0f);
 
@@ -165,28 +222,11 @@ int main()
 	glm::mat4 model, view, proj;
 	auto identity = glm::mat4(1.0f);
 
-	float currentFrame = 0.0f;
-
-	constexpr int frameHistoryCount = 10;
-	auto frameRateHistory = std::vector<int>(frameHistoryCount, 0);
-
 	// Render Loop
 	std::cout << "Starting render loop" << std::endl;
 	while (!glfwWindowShouldClose(window))
 	{
-		// Calculate Frame Rate
-		currentFrame = static_cast<float>(glfwGetTime());
-		deltaTime = currentFrame - lastFrame;
-		lastFrame = currentFrame;
-		frameRateHistory.pop_back();
-		frameRateHistory.insert(frameRateHistory.begin(), static_cast<int>(1.0f / deltaTime));
-		int averageFrameRate = 0;
-		for (int rate : frameRateHistory)
-			averageFrameRate += rate;
-		averageFrameRate /= static_cast<int>(frameRateHistory.size());
-		glfwSetWindowTitle(window, ("LearnOpenGL FPS: " + std::to_string(averageFrameRate)).c_str());
-
-		// Input
+		UpdateFrameRate(window);
 		ProcessInput(window);
 
 		// Set matrices
@@ -194,6 +234,13 @@ int main()
 		view = camera.GetViewMatrix();
 		proj = glm::perspective(glm::radians(camera.m_Zoom),
 			static_cast<float>(SCR_WIDTH) / static_cast<float>(SCR_HEIGHT), 0.1f, 100.0f);
+
+		model = glm::scale(glm::translate(identity, pointLight->m_Pos), glm::vec3(0.2f));
+		pointLightMesh->SetMVP(model, view, proj);
+		model = identity;
+
+		flashlight->m_Pos = camera.m_Position;
+		flashlight->m_Direction = camera.m_Front;
 
 		// Render
 		// -------
@@ -215,6 +262,14 @@ int main()
 		backpack.SetMVP(model, view, proj);
 
 		backpack.Draw();
+
+		pointLightMesh->Draw();
+
+		if (renderNormals)
+		{
+			backpack.DrawNormals();
+			pointLightMesh->DrawNormals();
+		}
 
 		// Check and call events and swap buffers
 		glfwSwapBuffers(window);

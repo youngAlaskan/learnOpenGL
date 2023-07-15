@@ -40,6 +40,13 @@ public:
             mesh->Draw();
     }
 
+    // draws the model normals, and thus all of it's meshes normals
+    void DrawNormals(const glm::vec3 color = glm::vec3(1.0, 0.0, 1.0)) const
+    {
+        for (auto& mesh : m_Meshes)
+            mesh->DrawNormals(color);
+    }
+
 public:
     // model data 
     std::vector<std::shared_ptr<Texture>> m_TexturesLoaded;	// stores all the textures loaded so far, optimization to make sure textures aren't loaded more than once.
@@ -77,7 +84,7 @@ private:
             // the scene contains all the data, node is just to keep stuff organized (like relations between nodes).
             aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
             auto convertedMesh = ProcessMesh(mesh, scene);
-            convertedMesh->m_DrawingMode = MODEL;
+            convertedMesh->m_DrawingMode = LIT_OBJECT;
             convertedMesh->SetVertexCount(mesh->mNumVertices);
             m_Meshes.emplace_back(convertedMesh);
         }

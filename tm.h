@@ -248,7 +248,7 @@ public:
 		glBindVertexArray(0);
 	}
 
-	void DrawNormals(const glm::vec3& color) const
+	void DrawNormals(const glm::vec3& color = glm::vec3(1.0, 0.0, 1.0)) const
 	{
 		m_ShaderProgramNormals.Use();
 		m_ShaderProgramNormals.SetMat4("model", m_Model);
