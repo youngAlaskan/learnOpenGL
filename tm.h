@@ -217,6 +217,8 @@ public:
 			if (m_Material)
 				m_Material->SendToShader(shader);
 
+			shader.SetInt("pointLightCount", PointLight::GetCount());
+
 			for (const auto& pointLight : m_PointLights)
 				pointLight->SendToShader(shader);
 

@@ -1,7 +1,7 @@
 #version 460
 
 #define TEXTURE_CAPACITY 16
-#define POINT_LIGHT_COUNT 1
+#define POINT_LIGHT_CAPACITY 1
 
 struct Material
 {
@@ -59,16 +59,11 @@ uniform sampler2D textures[TEXTURE_CAPACITY];
 
 uniform Material material;
 
+uniform int pointLightCount;
+
 uniform DirLight dirLight;
-uniform PointLight pointLights[POINT_LIGHT_COUNT];
+uniform PointLight pointLights[POINT_LIGHT_CAPACITY];
 uniform SpotLight spotLight;
-
-vec4 CalcDirLight(in DirLight light, in vec3 normal, in vec3 toViewer);
-vec4 CalcPointLight(in PointLight light, in vec3 normal, in vec3 toViewer);
-vec4 CalcSpotLight(in SpotLight light, in vec3 normal, in vec3 toViewer);
-void SetValues(out vec4 ambient, out vec4 diffuse, out vec4 specular, out vec4 emissive);
-
-float CalcSpec(in vec3 fragToLight, in vec3 toViewer);
 
 uniform vec3 viewPos;
 
@@ -79,36 +74,46 @@ in vec2 texCoord;
 
 out vec4 FragColor;
 
+vec4 CalcDirLight(in DirLight light, in vec3 normal, in vec3 toViewer, in mat4 textureValues);
+vec4 CalcPointLight(in PointLight light, in vec3 normal, in vec3 toViewer, in mat4 textureValues);
+vec4 CalcSpotLight(in SpotLight light, in vec3 normal, in vec3 toViewer, in mat4 textureValues);
+void SetValues(out mat4 textureValues);
+
+float CalcSpec(in vec3 fragToLight, in vec3 toViewer);
+
 void main()
 {
     vec3 norm = normalize(normal);
     vec3 toViewer = normalize(viewPos - vec3(fragPos));
 
+    mat4 textureValues; // Ambient, Diffuse, Specular, Emissive
+
+    SetValues(textureValues);
+
     vec4 result = vec4(0.0);
     if (dirLight.direction != vec3(0.0))
-        result += CalcDirLight(dirLight, norm, toViewer);
+        result += CalcDirLight(dirLight, norm, toViewer, textureValues);
 
-    for (int i = 0; i < POINT_LIGHT_COUNT; i++)
-    {
-        result += CalcPointLight(pointLights[i], norm, toViewer);
-    }
+    for (int i = 0; i < pointLightCount && i < POINT_LIGHT_CAPACITY; i++)
+        result += CalcPointLight(pointLights[i], norm, toViewer, textureValues);
 
     if (spotLight.innerCutOff != 0.0)
-        result += CalcSpotLight(spotLight, norm, toViewer);
+        result += CalcSpotLight(spotLight, norm, toViewer, textureValues);
 
     FragColor = result;
 }
 
-vec4 CalcDirLight(DirLight light, vec3 normal, in vec3 toViewer)
+vec4 CalcDirLight(DirLight light, in vec3 normal, in vec3 toViewer, in mat4 textureValues)
 {
 	vec3 fragToLight = normalize(-light.direction);
 
     float lambertian = max(dot(normal, fragToLight), 0.0);
     float spec = lambertian > 0.0 ? CalcSpec(fragToLight, toViewer) : 0.0;
 
-    vec4 ambient, diffuse, specular, emissive;
-
-    SetValues(ambient, diffuse, specular, emissive);
+    vec4 ambient  = textureValues[0];
+    vec4 diffuse  = textureValues[1];
+    vec4 specular = textureValues[2];
+    vec4 emissive = textureValues[3];
 
     ambient  *= light.kA;
     diffuse  *= light.kD * lambertian;
@@ -117,7 +122,7 @@ vec4 CalcDirLight(DirLight light, vec3 normal, in vec3 toViewer)
     return (ambient + diffuse + specular + emissive) * light.color;
 }
 
-vec4 CalcPointLight(PointLight light, vec3 normal, in vec3 toViewer)
+vec4 CalcPointLight(PointLight light, in vec3 normal, in vec3 toViewer, in mat4 textureValues)
 {
     float distance = length(light.position - fragPos);
     float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
@@ -127,9 +132,10 @@ vec4 CalcPointLight(PointLight light, vec3 normal, in vec3 toViewer)
     float lambertian = max(dot(normal, fragToLight), 0.0);
     float spec = lambertian > 0.0 ? CalcSpec(fragToLight, toViewer) : 0.0;
 
-    vec4 ambient, diffuse, specular, emissive;
-
-    SetValues(ambient, diffuse, specular, emissive);
+    vec4 ambient  = textureValues[0];
+    vec4 diffuse  = textureValues[1];
+    vec4 specular = textureValues[2];
+    vec4 emissive = textureValues[3];
 
     ambient  *= light.kA * attenuation;
     diffuse  *= light.kD * attenuation * lambertian;
@@ -138,7 +144,7 @@ vec4 CalcPointLight(PointLight light, vec3 normal, in vec3 toViewer)
     return (ambient + diffuse + specular + emissive) * light.color;
 }
 
-vec4 CalcSpotLight(SpotLight light, vec3 normal, in vec3 toViewer)
+vec4 CalcSpotLight(SpotLight light, in vec3 normal, in vec3 toViewer, in mat4 textureValues)
 {
 
     vec3 fragToLight = normalize(vec3(light.position - fragPos));
@@ -153,9 +159,10 @@ vec4 CalcSpotLight(SpotLight light, vec3 normal, in vec3 toViewer)
     float distance = length(light.position - fragPos);
     float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
 
-    vec4 ambient, diffuse, specular, emissive;
-
-    SetValues(ambient, diffuse, specular, emissive);
+    vec4 ambient  = textureValues[0];
+    vec4 diffuse  = textureValues[1];
+    vec4 specular = textureValues[2];
+    vec4 emissive = textureValues[3];
 
     ambient  *= light.kA;
     diffuse  *= light.kD * intensity * attenuation * lambertian;
@@ -164,7 +171,7 @@ vec4 CalcSpotLight(SpotLight light, vec3 normal, in vec3 toViewer)
     return (ambient + diffuse + specular + emissive) * light.color;
 }
 
-float CalcSpec(vec3 fragToLight, vec3 toViewer)
+float CalcSpec(in vec3 fragToLight, in vec3 toViewer)
 {
     vec3 reflected = reflect(-fragToLight, normal);
 
@@ -172,22 +179,22 @@ float CalcSpec(vec3 fragToLight, vec3 toViewer)
     return pow(specAngle, material.shininess * 128.0);
 }
 
-void SetValues(out vec4 ambient, out vec4 diffuse, out vec4 specular, out vec4 emissive)
+void SetValues(out mat4 textureValues)
 {
     // Iterate through diffuse textures
     for (int i = 0; i < material.diffuseEnd && i < TEXTURE_CAPACITY; i++)
     {
         if (texture(textures[i], texCoord).a == 0.0)
             discard;
-        ambient  += texture(textures[i], texCoord);
-        diffuse  += texture(textures[i], texCoord);
+        textureValues[0] += texture(textures[i], texCoord);
+        textureValues[1] += texture(textures[i], texCoord);
     }
 
     // Iterate through specular textures
     for (int i = material.diffuseEnd; i < material.specularEnd && i < TEXTURE_CAPACITY; i++)
-        specular += texture(textures[i], texCoord);
+        textureValues[2] += texture(textures[i], texCoord);
 
     // Iterate through emissive textures
     for (int i = material.specularEnd; i < material.emissiveEnd && i < TEXTURE_CAPACITY; i++)
-        emissive += texture(textures[i], texCoord);
+        textureValues[3] += texture(textures[i], texCoord);
 }
