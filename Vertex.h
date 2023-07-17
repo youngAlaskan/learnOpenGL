@@ -4,14 +4,14 @@
 
 struct Vertex
 {
-	glm::vec3 Position;
-	glm::vec3 Color;
+	glm::vec4 Position;
+	glm::vec4 Color;
 	glm::vec3 Normal;
-	glm::vec3 TexCoord;
+	glm::vec2 TexCoord;
 
 	Vertex() = default;
 
-	Vertex(const glm::vec3& pos, const glm::vec3& col, const glm::vec3& norm, const glm::vec3& texCoord)
+	Vertex(const glm::vec4& pos, const glm::vec4& col, const glm::vec3& norm, const glm::vec2& texCoord)
 		: Position(pos), Color(col), Normal(norm), TexCoord(texCoord) {}
 	bool operator==(const Vertex& other) const
 	{

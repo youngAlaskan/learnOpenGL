@@ -23,7 +23,7 @@ public:
 	{
 		m_Start = start;
 		m_End = end;
-		m_Color = glm::vec3(1.0f, 1.0f, 1.0f);
+		m_Color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 		m_Model = glm::mat4(1.0f);
 
 		m_ShaderProgram = Shader("position.vert", "uniformColor.frag");
@@ -40,7 +40,7 @@ public:
 		glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(m_Vertices), m_Vertices.data(), GL_STATIC_DRAW);
 
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)nullptr);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), static_cast<void*>(nullptr));
 		glEnableVertexAttribArray(0);
 
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -60,7 +60,7 @@ public:
 		m_Proj = proj;
 	}
 
-	void SetColor(const glm::vec3 color) { m_Color = color; }
+	void SetColor(const glm::vec4 color) { m_Color = color; }
 
 	void Draw() const
 	{
@@ -69,7 +69,7 @@ public:
 		m_ShaderProgram.SetMat4("view", m_View);
 		m_ShaderProgram.SetMat4("proj", m_Proj);
 
-		m_ShaderProgram.SetVec3("color", m_Color);
+		m_ShaderProgram.SetVec4("color", m_Color);
 
 		glBindVertexArray(m_VAO);
 		glDrawArrays(GL_LINES, 0, 2);
@@ -104,5 +104,5 @@ public:
 	glm::vec3 m_Start;
 	glm::vec3 m_End;
 	glm::mat4 m_Model, m_View, m_Proj;
-	glm::vec3 m_Color;
+	glm::vec4 m_Color;
 };

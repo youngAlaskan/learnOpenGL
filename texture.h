@@ -48,7 +48,7 @@ public:
 class Tex2D final : public Texture
 {
 public:
-	explicit Tex2D(const glm::vec3 color)
+	explicit Tex2D(const glm::vec4 color)
 	{
 		// load and create a texture 
 		// -------------------------
@@ -62,12 +62,13 @@ public:
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-		const auto data = new unsigned char[3 * sizeof(unsigned char)];
+		const auto data = new unsigned char[4 * sizeof(unsigned char)];
 		data[0] = static_cast<unsigned char>(color.r * 255.0f);
 		data[1] = static_cast<unsigned char>(color.g * 255.0f);
 		data[2] = static_cast<unsigned char>(color.b * 255.0f);
+		data[3] = static_cast<unsigned char>(color.a * 255.0f);
 
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 		delete[] data;
 
 		glBindTexture(GL_TEXTURE_2D, 0);
@@ -101,7 +102,7 @@ public:
 				format = GL_RGBA;
 
 
-			glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, format, GL_UNSIGNED_BYTE, data);
 			glGenerateMipmap(GL_TEXTURE_2D);
 		}
 		else
@@ -147,17 +148,17 @@ public:
 			else if (channelsN == 4)
 				format = GL_RGBA;
 
-			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_RGB, width, height, 0,
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_RGBA, width, height, 0,
 				format, GL_UNSIGNED_BYTE, data);
-			glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, GL_RGB, width, height, 0,
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, GL_RGBA, width, height, 0,
 				format, GL_UNSIGNED_BYTE, data);
-			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, 0, GL_RGB, width, height, 0,
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, 0, GL_RGBA, width, height, 0,
 				format, GL_UNSIGNED_BYTE, data);
-			glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, GL_RGB, width, height, 0,
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, GL_RGBA, width, height, 0,
 				format, GL_UNSIGNED_BYTE, data);
-			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0, GL_RGB, width, height, 0,
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0, GL_RGBA, width, height, 0,
 				format, GL_UNSIGNED_BYTE, data);
-			glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, GL_RGB, width, height, 0,
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, GL_RGBA, width, height, 0,
 				format, GL_UNSIGNED_BYTE, data);
 			glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
 		}
@@ -191,7 +192,7 @@ public:
 					format = GL_RGBA;
 				glTexImage2D(
 					GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-					0, format, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data
+					0, GL_RGBA, width, height, 0, format, GL_UNSIGNED_BYTE, data
 				);
 			}
 			else
@@ -205,7 +206,7 @@ public:
 		glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 	}
 
-	explicit TexCube(const glm::vec3 color)
+	explicit TexCube(const glm::vec4 color)
 	{
 		glBindTexture(GL_TEXTURE_CUBE_MAP, m_ID);
 
@@ -215,24 +216,25 @@ public:
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-		const auto data = new unsigned char[3 * sizeof(unsigned char)];
+		const auto data = new unsigned char[4 * sizeof(unsigned char)];
 		data[0] = static_cast<unsigned char>(color.r * 255.0f);
 		data[1] = static_cast<unsigned char>(color.g * 255.0f);
 		data[2] = static_cast<unsigned char>(color.b * 255.0f);
+		data[3] = static_cast<unsigned char>(color.a * 255.0f);
 
-		constexpr GLint format = GL_RGB;
+		constexpr GLint format = GL_RGBA;
 
-		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_RGB, 1, 1, 0,
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_RGBA, 1, 1, 0,
 			format, GL_UNSIGNED_BYTE, data);
-		glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, GL_RGB, 1, 1, 0,
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, GL_RGBA, 1, 1, 0,
 			format, GL_UNSIGNED_BYTE, data);
-		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, 0, GL_RGB, 1, 1, 0,
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, 0, GL_RGBA, 1, 1, 0,
 			format, GL_UNSIGNED_BYTE, data);
-		glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, GL_RGB, 1, 1, 0,
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, GL_RGBA, 1, 1, 0,
 			format, GL_UNSIGNED_BYTE, data);
-		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0, GL_RGB, 1, 1, 0,
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0, GL_RGBA, 1, 1, 0,
 			format, GL_UNSIGNED_BYTE, data);
-		glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, GL_RGB, 1, 1, 0,
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, GL_RGBA, 1, 1, 0,
 			format, GL_UNSIGNED_BYTE, data);
 
 		delete[] data;

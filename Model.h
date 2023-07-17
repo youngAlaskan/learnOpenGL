@@ -41,7 +41,7 @@ public:
     }
 
     // draws the model normals, and thus all of it's meshes normals
-    void DrawNormals(const glm::vec3 color = glm::vec3(1.0, 0.0, 1.0)) const
+    void DrawNormals(const glm::vec4 color = glm::vec4(1.0f, 0.0f, 1.0f, 1.0f)) const
     {
         for (auto& mesh : m_Meshes)
             mesh->DrawNormals(color);
@@ -104,7 +104,7 @@ private:
         for (unsigned int i = 0; i < mesh->mNumVertices; i++)
         {
             Vertex vertex{};
-            vertex.Position = glm::vec3(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z);
+            vertex.Position = glm::vec4(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z, 1.0f);
             // normals
             if (mesh->HasNormals())
                 vertex.Normal = glm::vec3(mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z);
@@ -112,10 +112,8 @@ private:
             if (mesh->mTextureCoords[0])
                 // a vertex can contain up to 8 different texture coordinates. We thus make the assumption that we won't 
                 // use models where a vertex can have multiple texture coordinates so we always take the first set (0).
-                vertex.TexCoord = glm::vec3(mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y, mesh->mTextureCoords[0][i].z);
+                vertex.TexCoord = glm::vec2(mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y);
                 // Note: tangent and bi-tangent thrown away for the moment
-            else
-                vertex.TexCoord = glm::vec3(0.0f);
 
             vertices.emplace_back(vertex);
         }

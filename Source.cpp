@@ -36,7 +36,7 @@ bool renderNormals = false;
 float deltaTime = 0.0f;	// Time between current frame and last frame
 float lastFrame = 0.0f; // Time of last frame
 
-Camera camera(glm::vec3(1.0f, 1.0f, 3.0f));
+Camera camera(glm::vec4(1.0f, 1.0f, 3.0f, 1.0f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -149,6 +149,9 @@ GLFWwindow* Init()
 
 	glEnable(GL_DEPTH_TEST);
 
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 	return window;
 }
 
@@ -179,11 +182,12 @@ int main()
 	pointLight->m_KD = 0.5f;
 	pointLight->m_KS = 0.99f;
 	pointLight->m_Index = 0;
-	pointLight->m_Pos = glm::vec3(2.0f, 1.0f, 3.0f);
+	pointLight->m_Pos = glm::vec4(2.0f, 1.0f, 3.0f, 1.0f);
 	pointLights.emplace_back(pointLight);
 
 	auto pointLightMesh = std::make_shared<TriangleMesh>();
 	pointLightMesh->SetAsAACube(pointLight->m_Color);
+	pointLightMesh->SetModel(glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(pointLight->m_Pos)), glm::vec3(0.2f)));
 	
 	auto directionalLight = std::make_shared<DirectionalLight>();
 	directionalLight->m_KA = 0.2f;
@@ -195,6 +199,39 @@ int main()
 	flashlight->m_KA = 0.2f;
 	flashlight->m_KD = 0.5f;
 	flashlight->m_KS = 1.0f;
+
+	auto containerDiffuse = std::make_shared<Tex2D>(".\\textures\\container2.png");
+	containerDiffuse->SetTagDiffuse();
+	auto containerSpecular = std::make_shared<Tex2D>(".\\textures\\container2_specular.png");
+	containerSpecular->SetTagSpecular();
+	auto blackEmissive = std::make_shared<Tex2D>(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+	blackEmissive->SetTagEmissive();
+	auto containerTextures = std::vector<std::shared_ptr<Texture>>{ containerDiffuse, containerSpecular, blackEmissive };
+	auto containerMaterial = std::make_shared<Material>(containerTextures, 0.5f);
+
+	auto containerCube = std::make_shared<TriangleMesh>(containerMaterial, pointLights, directionalLight, flashlight, std::make_shared<Camera>(camera));
+	containerCube->SetAsAACube();
+	containerCube->m_DrawingMode = LIT_OBJECT;
+	containerCube->SetModel(glm::translate(glm::mat4(1.0f), glm::vec3(-2.0f, 0.0f, 2.0f)));
+
+	auto grassDiffuse = std::make_shared<Tex2D>(".\\textures\\grass.png");
+	grassDiffuse->SetTagDiffuse();
+	Tex2D::SetWrap(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
+	auto grassMaterial = std::make_shared<Material>(std::vector<std::shared_ptr<Texture>>{grassDiffuse}, 0.2f);
+
+	auto square = std::make_shared<TriangleMesh>(grassMaterial, pointLights, directionalLight, flashlight, std::make_shared<Camera>(camera));
+	square->SetAsAARectangle();
+	square->m_DrawingMode = LIT_OBJECT;
+	square->SetModel(glm::translate(glm::mat4(1.0f), glm::vec3(0.5f, 0.0f, 1.5f)));
+
+	auto windowDiffuse = std::make_shared<Tex2D>(".\\textures\\blending_transparent_window.png");
+	windowDiffuse->SetTagDiffuse();
+	auto windowMaterial = std::make_shared<Material>(std::vector<std::shared_ptr<Texture>>{windowDiffuse}, 0.2f);
+
+	auto windowMesh = std::make_shared<TriangleMesh>(windowMaterial, pointLights, directionalLight, flashlight, std::make_shared<Camera>(camera));
+	windowMesh->SetAsAARectangle();
+	windowMesh->m_DrawingMode = LIT_OBJECT;
+	windowMesh->SetModel(glm::translate(glm::mat4(1.0f), glm::vec3(0.4f, 0.0f, 2.0f)));
 
 	auto start = glfwGetTime();
 	auto backpack = Model("C:\\Dev\\LearnOpenGL\\assets\\backpack.obj");
@@ -215,11 +252,11 @@ int main()
 	Line yAxis(origin, glm::vec3( 0.0f, 10.0f,  0.0f));
 	Line zAxis(origin, glm::vec3( 0.0f,  0.0f, 10.0f));
 
-	xAxis.SetColor(glm::vec3(1.0f, 0.0f, 0.0f));
-	yAxis.SetColor(glm::vec3(0.0f, 1.0f, 0.0f));
-	zAxis.SetColor(glm::vec3(0.0f, 0.0f, 1.0f));
+	xAxis.SetColor(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+	yAxis.SetColor(glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
+	zAxis.SetColor(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
 
-	glm::mat4 model, view, proj;
+	glm::mat4 view, proj;
 	auto identity = glm::mat4(1.0f);
 
 	// Render Loop
@@ -230,17 +267,26 @@ int main()
 		ProcessInput(window);
 
 		// Set matrices
-		model = identity;
 		view = camera.GetViewMatrix();
 		proj = glm::perspective(glm::radians(camera.m_Zoom),
 			static_cast<float>(SCR_WIDTH) / static_cast<float>(SCR_HEIGHT), 0.1f, 100.0f);
 
-		model = glm::scale(glm::translate(identity, pointLight->m_Pos), glm::vec3(0.2f));
-		pointLightMesh->SetMVP(model, view, proj);
-		model = identity;
+		pointLightMesh->SetView(view);
+		pointLightMesh->SetProj(proj);
 
-		flashlight->m_Pos = camera.m_Position;
+		flashlight->m_Pos = glm::vec4(camera.m_Position, 1.0f);
 		flashlight->m_Direction = camera.m_Front;
+
+		backpack.SetMVP(identity, view, proj);
+
+		containerCube->SetView(view);
+		containerCube->SetProj(proj);
+
+		square->SetView(view);
+		square->SetProj(proj);
+
+		windowMesh->SetView(view);
+		windowMesh->SetProj(proj);
 
 		// Render
 		// -------
@@ -250,25 +296,32 @@ int main()
 
 		if (renderAxis)
 		{
-			xAxis.SetMVP(model, view, proj);
-			yAxis.SetMVP(model, view, proj);
-			zAxis.SetMVP(model, view, proj);
+			xAxis.SetMVP(identity, view, proj);
+			yAxis.SetMVP(identity, view, proj);
+			zAxis.SetMVP(identity, view, proj);
 
 			xAxis.Draw();
 			yAxis.Draw();
 			zAxis.Draw();
 		}
 
-		backpack.SetMVP(model, view, proj);
-
 		backpack.Draw();
 
 		pointLightMesh->Draw();
+
+		containerCube->Draw();
+
+		square->Draw();
+
+		windowMesh->Draw();
 
 		if (renderNormals)
 		{
 			backpack.DrawNormals();
 			pointLightMesh->DrawNormals();
+			containerCube->DrawNormals();
+			square->DrawNormals();
+			windowMesh->DrawNormals();
 		}
 
 		// Check and call events and swap buffers

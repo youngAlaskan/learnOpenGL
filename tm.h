@@ -12,9 +12,7 @@
 
 enum DrawingMode {
 	ISOLATED,
-	LIT_CUBE,
 	LIT_OBJECT,
-	MODEL,
 	DRAWING_MODE_SIZE
 };
 
@@ -44,9 +42,7 @@ public:
 	void SetUp()
 	{
 		m_Shaders.emplace_back("positionColorNormalTex.vert", "variableColor.frag");
-		m_Shaders.emplace_back("positionColorNormalTex.vert", "cubeLitByVariousLights.frag");
 		m_Shaders.emplace_back("positionColorNormalTex.vert", "objectLitByVariousLights.frag");
-		m_Shaders.emplace_back("positionColorNormalTex.vert", "model.frag");
 
 		glGenVertexArrays(1, &m_VAO);
 		glGenBuffers(1, &m_VBO);
@@ -81,49 +77,51 @@ public:
 	// TODO: Fix this
 	void SetAsAARectangle()
 	{
-		m_VertexCount = 4;
+		m_VertexCount = 6;
 		m_TriangleCount = 2;
 		m_Indices.reserve(sizeof(unsigned int) * m_TriangleCount * 3);
 		m_ConnectivityData.reserve(sizeof(Vertex) * m_VertexCount);
 		
-		auto posBL = glm::vec3(-0.5f, -0.5f, 0.0f);
-		auto posTL = glm::vec3(-0.5f, 0.5f, 0.0f);
-		auto posTR = glm::vec3(0.5f, 0.5f, 0.0f);
-		auto posBR = glm::vec3(0.5f, -0.5f, 0.0f);
+		auto posBL = glm::vec4(-0.5f, -0.5f, 0.0f, 1.0f);
+		auto posTL = glm::vec4(-0.5f,  0.5f, 0.0f, 1.0f);
+		auto posTR = glm::vec4( 0.5f,  0.5f, 0.0f, 1.0f);
+		auto posBR = glm::vec4( 0.5f, -0.5f, 0.0f, 1.0f);
 
-		auto colorBL = glm::vec3(1.0f, 0.0f, 0.0f); // Red
-		auto colorTL = glm::vec3(1.0f, 1.0f, 0.0f); // Yellow
-		auto colorTR = glm::vec3(0.0f, 0.0f, 1.0f); // Blue
-		auto colorBR = glm::vec3(0.0f, 1.0f, 0.0f); // Green
+		auto colorBL = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f); // Red
+		auto colorTL = glm::vec4(1.0f, 1.0f, 0.0f, 1.0f); // Yellow
+		auto colorTR = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f); // Blue
+		auto colorBR = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f); // Green
 
 		auto normal = glm::vec3(0.0f, 0.0f, 1.0f);
 
-		auto texCoordBL = glm::vec3(0.0f, 0.0f, 0.0f);
-		auto texCoordTL = glm::vec3(0.0f, 1.0f, 0.0f);
-		auto texCoordTR = glm::vec3(1.0f, 1.0f, 0.0f);
-		auto texCoordBR = glm::vec3(1.0f, 0.0f, 0.0f);
+		auto texCoordBL = glm::vec2(0.0f, 0.0f);
+		auto texCoordTL = glm::vec2(0.0f, 1.0f);
+		auto texCoordTR = glm::vec2(1.0f, 1.0f);
+		auto texCoordBR = glm::vec2(1.0f, 0.0f);
 
 		m_ConnectivityData.emplace_back(posBL, colorBL, normal, texCoordBL); // BL
 		m_ConnectivityData.emplace_back(posTL, colorTL, normal, texCoordTL); // TL
+		m_ConnectivityData.emplace_back(posTR, colorTR, normal, texCoordTR); // TR
+		m_ConnectivityData.emplace_back(posBL, colorBL, normal, texCoordBL); // BL
 		m_ConnectivityData.emplace_back(posTR, colorTR, normal, texCoordTR); // TR
 		m_ConnectivityData.emplace_back(posBR, colorBR, normal, texCoordBR); // BR
 
 		// Indexing
 		// --------
 		IndicesPush3I(0, 1, 2);
-		IndicesPush3I(0, 2, 3);
+		IndicesPush3I(3, 4, 5);
 
 		SetVAOData();
 		SetNVAOData();
 	}
 
 	// Set Mesh as Axis-Aligned Cube with an optional solid color
-	void SetAsAACube(glm::vec3 color = glm::vec3(1.0f, 0.0f, 1.0f))
+	void SetAsAACube(glm::vec4 color = glm::vec4(1.0f, 0.0f, 1.0f, 1.0f))
 	{
 		constexpr unsigned int BLF = 0, TLF = 1, TRF = 2, BRF = 3, BLB = 4, TLB = 5, TRB = 6, BRB = 7;
 		m_TriangleCount = 12;
 		m_VertexCount = 3 * m_TriangleCount;
-		m_ConnectivityData.reserve(sizeof(Vertex) * 12 * m_VertexCount);
+		m_ConnectivityData.reserve(sizeof(Vertex) * m_VertexCount);
 		m_Indices.reserve(m_VertexCount);
 
 		// Front
@@ -150,19 +148,19 @@ public:
 		IndicesPush3I(TRF, TRB, TLB);
 		IndicesPush3I(TRF, TLB, TLF);
 
-		std::vector<glm::vec3> positions;
-		std::vector<glm::vec3> colors;
+		std::vector<glm::vec4> positions;
+		std::vector<glm::vec4> colors;
 		std::vector<glm::vec3> normals;
-		std::vector<glm::vec3> texCoords;
+		std::vector<glm::vec2> texCoords;
 
-		positions.emplace_back(-0.5f, -0.5f,  0.5f); // BLF
-		positions.emplace_back(-0.5f,  0.5f,  0.5f); // TLF
-		positions.emplace_back( 0.5f,  0.5f,  0.5f); // TRF
-		positions.emplace_back( 0.5f, -0.5f,  0.5f); // BRF
-		positions.emplace_back(-0.5f, -0.5f, -0.5f); // BLB
-		positions.emplace_back(-0.5f,  0.5f, -0.5f); // TLB
-		positions.emplace_back( 0.5f,  0.5f, -0.5f); // TRB
-		positions.emplace_back( 0.5f, -0.5f, -0.5f); // BRB
+		positions.emplace_back(-0.5f, -0.5f,  0.5f, 1.0f); // BLF
+		positions.emplace_back(-0.5f,  0.5f,  0.5f, 1.0f); // TLF
+		positions.emplace_back( 0.5f,  0.5f,  0.5f, 1.0f); // TRF
+		positions.emplace_back( 0.5f, -0.5f,  0.5f, 1.0f); // BRF
+		positions.emplace_back(-0.5f, -0.5f, -0.5f, 1.0f); // BLB
+		positions.emplace_back(-0.5f,  0.5f, -0.5f, 1.0f); // TLB
+		positions.emplace_back( 0.5f,  0.5f, -0.5f, 1.0f); // TRB
+		positions.emplace_back( 0.5f, -0.5f, -0.5f, 1.0f); // BRB
 
 		colors.emplace_back(color); // BLF
 		colors.emplace_back(color); // TLF
@@ -180,17 +178,15 @@ public:
 		normals.emplace_back( 0.0f, -1.0f,  0.0f); // NEG Y
 		normals.emplace_back( 0.0f,  1.0f,  0.0f); // POS Y
 
-		texCoords.emplace_back(-1.0f, -1.0f,  1.0f); // BLF
-		texCoords.emplace_back(-1.0f,  1.0f,  1.0f); // TLF
-		texCoords.emplace_back( 1.0f,  1.0f,  1.0f); // TRF
-		texCoords.emplace_back( 1.0f, -1.0f,  1.0f); // BRF
-		texCoords.emplace_back(-1.0f, -1.0f, -1.0f); // BLB
-		texCoords.emplace_back(-1.0f,  1.0f, -1.0f); // TLB
-		texCoords.emplace_back( 1.0f,  1.0f, -1.0f); // TRB
-		texCoords.emplace_back( 1.0f, -1.0f, -1.0f); // BRB
+		texCoords.emplace_back(0.0f, 0.0f);
+		texCoords.emplace_back(0.0f, 1.0f);
+		texCoords.emplace_back(1.0f, 1.0f);
+		texCoords.emplace_back(1.0f, 0.0f);
+
+		const auto texCoordIndices = std::vector<int>{ 0, 1, 2, 0, 2, 3 };
 
 		for (unsigned int i = 0; i < m_VertexCount; i++)
-			m_ConnectivityData.emplace_back(positions[m_Indices[i]], colors[m_Indices[i]], normals[i / 6], texCoords[m_Indices[i]]);
+			m_ConnectivityData.emplace_back(positions[m_Indices[i]], colors[m_Indices[i]], normals[i / 6], texCoords[texCoordIndices[i % 6]]);
 
 		for (unsigned int i = 0; i < m_VertexCount; i++)
 			m_Indices[i] = i;
@@ -217,7 +213,6 @@ public:
 		{
 		case ISOLATED:
 			break;
-		case LIT_CUBE:
 		case LIT_OBJECT:
 			if (m_Material)
 				m_Material->SendToShader(shader);
@@ -233,11 +228,6 @@ public:
 
 			if (m_Camera)
 				m_Camera->SendToShader(shader);
-
-			break;
-		case MODEL:
-			if (m_Material)
-				m_Material->SendToShader(shader);
 			break;
 		default:
 			break;
@@ -248,14 +238,14 @@ public:
 		glBindVertexArray(0);
 	}
 
-	void DrawNormals(const glm::vec3& color = glm::vec3(1.0, 0.0, 1.0)) const
+	void DrawNormals(const glm::vec4& color = glm::vec4(1.0, 0.0, 1.0, 1.0f)) const
 	{
 		m_ShaderProgramNormals.Use();
 		m_ShaderProgramNormals.SetMat4("model", m_Model);
 		m_ShaderProgramNormals.SetMat4("view", m_View);
 		m_ShaderProgramNormals.SetMat4("proj", m_Proj);
 
-		m_ShaderProgramNormals.SetVec3("color", color);
+		m_ShaderProgramNormals.SetVec4("color", color);
 
 		glBindVertexArray(m_NVAO);
 		glDrawArrays(GL_LINES, 0, m_VertexCount * 2);
@@ -305,16 +295,17 @@ private:
 			glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_Indices.size() * sizeof(unsigned int), m_Indices.data(), GL_STATIC_DRAW);
 		}
 
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Position));
+		// TODO: Update size parameters to be generalized
+		glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Position));
 		glEnableVertexAttribArray(0);
 
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Color));
+		glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Color));
 		glEnableVertexAttribArray(1);
 
 		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Normal));
 		glEnableVertexAttribArray(2);
 
-		glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, TexCoord));
+		glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, TexCoord));
 		glEnableVertexAttribArray(3);
 
 		// Unbinds

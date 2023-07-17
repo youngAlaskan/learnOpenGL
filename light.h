@@ -5,12 +5,12 @@ class Light
 public:
 	Light() = default;
 
-	explicit Light(const glm::vec3 color)
+	explicit Light(const glm::vec4 color)
 	{
 		m_Color = color;
 	}
 
-	void SetColor(const glm::vec3 color)
+	void SetColor(const glm::vec4 color)
 	{
 		m_Color = color;
 	}
@@ -18,7 +18,7 @@ public:
 	virtual void SendToShader(const Shader& shader) const {}
 
 public:
-	glm::vec3 m_Color = glm::vec3(1.0f, 1.0f, 1.0f);
+	glm::vec4 m_Color = glm::vec4(1.0f);
 	float m_KA = 1.0f, m_KD = 1.0f, m_KS = 1.0f;
 };
 
@@ -27,14 +27,14 @@ class PointLight : public Light
 public:
 	PointLight() = default;
 
-	explicit PointLight(const float distance) : m_Pos(glm::vec3(0.0f, 0.0f, 0.0f))
+	explicit PointLight(const float distance)
 	{
 		m_Distance = distance;
 		m_Linear = 4.48882f / distance;
 		m_Quadratic = 75.5817f / (distance * distance);
 	}
 
-	void SetPos(const glm::vec3 pos)
+	void SetPos(const glm::vec4 pos)
 	{
 		m_Pos = pos;
 	}
@@ -42,8 +42,8 @@ public:
 	void SendToShader(const Shader& shader) const override
 	{
 		const std::string prefix = "pointLights[" + std::to_string(m_Index) + "].";
-		shader.SetVec3(prefix + "position", m_Pos);
-		shader.SetVec3(prefix + "color", m_Color);
+		shader.SetVec4(prefix + "position", m_Pos);
+		shader.SetVec4(prefix + "color", m_Color);
 
 		shader.SetFloat(prefix + "kA", m_KA);
 		shader.SetFloat(prefix + "kD", m_KD);
@@ -55,7 +55,7 @@ public:
 	}
 
 public:
-	glm::vec3 m_Pos = glm::vec3(0.0f);
+	glm::vec4 m_Pos = glm::vec4(0.0f);
 	float m_Distance = 0.0f;
 	float m_Constant = 1.0f, m_Linear = 0.0f, m_Quadratic = 0.0f;
 	int m_Index = 0;
@@ -69,7 +69,7 @@ public:
 	void SendToShader(const Shader& shader) const override
 	{
 		shader.SetVec3("dirLight.direction", m_Direction);
-		shader.SetVec3("dirLight.color", m_Color);
+		shader.SetVec4("dirLight.color", m_Color);
 
 		shader.SetFloat("dirLight.kA", m_KA);
 		shader.SetFloat("dirLight.kD", m_KD);
@@ -97,9 +97,9 @@ public:
 
 	void SendToShader(const Shader& shader) const override
 	{
-		shader.SetVec3("spotLight.position", m_Pos);
+		shader.SetVec4("spotLight.position", m_Pos);
 		shader.SetVec3("spotLight.direction", m_Direction);
-		shader.SetVec3("spotLight.color", m_Color);
+		shader.SetVec4("spotLight.color", m_Color);
 
 		shader.SetFloat("spotLight.kA", m_KA);
 		shader.SetFloat("spotLight.kD", m_KD);

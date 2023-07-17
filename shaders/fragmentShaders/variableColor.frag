@@ -1,12 +1,12 @@
 #version 460 core
 out vec4 FragColor;
 
+in vec4 fragPos;
+in vec4 color;
 in vec3 normal;
-in vec3 fragPos;
-in vec3 color;
-in vec3 texCoord;
+in vec2 texCoord;
 
 void main()
 {
-    FragColor = vec4(color, 1.0);
+    FragColor = color;
 }
