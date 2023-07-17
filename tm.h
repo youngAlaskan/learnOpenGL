@@ -100,11 +100,11 @@ public:
 		auto texCoordBR = glm::vec2(1.0f, 0.0f);
 
 		m_ConnectivityData.emplace_back(posBL, colorBL, normal, texCoordBL); // BL
+		m_ConnectivityData.emplace_back(posTR, colorTR, normal, texCoordTR); // TR
 		m_ConnectivityData.emplace_back(posTL, colorTL, normal, texCoordTL); // TL
-		m_ConnectivityData.emplace_back(posTR, colorTR, normal, texCoordTR); // TR
 		m_ConnectivityData.emplace_back(posBL, colorBL, normal, texCoordBL); // BL
-		m_ConnectivityData.emplace_back(posTR, colorTR, normal, texCoordTR); // TR
 		m_ConnectivityData.emplace_back(posBR, colorBR, normal, texCoordBR); // BR
+		m_ConnectivityData.emplace_back(posTR, colorTR, normal, texCoordTR); // TR
 
 		// Indexing
 		// --------
@@ -125,28 +125,28 @@ public:
 		m_Indices.reserve(m_VertexCount);
 
 		// Front
-		IndicesPush3I(BLF, TLF, TRF);
-		IndicesPush3I(BLF, TRF, BRF);
+		IndicesPush3I(BLF, TRF, TLF);
+		IndicesPush3I(BLF, BRF, TRF);
 
 		// Right
-		IndicesPush3I(BRF, TRF, TRB);
-		IndicesPush3I(BRF, TRB, BRB);
+		IndicesPush3I(BRF, TRB, TRF);
+		IndicesPush3I(BRF, BRB, TRB);
 
 		// Back
-		IndicesPush3I(BRB, TRB, TLB);
-		IndicesPush3I(BRB, TLB, BLB);
+		IndicesPush3I(BRB, TLB, TRB);
+		IndicesPush3I(BRB, BLB, TLB);
 
 		// Left
-		IndicesPush3I(BLB, TLB, TLF);
-		IndicesPush3I(BLB, TLF, BLF);
+		IndicesPush3I(BLB, TLF, TLB);
+		IndicesPush3I(BLB, BLF, TLF);
 
 		// Bottom
-		IndicesPush3I(BRF, BRB, BLB);
-		IndicesPush3I(BRF, BLB, BLF);
+		IndicesPush3I(BLB, BRF, BLF);
+		IndicesPush3I(BLB, BRB, BRF);
 
 		// Top
-		IndicesPush3I(TRF, TRB, TLB);
-		IndicesPush3I(TRF, TLB, TLF);
+		IndicesPush3I(TLF, TRB, TLB);
+		IndicesPush3I(TLF, TRF, TRB);
 
 		std::vector<glm::vec4> positions;
 		std::vector<glm::vec4> colors;
@@ -183,7 +183,7 @@ public:
 		texCoords.emplace_back(1.0f, 1.0f);
 		texCoords.emplace_back(1.0f, 0.0f);
 
-		const auto texCoordIndices = std::vector<int>{ 0, 1, 2, 0, 2, 3 };
+		const auto texCoordIndices = std::vector<int>{ 0, 2, 1, 0, 3, 2 };
 
 		for (unsigned int i = 0; i < m_VertexCount; i++)
 			m_ConnectivityData.emplace_back(positions[m_Indices[i]], colors[m_Indices[i]], normals[i / 6], texCoords[texCoordIndices[i % 6]]);

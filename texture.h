@@ -35,6 +35,9 @@ public:
 			m_Path == other.m_Path;
 	}
 
+	operator GLuint& () { return m_ID; }
+	operator const GLuint& () const { return m_ID; }
+
 	virtual ~Texture() {
 		glDeleteTextures(1, &m_ID);
 	}
@@ -252,4 +255,19 @@ public:
 		glActiveTexture(GL_TEXTURE0 + m_ID);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, m_ID);
 	}
+};
+
+class TexColorBuffer final : public Texture
+{
+public:
+	explicit TexColorBuffer(const unsigned int width, const unsigned int height)
+	{
+		glBindTexture(GL_TEXTURE_2D, m_ID);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	}
+
+	void Use() const override {}
 };

@@ -12,7 +12,11 @@
 
 #include "utils.h"
 
+#include "Renderbuffer.h"
+#include "Framebuffer.h"
+
 #include "Shader.h"
+#include "Texture.h"
 #include "Material.h"
 #include "Camera.h"
 
@@ -152,6 +156,8 @@ GLFWwindow* Init()
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+	glEnable(GL_CULL_FACE);
+
 	return window;
 }
 
@@ -223,6 +229,12 @@ int main()
 		triangleMeshes.emplace_back(mesh);
 	}
 
+	auto floor = std::make_shared<TriangleMesh>(containerMaterial, pointLights, directionalLight, flashlight, std::make_shared<Camera>(camera));
+	floor->SetAsAARectangle();
+	floor->m_DrawingMode = LIT_OBJECT;
+	floor->SetModel(glm::scale(glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -2.0f, 0.0f)), glm::radians(270.0f), glm::vec3(1.0f, 0.0f, 0.0f)), glm::vec3(10.0f)));
+	triangleMeshes.emplace_back(floor);
+
 	auto grassDiffuse = std::make_shared<Tex2D>(".\\textures\\grass.png");
 	grassDiffuse->SetTagDiffuse();
 	Tex2D::SetWrap(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
@@ -257,6 +269,10 @@ int main()
 	glm::mat4 view, proj;
 	auto identity = glm::mat4(1.0f);
 
+	auto colorBuffer = TexColorBuffer(SCR_WIDTH, SCR_HEIGHT);
+	auto depthAndStencilBuffer = Renderbuffer(SCR_WIDTH, SCR_HEIGHT);
+	auto framebuffer = Framebuffer(colorBuffer, depthAndStencilBuffer);
+
 	// Render Loop
 	std::cout << "Starting render loop" << std::endl;
 	while (!glfwWindowShouldClose(window))
@@ -274,7 +290,8 @@ int main()
 
 		// Render
 		// -------
-		// Set Background
+		framebuffer.Use();
+		glEnable(GL_DEPTH_TEST);
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -297,6 +314,13 @@ int main()
 			if (renderNormals)
 				mesh->DrawNormals();
 		}
+
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glDisable(GL_DEPTH_TEST);
+		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
+
+
 
 		// Check and call events and swap buffers
 		glfwSwapBuffers(window);
