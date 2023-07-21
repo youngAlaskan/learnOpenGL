@@ -24,7 +24,7 @@ public:
 	operator GLuint& () { return m_ID; }
 	operator const GLuint& () const { return m_ID; }
 
-private:
+public:
 	unsigned int m_ID = 0;
 	unsigned int m_Width = 0, m_Height = 0;
 };

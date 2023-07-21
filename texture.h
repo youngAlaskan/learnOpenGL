@@ -38,7 +38,7 @@ public:
 	operator GLuint& () { return m_ID; }
 	operator const GLuint& () const { return m_ID; }
 
-	virtual ~Texture() {
+	~Texture() {
 		glDeleteTextures(1, &m_ID);
 	}
 
@@ -132,7 +132,8 @@ public:
 class TexCube final : public Texture
 {
 public:
-	explicit TexCube(const char* filepath) {
+	explicit TexCube(const char* filepath)
+	{
 		glBindTexture(GL_TEXTURE_CUBE_MAP, m_ID);
 
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -174,7 +175,8 @@ public:
 		glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 	}
 
-	explicit TexCube(const char** filepaths) {
+	explicit TexCube(const char** filepaths)
+	{
 		glBindTexture(GL_TEXTURE_CUBE_MAP, m_ID);
 
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -260,14 +262,21 @@ public:
 class TexColorBuffer final : public Texture
 {
 public:
+	explicit TexColorBuffer() = default;
+
 	explicit TexColorBuffer(const unsigned int width, const unsigned int height)
 	{
 		glBindTexture(GL_TEXTURE_2D, m_ID);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+		glObjectLabel(GL_TEXTURE, m_ID, static_cast<GLsizei>(m_Path.size()), m_Path.c_str());
 
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
 	}
 
-	void Use() const override {}
+	void Use() const override
+	{
+		glBindTexture(GL_TEXTURE_2D, m_ID);
+	}
 };

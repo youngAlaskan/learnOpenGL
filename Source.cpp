@@ -149,6 +149,7 @@ GLFWwindow* Init()
 	}
 
 	glEnable(GL_DEBUG_OUTPUT);
+	glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 	glDebugMessageCallback(MessageCallback, nullptr);
 
 	glEnable(GL_DEPTH_TEST);
@@ -230,18 +231,17 @@ int main()
 	}
 
 	auto floor = std::make_shared<TriangleMesh>(containerMaterial, pointLights, directionalLight, flashlight, std::make_shared<Camera>(camera));
-	floor->SetAsAARectangle();
+	floor->SetAsAASquare();
 	floor->m_DrawingMode = LIT_OBJECT;
 	floor->SetModel(glm::scale(glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -2.0f, 0.0f)), glm::radians(270.0f), glm::vec3(1.0f, 0.0f, 0.0f)), glm::vec3(10.0f)));
 	triangleMeshes.emplace_back(floor);
 
 	auto grassDiffuse = std::make_shared<Tex2D>(".\\textures\\grass.png");
 	grassDiffuse->SetTagDiffuse();
-	Tex2D::SetWrap(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
 	auto grassMaterial = std::make_shared<Material>(std::vector<std::shared_ptr<Texture>>{grassDiffuse}, 0.2f);
 
 	auto square = std::make_shared<TriangleMesh>(grassMaterial, pointLights, directionalLight, flashlight, std::make_shared<Camera>(camera));
-	square->SetAsAARectangle();
+	square->SetAsAASquare();
 	square->m_DrawingMode = LIT_OBJECT;
 	square->SetModel(glm::translate(glm::mat4(1.0f), glm::vec3(0.5f, 0.0f, 1.5f)));
 	triangleMeshes.emplace_back(square);
@@ -251,7 +251,7 @@ int main()
 	auto windowMaterial = std::make_shared<Material>(std::vector<std::shared_ptr<Texture>>{windowDiffuse}, 0.2f);
 
 	auto windowMesh = std::make_shared<TriangleMesh>(windowMaterial, pointLights, directionalLight, flashlight, std::make_shared<Camera>(camera));
-	windowMesh->SetAsAARectangle();
+	windowMesh->SetAsAASquare();
 	windowMesh->m_DrawingMode = LIT_OBJECT;
 	windowMesh->SetModel(glm::translate(glm::mat4(1.0f), glm::vec3(0.4f, 0.0f, 2.0f)));
 	triangleMeshes.emplace_back(windowMesh);
@@ -269,9 +269,11 @@ int main()
 	glm::mat4 view, proj;
 	auto identity = glm::mat4(1.0f);
 
-	auto colorBuffer = TexColorBuffer(SCR_WIDTH, SCR_HEIGHT);
-	auto depthAndStencilBuffer = Renderbuffer(SCR_WIDTH, SCR_HEIGHT);
+	auto colorBuffer = std::make_shared<TexColorBuffer>(SCR_WIDTH, SCR_HEIGHT);
+	auto depthAndStencilBuffer = std::make_shared <Renderbuffer>(GL_DEPTH24_STENCIL8, SCR_WIDTH, SCR_HEIGHT);
 	auto framebuffer = Framebuffer(colorBuffer, depthAndStencilBuffer);
+
+	auto billboard = std::make_shared<ScreenMesh>(colorBuffer);
 
 	// Render Loop
 	std::cout << "Starting render loop" << std::endl;
@@ -320,7 +322,7 @@ int main()
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-
+		billboard->Draw();
 
 		// Check and call events and swap buffers
 		glfwSwapBuffers(window);

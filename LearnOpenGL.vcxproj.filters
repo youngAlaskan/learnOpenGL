@@ -71,5 +71,7 @@
     <None Include="shaders\fragmentShaders\variableColor.frag" />
     <None Include="README.md" />
     <None Include="shaders\fragmentShaders\objectLitByVariousLights.frag" />
+    <None Include="shaders\fragmentShaders\texture2D.frag" />
+    <None Include="shaders\vertexShaders\screen.vert" />
   </ItemGroup>
 </Project>

@@ -164,11 +164,13 @@
   <ItemGroup>
     <None Include="README.md" />
     <None Include="shaders\fragmentShaders\objectLitByVariousLights.frag" />
+    <None Include="shaders\fragmentShaders\texture2D.frag" />
     <None Include="shaders\fragmentShaders\uniformColor.frag" />
     <None Include="shaders\fragmentShaders\variableColor.frag" />
     <None Include="shaders\vertexShaders\position.vert" />
     <None Include="shaders\vertexShaders\positionColorNormalTex.vert" />
     <None Include="shaders\vertexShaders\positionColorTex.vert" />
+    <None Include="shaders\vertexShaders\screen.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

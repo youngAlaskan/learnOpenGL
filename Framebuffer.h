@@ -10,13 +10,13 @@ class Framebuffer
 public:
 	Framebuffer() { glGenFramebuffers(1, &m_ID); }
 
-	Framebuffer(TexColorBuffer colorBuffer, Renderbuffer renderbuffer)
+	Framebuffer(const std::shared_ptr<TexColorBuffer>& colorBuffer, const std::shared_ptr<Renderbuffer>& renderbuffer)
 	{
 		glGenFramebuffers(1, &m_ID);
 		glBindFramebuffer(GL_FRAMEBUFFER, m_ID);
 
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorBuffer, 0);
-		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderbuffer);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorBuffer->m_ID, 0);
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderbuffer->m_ID);
 
 		CheckFrameBufferStatus();
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);

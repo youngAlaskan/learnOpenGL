@@ -1,6 +1,7 @@
 #pragma once
 
 #include <glm/glm.hpp>
+#include <utility>
 #include <vector>
 #include <iostream>
 
@@ -16,7 +17,77 @@ enum DrawingMode {
 	DRAWING_MODE_SIZE
 };
 
-class TriangleMesh
+class Drawable
+{
+public:
+	Drawable()
+	{
+		glGenVertexArrays(1, &m_VAO);
+		glGenBuffers(1, &m_VBO);
+		glGenBuffers(1, &m_EBO);
+	}
+
+	virtual void Draw() const = 0;
+
+	virtual ~Drawable()
+	{
+		glDeleteVertexArrays(1, &m_VAO);
+		glDeleteBuffers(1, &m_VBO);
+		glDeleteBuffers(1, &m_EBO);
+	}
+
+public:
+	std::vector<Vertex> m_ConnectivityData = std::vector<Vertex>();
+	std::vector<unsigned int> m_Indices = std::vector<unsigned int>();
+	unsigned int m_TriangleCount = 0, m_VertexCount = 0;
+	unsigned int m_VAO = 0, m_VBO = 0, m_EBO = 0;
+
+protected:
+	// Push x, y, and z onto m_Indices
+	void IndicesPush3I(const unsigned int x, const unsigned int y, const unsigned int z)
+	{
+		m_Indices.push_back(x);
+		m_Indices.push_back(y);
+		m_Indices.push_back(z);
+	}
+
+	// Sets VAO attribute pointers using connectivity data and indices
+	void SetVAOData() const
+	{
+		if (m_ConnectivityData.empty()) return;
+
+		// Bind VAO first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
+		glBindVertexArray(m_VAO);
+
+		glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
+		glBufferData(GL_ARRAY_BUFFER, m_ConnectivityData.size() * sizeof(Vertex), m_ConnectivityData.data(), GL_STATIC_DRAW);
+
+		if (!m_Indices.empty())
+		{
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_Indices.size() * sizeof(unsigned int), m_Indices.data(), GL_STATIC_DRAW);
+		}
+
+		// TODO: Update size parameters to be generalized
+		glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Position));
+		glEnableVertexAttribArray(0);
+
+		glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Color));
+		glEnableVertexAttribArray(1);
+
+		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Normal));
+		glEnableVertexAttribArray(2);
+
+		glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, TexCoord));
+		glEnableVertexAttribArray(3);
+
+		// Unbinds
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindVertexArray(0);
+	}
+};
+
+class TriangleMesh final : public Drawable
 {
 public:
 	TriangleMesh()
@@ -31,8 +102,10 @@ public:
 	}
 
 	TriangleMesh(std::vector<Vertex> connectivityData, std::vector<unsigned int> indices, std::shared_ptr<Material> material)
-		: m_Material(std::move(material)), m_ConnectivityData(std::move(connectivityData)), m_Indices(std::move(indices))
+		: m_Material(std::move(material))
 	{
+		m_ConnectivityData = std::move(connectivityData);
+		m_Indices = std::move(indices);
 		SetUp();
 		SetVAOData();
 		SetNVAOData();
@@ -43,10 +116,6 @@ public:
 	{
 		m_Shaders.emplace_back("positionColorNormalTex.vert", "variableColor.frag");
 		m_Shaders.emplace_back("positionColorNormalTex.vert", "objectLitByVariousLights.frag");
-
-		glGenVertexArrays(1, &m_VAO);
-		glGenBuffers(1, &m_VBO);
-		glGenBuffers(1, &m_EBO);
 
 		glGenVertexArrays(1, &m_NVAO);
 		glGenBuffers(1, &m_NVBO);
@@ -74,8 +143,7 @@ public:
 		m_Proj = proj;
 	}
 
-	// TODO: Fix this
-	void SetAsAARectangle()
+	void SetAsAASquare()
 	{
 		m_VertexCount = 6;
 		m_TriangleCount = 2;
@@ -200,7 +268,7 @@ public:
 	void SetCamera(const std::shared_ptr<Camera>& camera) { m_Camera = camera; }
 	void SetVertexCount(const unsigned int count) { m_VertexCount = count; }
 
-	void Draw() const
+	void Draw() const override
 	{
 		const Shader shader = m_Shaders[m_DrawingMode];
 		shader.Use();
@@ -254,11 +322,8 @@ public:
 		glBindVertexArray(0);
 	}
 
-	~TriangleMesh()
+	~TriangleMesh() override
 	{
-		glDeleteVertexArrays(1, &m_VAO);
-		glDeleteBuffers(1, &m_VBO);
-		glDeleteBuffers(1, &m_EBO);
 		glDeleteVertexArrays(1, &m_NVAO);
 		glDeleteBuffers(1, &m_NVBO);
 	}
@@ -272,49 +337,14 @@ public:
 
 	int m_DrawingMode = ISOLATED;
 
+	std::vector<Shader> m_Shaders = std::vector<Shader>();
+	Shader m_ShaderProgramNormals = Shader("position.vert", "uniformColor.frag");
+	unsigned int m_NVAO = 0, m_NVBO = 0;
+	glm::mat4 m_Model = glm::mat4(1.0f);
+	glm::mat4 m_View = glm::mat4(1.0f);
+	glm::mat4 m_Proj = glm::mat4(1.0f);
+
 private:
-	void IndicesPush3I(const unsigned int x, const unsigned int y, const unsigned int z)
-	{
-		m_Indices.push_back(x);
-		m_Indices.push_back(y);
-		m_Indices.push_back(z);
-	}
-
-	// Sets VAO attribute pointers using connectivity data and indices
-	void SetVAOData() const
-	{
-		if (m_ConnectivityData.empty()) return;
-
-		// Bind VAO first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
-		glBindVertexArray(m_VAO);
-
-		glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
-		glBufferData(GL_ARRAY_BUFFER, m_ConnectivityData.size() * sizeof(Vertex), m_ConnectivityData.data(), GL_STATIC_DRAW);
-
-		if (!m_Indices.empty())
-		{
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
-			glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_Indices.size() * sizeof(unsigned int), m_Indices.data(), GL_STATIC_DRAW);
-		}
-
-		// TODO: Update size parameters to be generalized
-		glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Position));
-		glEnableVertexAttribArray(0);
-
-		glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Color));
-		glEnableVertexAttribArray(1);
-
-		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Normal));
-		glEnableVertexAttribArray(2);
-
-		glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, TexCoord));
-		glEnableVertexAttribArray(3);
-
-		// Unbinds
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		glBindVertexArray(0);
-	}
-
 	// Sets NVAO using connectivity data
 	void SetNVAOData() const
 	{
@@ -344,16 +374,74 @@ private:
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		glBindVertexArray(0);
 	}
+};
+
+class ScreenMesh final : public Drawable
+{
+public:
+	explicit ScreenMesh(std::shared_ptr<TexColorBuffer> texture = std::make_shared<TexColorBuffer>())
+		: m_Texture(std::move(texture))
+	{
+		m_VertexCount = 6;
+		m_TriangleCount = 2;
+		m_Indices.reserve(sizeof(unsigned int) * m_TriangleCount * 3);
+		m_ConnectivityData.reserve(sizeof(Vertex) * m_VertexCount);
+
+		auto posBL = glm::vec4(-1.0f, -1.0f, 0.0f, 1.0f);
+		auto posTL = glm::vec4(-1.0f, 1.0f, 0.0f, 1.0f);
+		auto posTR = glm::vec4(1.0f, 1.0f, 0.0f, 1.0f);
+		auto posBR = glm::vec4(1.0f, -1.0f, 0.0f, 1.0f);
+
+		auto colorBL = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f); // Red
+		auto colorTL = glm::vec4(1.0f, 1.0f, 0.0f, 1.0f); // Yellow
+		auto colorTR = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f); // Blue
+		auto colorBR = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f); // Green
+
+		auto normal = glm::vec3(0.0f, 0.0f, 1.0f);
+
+		auto texCoordBL = glm::vec2(0.0f, 0.0f);
+		auto texCoordTL = glm::vec2(0.0f, 1.0f);
+		auto texCoordTR = glm::vec2(1.0f, 1.0f);
+		auto texCoordBR = glm::vec2(1.0f, 0.0f);
+
+		m_ConnectivityData.emplace_back(posBL, colorBL, normal, texCoordBL); // BL
+		m_ConnectivityData.emplace_back(posTR, colorTR, normal, texCoordTR); // TR
+		m_ConnectivityData.emplace_back(posTL, colorTL, normal, texCoordTL); // TL
+		m_ConnectivityData.emplace_back(posBL, colorBL, normal, texCoordBL); // BL
+		m_ConnectivityData.emplace_back(posBR, colorBR, normal, texCoordBR); // BR
+		m_ConnectivityData.emplace_back(posTR, colorTR, normal, texCoordTR); // TR
+
+		// Indexing
+		// --------
+		IndicesPush3I(0, 1, 2);
+		IndicesPush3I(3, 4, 5);
+
+		SetVAOData();
+
+		// Set Shader
+		m_ScreenShader.Use();
+		m_ScreenShader.SetInt("tex", 0);
+	}
+
+	void SetTexture(std::shared_ptr<TexColorBuffer> texture) { m_Texture = std::move(texture); }
+	std::shared_ptr<TexColorBuffer> GetTexture() { return m_Texture; }
+
+	void UseShader() const
+	{
+		m_ScreenShader.Use();
+		m_Texture->Use();
+	}
+
+	void Draw() const override
+	{
+		UseShader();
+
+		glBindVertexArray(m_VAO);
+		glDrawElements(GL_TRIANGLES, static_cast<int>(m_VertexCount), GL_UNSIGNED_INT, nullptr);
+		glBindVertexArray(0);
+	}
 
 private:
-	std::vector<Vertex> m_ConnectivityData = std::vector<Vertex>();
-	std::vector<unsigned int> m_Indices = std::vector<unsigned int>();
-	std::vector<Shader> m_Shaders = std::vector<Shader>();
-	unsigned int m_TriangleCount = 0, m_VertexCount = 0;
-	Shader m_ShaderProgramNormals = Shader("position.vert", "uniformColor.frag");
-	unsigned int m_VAO = 0, m_VBO = 0, m_EBO = 0;
-	unsigned int m_NVAO = 0, m_NVBO = 0;
-	glm::mat4 m_Model = glm::mat4(1.0f);
-	glm::mat4 m_View = glm::mat4(1.0f);
-	glm::mat4 m_Proj = glm::mat4(1.0f);
+	std::shared_ptr<TexColorBuffer> m_Texture;
+	Shader m_ScreenShader = Shader("screen.vert", "texture2D.frag");
 };
