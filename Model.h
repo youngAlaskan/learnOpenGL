@@ -10,8 +10,6 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
-#include "utils.h"
-
 #include "TM.h"
 #include "Texture.h"
 #include "Vertex.h"
@@ -34,25 +32,24 @@ public:
     }
 
     // draws the model, and thus all its meshes
-    void Draw() const
+    void Draw(const Shader& shader) const
     {
         for (auto& mesh : m_Meshes)
-            mesh->Draw();
+            mesh->Draw(shader);
     }
 
     // draws the model normals, and thus all of it's meshes normals
-    void DrawNormals(const glm::vec4 color = glm::vec4(1.0f, 0.0f, 1.0f, 1.0f)) const
+    void DrawNormals(const Shader& shader, const glm::vec4 color = glm::vec4(1.0f, 0.0f, 1.0f, 1.0f)) const
     {
         for (auto& mesh : m_Meshes)
-            mesh->DrawNormals(color);
+            mesh->DrawNormals(shader, color);
     }
 
 public:
-    // model data 
-    std::vector<std::shared_ptr<Texture>> m_TexturesLoaded;	// stores all the textures loaded so far, optimization to make sure textures aren't loaded more than once.
-    std::vector<std::shared_ptr<TriangleMesh>> m_Meshes;
-    std::string m_Directory;
-    bool m_GammaCorrection;
+    std::unordered_map<std::string, std::shared_ptr<Tex2D>> m_TexturesLoaded = std::unordered_map<std::string, std::shared_ptr<Tex2D>>(); // Stores all loaded textures with their file names as keys
+    std::vector<std::shared_ptr<TriangleMesh>> m_Meshes = std::vector<std::shared_ptr<TriangleMesh>>(); // Vector of meshes within the model
+    std::string m_Directory = std::string(); // The location of the directory containing all model assets
+    bool m_GammaCorrection = false; // Flag for whether gamma should be corrected
 
 private:
     // loads a model with supported ASSIMP extensions from file and stores the resulting meshes in the meshes vector.
@@ -60,11 +57,11 @@ private:
     {
         // read file via ASSIMP
         auto importer = Assimp::Importer();
-        const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
+        const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs); // | aiProcess_CalcTangentSpace);
         // check for errors
-        if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) // if is Not Zero
+        if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
         {
-            std::cout << "ERROR::ASSIMP:: " << importer.GetErrorString() << std::endl;
+            std::cout << "ERROR::ASSIMP: " << importer.GetErrorString() << std::endl;
             return;
         }
         // retrieve the directory path of the filepath
@@ -84,7 +81,7 @@ private:
             // the scene contains all the data, node is just to keep stuff organized (like relations between nodes).
             aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
             auto convertedMesh = ProcessMesh(mesh, scene);
-            convertedMesh->m_DrawingMode = LIT_OBJECT;
+            convertedMesh->m_DrawingMode = DrawingMode::LIT_OBJECT;
             convertedMesh->SetVertexCount(mesh->mNumVertices);
             m_Meshes.emplace_back(convertedMesh);
         }
@@ -98,14 +95,15 @@ private:
         // data to fill
         std::vector<Vertex> vertices;
         std::vector<unsigned int> indices;
-        std::vector<std::shared_ptr<Texture>> textures;
+        std::vector<std::shared_ptr<Tex2D>> textures;
 
         // walk through each of the mesh's vertices
         for (unsigned int i = 0; i < mesh->mNumVertices; i++)
         {
             Vertex vertex{};
+
             vertex.Position = glm::vec4(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z, 1.0f);
-            // normals
+
             if (mesh->HasNormals())
                 vertex.Normal = glm::vec3(mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z);
             
@@ -113,11 +111,10 @@ private:
                 // a vertex can contain up to 8 different texture coordinates. We thus make the assumption that we won't 
                 // use models where a vertex can have multiple texture coordinates so we always take the first set (0).
                 vertex.TexCoord = glm::vec2(mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y);
-                // Note: tangent and bi-tangent thrown away for the moment
 
             vertices.emplace_back(vertex);
         }
-        // now wak through each of the mesh's faces (a face is a mesh its triangle) and retrieve the corresponding vertex indices.
+        // now walk through each of the mesh's faces and retrieve the corresponding vertex indices.
         for (unsigned int i = 0; i < mesh->mNumFaces; i++)
         {
             aiFace face = mesh->mFaces[i];
@@ -144,8 +141,7 @@ private:
         auto emissiveMaps = LoadMaterialTextures(material, aiTextureType_EMISSIVE, "emissive");
         textures.insert(textures.end(), emissiveMaps.begin(), emissiveMaps.end());
 
-        auto meshMaterial = std::make_shared<Material>();
-        meshMaterial->SetTextures(textures);
+        auto meshMaterial = std::make_shared<Material>(textures, 0.5f);
 
         // return a mesh object created from the extracted mesh data
         return std::make_shared<TriangleMesh>(vertices, indices, meshMaterial);
@@ -153,34 +149,29 @@ private:
 
     // checks all material textures of a given type and loads the textures if they're not loaded yet.
     // the required info is returned as a texture struct.
-    std::vector<std::shared_ptr<Texture>> LoadMaterialTextures(const aiMaterial* mat, const aiTextureType type, const std::string& typeName)
+    std::vector<std::shared_ptr<Tex2D>> LoadMaterialTextures(const aiMaterial* mat, const aiTextureType type, const std::string& typeName)
     {
-        std::vector<std::shared_ptr<Texture>> textures;
+        auto materialTextures = std::vector<std::shared_ptr<Tex2D>>();
+
         for (unsigned int i = 0; i < mat->GetTextureCount(type); i++)
         {
             aiString str;
             mat->GetTexture(type, i, &str);
-            // check if texture was loaded before and if so, continue to next iteration: skip loading a new texture
-            bool skip = false;
-            for (auto& texture : m_TexturesLoaded)
+            auto filename = std::string(str.C_Str());
+
+            // Check if texture has been loaded
+            if (auto iterator = m_TexturesLoaded.find(filename); iterator != m_TexturesLoaded.end())
             {
-                if (std::strcmp(texture->m_Path.c_str(), str.C_Str()) == 0)
-                {
-                    textures.emplace_back(texture);
-                    skip = true; // a texture with the same filepath has already been loaded, continue to next one. (optimization)
-                    break;
-                }
+                materialTextures.emplace_back(iterator->second);
             }
-            if (!skip)
-            {   // if texture hasn't been loaded already, load it
-                auto texture = std::make_shared<Tex2D>((m_Directory + std::string("\\") + std::string(str.C_Str())).c_str());
-                texture->m_Tag = typeName;
-                texture->m_Path = str.C_Str();
-                textures.emplace_back(texture);
-                m_TexturesLoaded.emplace_back(texture);  // store it as texture loaded for entire model, to ensure we won't unnecessary load duplicate textures.
+            else
+            {
+                auto texture = std::make_shared<Tex2D>(m_Directory + std::string("\\") + filename, typeName);
+                materialTextures.emplace_back(texture);
+                m_TexturesLoaded.insert(std::make_pair(filename, texture));
             }
         }
 
-        return textures;
+        return materialTextures;
     }
 };

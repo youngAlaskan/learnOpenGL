@@ -11,10 +11,13 @@
 #include "Camera.h"
 #include "Material.h"
 
-enum DrawingMode {
+#include "Scene.h"
+
+enum class DrawingMode {
 	ISOLATED,
 	LIT_OBJECT,
-	DRAWING_MODE_SIZE
+	NORMALS,
+	SCREEN
 };
 
 class Drawable
@@ -27,7 +30,7 @@ public:
 		glGenBuffers(1, &m_EBO);
 	}
 
-	virtual void Draw() const = 0;
+	virtual void Draw(const Shader& shader) const = 0;
 
 	virtual ~Drawable()
 	{
@@ -41,6 +44,8 @@ public:
 	std::vector<unsigned int> m_Indices = std::vector<unsigned int>();
 	unsigned int m_TriangleCount = 0, m_VertexCount = 0;
 	unsigned int m_VAO = 0, m_VBO = 0, m_EBO = 0;
+
+	DrawingMode m_DrawingMode = DrawingMode::ISOLATED;
 
 protected:
 	// Push x, y, and z onto m_Indices
@@ -95,17 +100,19 @@ public:
 		SetUp();
 	}
 
-	TriangleMesh(std::shared_ptr<Material> material, std::vector<std::shared_ptr<PointLight>> lights, std::shared_ptr<DirectionalLight> directionalLight, std::shared_ptr<SpotLight> spotLight, std::shared_ptr<Camera> camera)
-		: m_Material(std::move(material)), m_PointLights(std::move(lights)), m_DirectionalLight(std::move(directionalLight)), m_SpotLight(std::move(spotLight)), m_Camera(std::move(camera))
+	TriangleMesh(std::shared_ptr<Material> material, Scene scene, const DrawingMode drawingMode = DrawingMode::ISOLATED)
+		: m_Material(std::move(material)), m_PointLights(std::move(scene.PointLights)), m_DirectionalLight(std::move(scene.DirectionalLight)), m_SpotLight(std::move(scene.SpotLight)), m_Camera(std::move(scene.Camera))
 	{
+		m_DrawingMode = drawingMode;
 		SetUp();
 	}
 
-	TriangleMesh(std::vector<Vertex> connectivityData, std::vector<unsigned int> indices, std::shared_ptr<Material> material)
+	TriangleMesh(std::vector<Vertex> connectivityData, std::vector<unsigned int> indices, std::shared_ptr<Material> material, DrawingMode drawingMode = DrawingMode::ISOLATED)
 		: m_Material(std::move(material))
 	{
 		m_ConnectivityData = std::move(connectivityData);
 		m_Indices = std::move(indices);
+		m_DrawingMode = drawingMode;
 		SetUp();
 		SetVAOData();
 		SetNVAOData();
@@ -114,9 +121,6 @@ public:
 	// Init shaders and generate VertexArrays and Buffers
 	void SetUp()
 	{
-		m_Shaders.emplace_back("positionColorNormalTex.vert", "variableColor.frag");
-		m_Shaders.emplace_back("positionColorNormalTex.vert", "objectLitByVariousLights.frag");
-
 		glGenVertexArrays(1, &m_NVAO);
 		glGenBuffers(1, &m_NVBO);
 	}
@@ -268,20 +272,13 @@ public:
 	void SetCamera(const std::shared_ptr<Camera>& camera) { m_Camera = camera; }
 	void SetVertexCount(const unsigned int count) { m_VertexCount = count; }
 
-	void Draw() const override
+	void Draw(const Shader& shader) const override
 	{
-		const Shader shader = m_Shaders[m_DrawingMode];
 		shader.Use();
-		shader.SetMat4("model", m_Model);
-		shader.SetMat4("view", m_View);
-		shader.SetMat4("proj", m_Proj);
-		shader.SetMat4("modelInv", glm::inverse(m_Model));
 
 		switch (m_DrawingMode)
 		{
-		case ISOLATED:
-			break;
-		case LIT_OBJECT:
+		case DrawingMode::LIT_OBJECT:
 			if (m_Material)
 				m_Material->SendToShader(shader);
 
@@ -298,24 +295,32 @@ public:
 
 			if (m_Camera)
 				m_Camera->SendToShader(shader);
+
+		case DrawingMode::ISOLATED:
+			shader.SetMat4("model", m_Model);
+			shader.SetMat4("view", m_View);
+			shader.SetMat4("proj", m_Proj);
+			shader.SetMat4("modelInv", glm::inverse(m_Model));
+
+			glBindVertexArray(m_VAO);
+			glDrawElements(GL_TRIANGLES, static_cast<int>(m_VertexCount), GL_UNSIGNED_INT, nullptr);
+			glBindVertexArray(0);
+
 			break;
 		default:
+			std::cerr << "ERROR::TRIANGLE_MESH::DRAW: Undefined draw type for this object!" << std::endl;
 			break;
 		}
-
-		glBindVertexArray(m_VAO);
-		glDrawElements(GL_TRIANGLES, static_cast<int>(m_VertexCount), GL_UNSIGNED_INT, nullptr);
-		glBindVertexArray(0);
 	}
 
-	void DrawNormals(const glm::vec4& color = glm::vec4(1.0, 0.0, 1.0, 1.0f)) const
+	void DrawNormals(const Shader& shader = Shader("position.vert", "uniformColor.frag"), const glm::vec4& color = glm::vec4(1.0, 0.0, 1.0, 1.0f)) const
 	{
-		m_ShaderProgramNormals.Use();
-		m_ShaderProgramNormals.SetMat4("model", m_Model);
-		m_ShaderProgramNormals.SetMat4("view", m_View);
-		m_ShaderProgramNormals.SetMat4("proj", m_Proj);
+		shader.Use();
+		shader.SetMat4("model", m_Model);
+		shader.SetMat4("view", m_View);
+		shader.SetMat4("proj", m_Proj);
 
-		m_ShaderProgramNormals.SetVec4("color", color);
+		shader.SetVec4("color", color);
 
 		glBindVertexArray(m_NVAO);
 		glDrawArrays(GL_LINES, 0, m_VertexCount * 2);
@@ -335,10 +340,6 @@ public:
 	std::shared_ptr<SpotLight> m_SpotLight;
 	std::shared_ptr<Camera> m_Camera;
 
-	int m_DrawingMode = ISOLATED;
-
-	std::vector<Shader> m_Shaders = std::vector<Shader>();
-	Shader m_ShaderProgramNormals = Shader("position.vert", "uniformColor.frag");
 	unsigned int m_NVAO = 0, m_NVBO = 0;
 	glm::mat4 m_Model = glm::mat4(1.0f);
 	glm::mat4 m_View = glm::mat4(1.0f);
@@ -382,6 +383,7 @@ public:
 	explicit ScreenMesh(std::shared_ptr<TexColorBuffer> texture = std::make_shared<TexColorBuffer>())
 		: m_Texture(std::move(texture))
 	{
+		m_DrawingMode = DrawingMode::SCREEN;
 		m_VertexCount = 6;
 		m_TriangleCount = 2;
 		m_Indices.reserve(sizeof(unsigned int) * m_TriangleCount * 3);
@@ -417,24 +419,15 @@ public:
 		IndicesPush3I(3, 4, 5);
 
 		SetVAOData();
-
-		// Set Shader
-		m_ScreenShader.Use();
-		m_ScreenShader.SetInt("tex", 0);
 	}
 
 	void SetTexture(std::shared_ptr<TexColorBuffer> texture) { m_Texture = std::move(texture); }
 	std::shared_ptr<TexColorBuffer> GetTexture() { return m_Texture; }
 
-	void UseShader() const
+	void Draw(const Shader& shader) const override
 	{
-		m_ScreenShader.Use();
+		shader.Use();
 		m_Texture->Use();
-	}
-
-	void Draw() const override
-	{
-		UseShader();
 
 		glBindVertexArray(m_VAO);
 		glDrawElements(GL_TRIANGLES, static_cast<int>(m_VertexCount), GL_UNSIGNED_INT, nullptr);
@@ -443,5 +436,4 @@ public:
 
 private:
 	std::shared_ptr<TexColorBuffer> m_Texture;
-	Shader m_ScreenShader = Shader("screen.vert", "texture2D.frag");
 };

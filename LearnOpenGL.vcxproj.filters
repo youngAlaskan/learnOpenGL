@@ -62,6 +62,9 @@
     <ClInclude Include="Renderbuffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Scene.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\vertexShaders\positionColorTex.vert" />

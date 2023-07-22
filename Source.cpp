@@ -26,6 +26,8 @@
 
 #include "Model.h"
 
+#include "Scene.h"
+
 constexpr unsigned int SCR_WIDTH = 800;
 constexpr unsigned int SCR_HEIGHT = 600;
 
@@ -46,12 +48,6 @@ float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
 
 std::vector<int> frameRateHistory(10, 0);
-
-enum Name {
-	EMERALD, JADE, OBSIDIAN, PEARL, RUBY,
-	TURQUOISE, BRASS, BRONZE, CHROME, COPPER,
-	GOLD, SILVER
-};
 
 void FramebufferSizeCallback(GLFWwindow* window, int width, int height)
 {
@@ -183,11 +179,21 @@ int main()
 	if (!window)
 		return -1;
 
+	Scene scene;
+	scene.Camera = std::make_shared<Camera>(camera);
+
+	auto shaders = std::unordered_map<DrawingMode, Shader>
+	{
+		{DrawingMode::ISOLATED,   Shader("positionColorNormalTex.vert", "variableColor.frag") },
+		{DrawingMode::LIT_OBJECT, Shader("positionColorNormalTex.vert", "objectLitByVariousLights.frag") },
+		{DrawingMode::NORMALS,    Shader("position.vert",               "uniformColor.frag") },
+		{DrawingMode::SCREEN,     Shader("screen.vert",                 "texture2D.frag") }
+	};
+
 	std::vector<std::shared_ptr<TriangleMesh>> triangleMeshes;
 
-	std::vector<std::shared_ptr<PointLight>> pointLights;
 	auto pointLight = std::make_shared<PointLight>(glm::vec4(2.0f, 1.0f, 3.0f, 1.0f), 100.0f, 0.2f, 0.5f, 0.99f);
-	pointLights.emplace_back(pointLight);
+	scene.PointLights.emplace_back(pointLight);
 
 	std::cout << PointLight::GetCount() << std::endl;
 
@@ -196,22 +202,18 @@ int main()
 	pointLightMesh->SetModel(glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(pointLight->m_Pos)), glm::vec3(0.2f)));
 	triangleMeshes.emplace_back(pointLightMesh);
 
-	auto directionalLight = std::make_shared<DirectionalLight>(glm::normalize(glm::vec3(1.0, -1.0, 1.0)), 0.2f, 0.5f, 0.99f);
+	scene.DirectionalLight = std::make_shared<DirectionalLight>(glm::normalize(glm::vec3(1.0, -1.0, 1.0)), 0.2f, 0.5f, 0.99f);
 
-	auto flashlight = std::make_shared<SpotLight>(12.5f, 0.2f, 0.5f, 0.99f);
+	scene.SpotLight = std::make_shared<SpotLight>(12.5f, 0.2f, 0.5f, 0.99f);
 
-	auto containerDiffuse = std::make_shared<Tex2D>(".\\textures\\container2.png");
-	containerDiffuse->SetTagDiffuse();
-	auto containerSpecular = std::make_shared<Tex2D>(".\\textures\\container2_specular.png");
-	containerSpecular->SetTagSpecular();
-	auto blackEmissive = std::make_shared<Tex2D>(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
-	blackEmissive->SetTagEmissive();
-	auto containerTextures = std::vector<std::shared_ptr<Texture>>{ containerDiffuse, containerSpecular, blackEmissive };
+	auto containerDiffuse = std::make_shared<Tex2D>(".\\textures\\container2.png", "diffuse");
+	auto containerSpecular = std::make_shared<Tex2D>(".\\textures\\container2_specular.png", "specular");
+	auto blackEmissive = std::make_shared<Tex2D>(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f), "emissive");
+	auto containerTextures = std::vector<std::shared_ptr<Tex2D>>{ containerDiffuse, containerSpecular, blackEmissive };
 	auto containerMaterial = std::make_shared<Material>(containerTextures, 0.5f);
 
-	auto containerCube = std::make_shared<TriangleMesh>(containerMaterial, pointLights, directionalLight, flashlight, std::make_shared<Camera>(camera));
+	auto containerCube = std::make_shared<TriangleMesh>(containerMaterial, scene, DrawingMode::LIT_OBJECT);
 	containerCube->SetAsAACube();
-	containerCube->m_DrawingMode = LIT_OBJECT;
 	containerCube->SetModel(glm::translate(glm::mat4(1.0f), glm::vec3(-2.0f, 0.0f, 2.0f)));
 	triangleMeshes.emplace_back(containerCube);
 
@@ -222,37 +224,32 @@ int main()
 
 	for (auto& mesh : backpack.m_Meshes)
 	{
-		mesh->m_DirectionalLight = directionalLight;
-		mesh->m_PointLights = pointLights;
-		mesh->m_SpotLight = flashlight;
+		mesh->m_DirectionalLight = scene.DirectionalLight;
+		mesh->m_PointLights = scene.PointLights;
+		mesh->m_SpotLight = scene.SpotLight;
 		mesh->m_Camera = std::make_shared<Camera>(camera);
 		mesh->SetModel(glm::mat4(1.0f));
 		triangleMeshes.emplace_back(mesh);
 	}
 
-	auto floor = std::make_shared<TriangleMesh>(containerMaterial, pointLights, directionalLight, flashlight, std::make_shared<Camera>(camera));
+	auto floor = std::make_shared<TriangleMesh>(containerMaterial, scene, DrawingMode::LIT_OBJECT);
 	floor->SetAsAASquare();
-	floor->m_DrawingMode = LIT_OBJECT;
 	floor->SetModel(glm::scale(glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -2.0f, 0.0f)), glm::radians(270.0f), glm::vec3(1.0f, 0.0f, 0.0f)), glm::vec3(10.0f)));
 	triangleMeshes.emplace_back(floor);
 
-	auto grassDiffuse = std::make_shared<Tex2D>(".\\textures\\grass.png");
-	grassDiffuse->SetTagDiffuse();
-	auto grassMaterial = std::make_shared<Material>(std::vector<std::shared_ptr<Texture>>{grassDiffuse}, 0.2f);
+	auto grassDiffuse = std::make_shared<Tex2D>(".\\textures\\grass.png", "diffuse");
+	auto grassMaterial = std::make_shared<Material>(grassDiffuse, 0.2f);
 
-	auto square = std::make_shared<TriangleMesh>(grassMaterial, pointLights, directionalLight, flashlight, std::make_shared<Camera>(camera));
+	auto square = std::make_shared<TriangleMesh>(grassMaterial, scene, DrawingMode::LIT_OBJECT);
 	square->SetAsAASquare();
-	square->m_DrawingMode = LIT_OBJECT;
 	square->SetModel(glm::translate(glm::mat4(1.0f), glm::vec3(0.5f, 0.0f, 1.5f)));
 	triangleMeshes.emplace_back(square);
 
-	auto windowDiffuse = std::make_shared<Tex2D>(".\\textures\\blending_transparent_window.png");
-	windowDiffuse->SetTagDiffuse();
-	auto windowMaterial = std::make_shared<Material>(std::vector<std::shared_ptr<Texture>>{windowDiffuse}, 0.2f);
+	auto windowDiffuse = std::make_shared<Tex2D>(".\\textures\\blending_transparent_window.png", "diffuse");
+	auto windowMaterial = std::make_shared<Material>(windowDiffuse, 0.2f);
 
-	auto windowMesh = std::make_shared<TriangleMesh>(windowMaterial, pointLights, directionalLight, flashlight, std::make_shared<Camera>(camera));
+	auto windowMesh = std::make_shared<TriangleMesh>(windowMaterial, scene, DrawingMode::LIT_OBJECT);
 	windowMesh->SetAsAASquare();
-	windowMesh->m_DrawingMode = LIT_OBJECT;
 	windowMesh->SetModel(glm::translate(glm::mat4(1.0f), glm::vec3(0.4f, 0.0f, 2.0f)));
 	triangleMeshes.emplace_back(windowMesh);
 
@@ -287,8 +284,8 @@ int main()
 		proj = glm::perspective(glm::radians(camera.m_Zoom),
 			static_cast<float>(SCR_WIDTH) / static_cast<float>(SCR_HEIGHT), 0.1f, 100.0f);
 
-		flashlight->m_Pos = glm::vec4(camera.m_Position, 1.0f);
-		flashlight->m_Direction = camera.m_Front;
+		scene.SpotLight->m_Pos = glm::vec4(camera.m_Position, 1.0f);
+		scene.SpotLight->m_Direction = camera.m_Front;
 
 		// Render
 		// -------
@@ -312,9 +309,9 @@ int main()
 		{
 			mesh->SetView(view);
 			mesh->SetProj(proj);
-			mesh->Draw();
+			mesh->Draw(shaders[mesh->m_DrawingMode]);
 			if (renderNormals)
-				mesh->DrawNormals();
+				mesh->DrawNormals(shaders[DrawingMode::NORMALS]);
 		}
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -322,7 +319,7 @@ int main()
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		billboard->Draw();
+		billboard->Draw(shaders[billboard->m_DrawingMode]);
 
 		// Check and call events and swap buffers
 		glfwSwapBuffers(window);

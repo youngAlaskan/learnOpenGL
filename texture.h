@@ -21,37 +21,27 @@ public:
 		m_ID = ID;
 	}
 
-	void SetTagDiffuse() { m_Tag = std::string("diffuse"); }
-	void SetTagSpecular() { m_Tag = std::string("specular"); }
-	void SetTagEmissive() { m_Tag = std::string("emissive"); }
-	void SetTagCustom(const std::string& name) { m_Tag = name; }
-
 	virtual void Use() const = 0;
 
 	bool operator==(const Texture& other) const
 	{
-		return m_ID == other.m_ID &&
-			m_Tag == other.m_Tag &&
-			m_Path == other.m_Path;
+		return m_ID == other.m_ID;
 	}
 
 	operator GLuint& () { return m_ID; }
 	operator const GLuint& () const { return m_ID; }
 
-	~Texture() {
-		glDeleteTextures(1, &m_ID);
-	}
+	virtual ~Texture() { glDeleteTextures(1, &m_ID); }
 
 public:
 	GLuint m_ID = 0;
-	std::string m_Tag = std::string();
-	std::string m_Path = std::string();
 };
 
 class Tex2D final : public Texture
 {
 public:
-	explicit Tex2D(const glm::vec4 color)
+	explicit Tex2D(const glm::vec4 color, std::string tag = std::string())
+		: m_Tag(std::move(tag))
 	{
 		// load and create a texture 
 		// -------------------------
@@ -77,7 +67,8 @@ public:
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
-	explicit Tex2D(const char* filepath)
+	explicit Tex2D(const std::string& filepath, std::string tag = std::string())
+		: m_Tag(std::move(tag)), m_Path(filepath)
 	{
 		// load and create a texture 
 		// -------------------------
@@ -92,18 +83,13 @@ public:
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 		// load image, create texture and generate mipmaps
-		int width, height, nrChannels;
+		int width, height, channelsN;
 
 		stbi_set_flip_vertically_on_load(true);
-		unsigned char* data = stbi_load(filepath, &width, &height, &nrChannels, 0);
+		unsigned char* data = stbi_load(filepath.c_str(), &width, &height, &channelsN, 0);
 		if (data)
 		{
-			GLint format = GL_RGB;
-			if (nrChannels == 1)
-				format = GL_RED;
-			else if (nrChannels == 4)
-				format = GL_RGBA;
-
+			const GLint format = channelsN == 1 ? GL_RED : (channelsN == 4 ? GL_RGBA : GL_RGB);
 
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, format, GL_UNSIGNED_BYTE, data);
 			glGenerateMipmap(GL_TEXTURE_2D);
@@ -122,18 +108,26 @@ public:
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, tWrap);
 	}
 
+	void SetTag(std::string tag) { m_Tag = std::move(tag); }
+
 	void Use() const override
 	{
 		glActiveTexture(GL_TEXTURE0 + m_ID);
 		glBindTexture(GL_TEXTURE_2D, m_ID);
 	}
+
+public:
+	std::string m_Tag = std::string();
+	std::string m_Path = std::string();
 };
 
 class TexCube final : public Texture
 {
 public:
-	explicit TexCube(const char* filepath)
+	explicit TexCube(const std::string& filepath)
 	{
+		m_Paths.emplace_back(filepath);
+
 		glBindTexture(GL_TEXTURE_CUBE_MAP, m_ID);
 
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -143,14 +137,10 @@ public:
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 		int width, height, channelsN;
-		unsigned char* data = stbi_load(filepath, &width, &height, &channelsN, 0);
+		unsigned char* data = stbi_load(filepath.c_str(), &width, &height, &channelsN, 0);
 		if (data)
 		{
-			GLint format = GL_RGB;
-			if (channelsN == 1)
-				format = GL_RED;
-			else if (channelsN == 4)
-				format = GL_RGBA;
+			const GLint format = channelsN == 1 ? GL_RED : (channelsN == 4 ? GL_RGBA : GL_RGB);
 
 			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_RGBA, width, height, 0,
 				format, GL_UNSIGNED_BYTE, data);
@@ -175,7 +165,8 @@ public:
 		glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 	}
 
-	explicit TexCube(const char** filepaths)
+	explicit TexCube(const std::vector<std::string>& filepaths)
+		: m_Paths(filepaths)
 	{
 		glBindTexture(GL_TEXTURE_CUBE_MAP, m_ID);
 
@@ -188,13 +179,10 @@ public:
 		int width, height, channelsN;
 		for (unsigned int i = 0; i < 6; i++)
 		{
-			unsigned char* data = stbi_load(filepaths[i], &width, &height, &channelsN, 0);
+			unsigned char* data = stbi_load(filepaths[i].c_str(), &width, &height, &channelsN, 0);
 			if (data) {
-				GLint format = GL_RGB;
-				if (channelsN == 1)
-					format = GL_RED;
-				else if (channelsN == 4)
-					format = GL_RGBA;
+				const GLint format = channelsN == 1 ? GL_RED : (channelsN == 4 ? GL_RGBA : GL_RGB);
+
 				glTexImage2D(
 					GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
 					0, GL_RGBA, width, height, 0, format, GL_UNSIGNED_BYTE, data
@@ -257,6 +245,9 @@ public:
 		glActiveTexture(GL_TEXTURE0 + m_ID);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, m_ID);
 	}
+
+public:
+	std::vector<std::string> m_Paths = std::vector<std::string>();
 };
 
 class TexColorBuffer final : public Texture
@@ -267,12 +258,11 @@ public:
 	explicit TexColorBuffer(const unsigned int width, const unsigned int height)
 	{
 		glBindTexture(GL_TEXTURE_2D, m_ID);
-		glObjectLabel(GL_TEXTURE, m_ID, static_cast<GLsizei>(m_Path.size()), m_Path.c_str());
 
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, static_cast<GLsizei>(width), static_cast<GLsizei>(height), 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
 	}
 
 	void Use() const override
