@@ -42,7 +42,7 @@ bool renderNormals = false;
 float deltaTime = 0.0f;	// Time between current frame and last frame
 float lastFrame = 0.0f; // Time of last frame
 
-Camera camera(glm::vec4(1.0f, 1.0f, 3.0f, 1.0f));
+auto camera = std::make_shared<Camera>(glm::vec4(1.0f, 1.0f, 3.0f, 1.0f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -69,15 +69,15 @@ void ProcessInput(GLFWwindow* window)
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		camera.ProcessKeyboard(FORWARD, deltaTime);
+		camera->ProcessKeyboard(FORWARD, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		camera.ProcessKeyboard(BACKWARD, deltaTime);
+		camera->ProcessKeyboard(BACKWARD, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		camera.ProcessKeyboard(LEFT, deltaTime);
+		camera->ProcessKeyboard(LEFT, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		camera.ProcessKeyboard(RIGHT, deltaTime);
+		camera->ProcessKeyboard(RIGHT, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_V) == GLFW_PRESS)
-		camera.ProcessKeyboard(TOGGLE_FLY, deltaTime);
+		camera->ProcessKeyboard(TOGGLE_FLY, deltaTime);
 }
 
 void MouseCallback(GLFWwindow* window, double xPosIn, double yPosIn)
@@ -98,12 +98,12 @@ void MouseCallback(GLFWwindow* window, double xPosIn, double yPosIn)
 	lastX = xPos;
 	lastY = yPos;
 
-	camera.ProcessMouseMovement(xOffset, yOffset);
+	camera->ProcessMouseMovement(xOffset, yOffset);
 }
 
 void ScrollCallback(GLFWwindow* window, double xOffset, double yOffset)
 {
-	camera.ProcessMouseScroll(static_cast<float>(yOffset));
+	camera->ProcessMouseScroll(static_cast<float>(yOffset));
 }
 
 GLFWwindow* Init()
@@ -179,21 +179,26 @@ int main()
 	if (!window)
 		return -1;
 
-	Scene scene;
-	scene.Camera = std::make_shared<Camera>(camera);
+	auto scene = std::make_shared<Scene>();
+	scene->Camera = camera;
 
 	auto shaders = std::unordered_map<DrawingMode, Shader>
 	{
-		{DrawingMode::ISOLATED,   Shader("positionColorNormalTex.vert", "variableColor.frag") },
-		{DrawingMode::LIT_OBJECT, Shader("positionColorNormalTex.vert", "objectLitByVariousLights.frag") },
-		{DrawingMode::NORMALS,    Shader("position.vert",               "uniformColor.frag") },
-		{DrawingMode::SKYBOX,     Shader("skybox.vert",                 "skybox.frag") },
-		{DrawingMode::SCREEN,     Shader("screen.vert",                 "texture2D.frag") }
+		{ DrawingMode::ISOLATED,   Shader("positionColorNormalTex.vert", "variableColor.frag") },
+		{ DrawingMode::LIT_OBJECT, Shader("positionColorNormalTex.vert", "objectLitByVariousLights.frag") },
+		{ DrawingMode::MIRROR,     Shader("positionColorNormalTex.vert", "skyboxMirror.frag") },
+		{ DrawingMode::REFRACTOR,  Shader("positionColorNormalTex.vert", "skyboxRefractor.frag") },
+		{ DrawingMode::NORMALS,    Shader("position.vert",               "uniformColor.frag") },
+		{ DrawingMode::SKYBOX,     Shader("skybox.vert",                 "skybox.frag") },
+		{ DrawingMode::SCREEN,     Shader("screen.vert",                 "texture2D.frag") }
 	};
 
 	shaders[DrawingMode::LIT_OBJECT].Use();
 	for (int i = 0; i < 16; i++)
 		shaders[DrawingMode::LIT_OBJECT].SetInt("textures[" + std::to_string(i) + "]", i);
+
+	shaders[DrawingMode::MIRROR].Use();
+	shaders[DrawingMode::MIRROR].SetInt("skybox", 0);
 
 	shaders[DrawingMode::SKYBOX].Use();
 	shaders[DrawingMode::SKYBOX].SetInt("skybox", 0);
@@ -209,11 +214,12 @@ int main()
 	};
 
 	auto skybox = Cubemap(faces);
+	scene->Skybox = skybox.m_Texture;
 
 	std::vector<std::shared_ptr<TriangleMesh>> triangleMeshes;
 
 	auto pointLight = std::make_shared<PointLight>(glm::vec4(2.0f, 1.0f, 3.0f, 1.0f), 100.0f, 0.2f, 0.5f, 0.99f);
-	scene.PointLights.emplace_back(pointLight);
+	scene->PointLights.emplace_back(pointLight);
 
 	std::cout << PointLight::GetCount() << std::endl;
 
@@ -222,9 +228,9 @@ int main()
 	pointLightMesh->SetModel(glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(pointLight->m_Pos)), glm::vec3(0.2f)));
 	triangleMeshes.emplace_back(pointLightMesh);
 
-	scene.DirectionalLight = std::make_shared<DirectionalLight>(glm::normalize(glm::vec3(1.0, -1.0, 1.0)), 0.2f, 0.5f, 0.99f);
+	scene->DirectionalLight = std::make_shared<DirectionalLight>(glm::normalize(glm::vec3(1.0, -1.0, 1.0)), 0.2f, 0.5f, 0.99f);
 
-	scene.SpotLight = std::make_shared<SpotLight>(12.5f, 0.2f, 0.5f, 0.99f);
+	scene->SpotLight = std::make_shared<SpotLight>(12.5f, 0.2f, 0.5f, 0.99f);
 
 	auto containerDiffuse = std::make_shared<Tex2D>(".\\textures\\container2.png", "diffuse");
 	auto containerSpecular = std::make_shared<Tex2D>(".\\textures\\container2_specular.png", "specular");
@@ -244,15 +250,12 @@ int main()
 
 	for (auto& mesh : backpack.m_Meshes)
 	{
-		mesh->m_DirectionalLight = scene.DirectionalLight;
-		mesh->m_PointLights = scene.PointLights;
-		mesh->m_SpotLight = scene.SpotLight;
-		mesh->m_Camera = std::make_shared<Camera>(camera);
+		mesh->SetScene(scene);
 		mesh->SetModel(glm::mat4(1.0f));
 		triangleMeshes.emplace_back(mesh);
 	}
 
-	auto floor = std::make_shared<TriangleMesh>(containerMaterial, scene, DrawingMode::LIT_OBJECT);
+	auto floor = std::make_shared<TriangleMesh>(containerMaterial, scene, DrawingMode::REFRACTOR);
 	floor->SetAsAASquare();
 	floor->SetModel(glm::scale(glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -2.0f, 0.0f)), glm::radians(270.0f), glm::vec3(1.0f, 0.0f, 0.0f)), glm::vec3(10.0f)));
 	triangleMeshes.emplace_back(floor);
@@ -300,12 +303,12 @@ int main()
 		ProcessInput(window);
 
 		// Set matrices
-		view = camera.GetViewMatrix();
-		proj = glm::perspective(glm::radians(camera.m_Zoom),
+		view = camera->GetViewMatrix();
+		proj = glm::perspective(glm::radians(camera->m_Zoom),
 			static_cast<float>(SCR_WIDTH) / static_cast<float>(SCR_HEIGHT), 0.1f, 100.0f);
 
-		scene.SpotLight->m_Pos = glm::vec4(camera.m_Position, 1.0f);
-		scene.SpotLight->m_Direction = camera.m_Front;
+		scene->SpotLight->m_Pos = glm::vec4(camera->m_Position, 1.0f);
+		scene->SpotLight->m_Direction = camera->m_Front;
 
 		skybox.m_View = glm::mat4(glm::mat3(view));
 		skybox.m_Proj = proj;

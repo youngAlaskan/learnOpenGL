@@ -78,5 +78,7 @@
     <None Include="shaders\vertexShaders\screen.vert" />
     <None Include="shaders\vertexShaders\skybox.vert" />
     <None Include="shaders\fragmentShaders\skybox.frag" />
+    <None Include="shaders\fragmentShaders\skyboxMirror.frag" />
+    <None Include="shaders\fragmentShaders\skyboxRefractor.frag" />
   </ItemGroup>
 </Project>

@@ -166,6 +166,8 @@
     <None Include="README.md" />
     <None Include="shaders\fragmentShaders\objectLitByVariousLights.frag" />
     <None Include="shaders\fragmentShaders\skybox.frag" />
+    <None Include="shaders\fragmentShaders\skyboxMirror.frag" />
+    <None Include="shaders\fragmentShaders\skyboxRefractor.frag" />
     <None Include="shaders\fragmentShaders\texture2D.frag" />
     <None Include="shaders\fragmentShaders\uniformColor.frag" />
     <None Include="shaders\fragmentShaders\variableColor.frag" />

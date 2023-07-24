@@ -16,6 +16,8 @@
 enum class DrawingMode {
 	ISOLATED,
 	LIT_OBJECT,
+	MIRROR,
+	REFRACTOR,
 	NORMALS,
 	SKYBOX,
 	SCREEN
@@ -101,14 +103,14 @@ public:
 		SetUp();
 	}
 
-	TriangleMesh(std::shared_ptr<Material> material, Scene scene, const DrawingMode drawingMode = DrawingMode::ISOLATED)
-		: m_Material(std::move(material)), m_PointLights(std::move(scene.PointLights)), m_DirectionalLight(std::move(scene.DirectionalLight)), m_SpotLight(std::move(scene.SpotLight)), m_Camera(std::move(scene.Camera))
+	TriangleMesh(std::shared_ptr<Material> material, std::shared_ptr<Scene> scene, const DrawingMode drawingMode = DrawingMode::ISOLATED)
+		: m_Material(std::move(material)), m_Scene(std::move(scene))
 	{
 		m_DrawingMode = drawingMode;
 		SetUp();
 	}
 
-	TriangleMesh(std::vector<Vertex> connectivityData, std::vector<unsigned int> indices, std::shared_ptr<Material> material, DrawingMode drawingMode = DrawingMode::ISOLATED)
+	TriangleMesh(std::vector<Vertex> connectivityData, std::vector<unsigned int> indices, std::shared_ptr<Material> material, const DrawingMode drawingMode = DrawingMode::ISOLATED)
 		: m_Material(std::move(material))
 	{
 		m_ConnectivityData = std::move(connectivityData);
@@ -147,6 +149,8 @@ public:
 		m_View = view;
 		m_Proj = proj;
 	}
+
+	void SetScene(std::shared_ptr<Scene> scene) { m_Scene = std::move(scene); }
 
 	void SetAsAASquare()
 	{
@@ -269,8 +273,6 @@ public:
 	}
 
 	void SetMaterial(const std::shared_ptr<Material>& material) { m_Material = material; }
-	void SetPointLights(const std::vector<std::shared_ptr<PointLight>>& pointLights) { m_PointLights = pointLights; }
-	void SetCamera(const std::shared_ptr<Camera>& camera) { m_Camera = camera; }
 	void SetVertexCount(const unsigned int count) { m_VertexCount = count; }
 
 	void Draw(const Shader& shader) const override
@@ -285,33 +287,42 @@ public:
 
 			shader.SetInt("pointLightCount", PointLight::GetCount());
 
-			for (const auto& pointLight : m_PointLights)
+			for (const auto& pointLight : m_Scene->PointLights)
 				pointLight->SendToShader(shader);
 
-			if (m_DirectionalLight)
-				m_DirectionalLight->SendToShader(shader);
+			if (m_Scene->DirectionalLight)
+				m_Scene->DirectionalLight->SendToShader(shader);
 
-			if (m_SpotLight)
-				m_SpotLight->SendToShader(shader);
+			if (m_Scene->SpotLight)
+				m_Scene->SpotLight->SendToShader(shader);
 
-			if (m_Camera)
-				m_Camera->SendToShader(shader);
-
+			if (m_Scene->Camera)
+				m_Scene->Camera->SendToShader(shader);
+			break;
 		case DrawingMode::ISOLATED:
-			shader.SetMat4("model", m_Model);
-			shader.SetMat4("view", m_View);
-			shader.SetMat4("proj", m_Proj);
-			shader.SetMat4("modelInv", glm::inverse(m_Model));
+			break;
+		case DrawingMode::REFRACTOR:
+			shader.SetFloat("refractiveIndex", m_RefractiveIndex);
+		case DrawingMode::MIRROR:
+			if (m_Scene->Skybox)
+				m_Scene->Skybox->Use();
 
-			glBindVertexArray(m_VAO);
-			glDrawElements(GL_TRIANGLES, static_cast<int>(m_VertexCount), GL_UNSIGNED_INT, nullptr);
-			glBindVertexArray(0);
-
+			if (m_Scene->Camera)
+				m_Scene->Camera->SendToShader(shader);
 			break;
 		default:
 			std::cerr << "ERROR::TRIANGLE_MESH::DRAW: Undefined draw type for this object!" << std::endl;
-			break;
+			return;
 		}
+
+		shader.SetMat4("model", m_Model);
+		shader.SetMat4("view", m_View);
+		shader.SetMat4("proj", m_Proj);
+		shader.SetMat4("modelInv", glm::inverse(m_Model));
+
+		glBindVertexArray(m_VAO);
+		glDrawElements(GL_TRIANGLES, static_cast<int>(m_VertexCount), GL_UNSIGNED_INT, nullptr);
+		glBindVertexArray(0);
 	}
 
 	void DrawNormals(const Shader& shader = Shader("position.vert", "uniformColor.frag"), const glm::vec4& color = glm::vec4(1.0, 0.0, 1.0, 1.0f)) const
@@ -336,15 +347,13 @@ public:
 
 public:
 	std::shared_ptr<Material> m_Material;
-	std::vector<std::shared_ptr<PointLight>> m_PointLights;
-	std::shared_ptr<DirectionalLight> m_DirectionalLight;
-	std::shared_ptr<SpotLight> m_SpotLight;
-	std::shared_ptr<Camera> m_Camera;
 
 	unsigned int m_NVAO = 0, m_NVBO = 0;
 	glm::mat4 m_Model = glm::mat4(1.0f);
 	glm::mat4 m_View = glm::mat4(1.0f);
 	glm::mat4 m_Proj = glm::mat4(1.0f);
+
+	float m_RefractiveIndex = 0.0f;
 
 private:
 	// Sets NVAO using connectivity data
@@ -376,6 +385,9 @@ private:
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		glBindVertexArray(0);
 	}
+
+private:
+	std::shared_ptr<Scene> m_Scene;
 };
 
 class Cubemap final : public Drawable
