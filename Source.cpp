@@ -191,6 +191,10 @@ int main()
 		{DrawingMode::SCREEN,     Shader("screen.vert",                 "texture2D.frag") }
 	};
 
+	shaders[DrawingMode::LIT_OBJECT].Use();
+	for (int i = 0; i < 16; i++)
+		shaders[DrawingMode::LIT_OBJECT].SetInt("textures[" + std::to_string(i) + "]", i);
+
 	shaders[DrawingMode::SKYBOX].Use();
 	shaders[DrawingMode::SKYBOX].SetInt("skybox", 0);
 
@@ -303,16 +307,13 @@ int main()
 		scene.SpotLight->m_Pos = glm::vec4(camera.m_Position, 1.0f);
 		scene.SpotLight->m_Direction = camera.m_Front;
 
-		// Render
-		// -------
-		framebuffer.Use();
-		glEnable(GL_DEPTH_TEST);
-		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
 		skybox.m_View = glm::mat4(glm::mat3(view));
 		skybox.m_Proj = proj;
-		skybox.Draw(shaders[DrawingMode::SKYBOX]);
+
+		// Render
+		// -------
+		glClearColor(0.53f, 0.81f, 0.92f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		if (renderAxis)
 		{
@@ -334,12 +335,7 @@ int main()
 				mesh->DrawNormals(shaders[DrawingMode::NORMALS]);
 		}
 
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glDisable(GL_DEPTH_TEST);
-		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
-
-		billboard->Draw(shaders[billboard->m_DrawingMode]);
+		skybox.Draw(shaders[DrawingMode::SKYBOX]);
 
 		// Check and call events and swap buffers
 		glfwSwapBuffers(window);

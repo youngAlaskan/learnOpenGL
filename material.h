@@ -44,10 +44,7 @@ public:
     void SendToShader(const Shader& shader) const
     {
         for (int i = 0; i < static_cast<int>(m_Textures.size()); i++)
-        {
-            m_Textures[i]->Use();
-            shader.SetInt("textures[" + std::to_string(i) + "]", static_cast<int>(m_Textures[i]->m_ID));
-        }
+            m_Textures[i]->Use(i);
 
         shader.SetInt("material.diffuseEnd", m_DiffuseEnd);
         shader.SetInt("material.specularEnd", m_SpecularEnd);

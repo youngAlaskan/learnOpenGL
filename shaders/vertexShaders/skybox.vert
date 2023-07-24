@@ -12,5 +12,5 @@ uniform mat4 view;
 void main()
 {
 	texCoords = aPos.xyz;
-	gl_Position = proj * view * aPos;
+	gl_Position = (proj * view * aPos).xyww;
 }

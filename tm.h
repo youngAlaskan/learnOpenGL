@@ -400,12 +400,12 @@ public:
 
 	void Draw(const Shader& shader) const override
 	{
-		glDepthMask(GL_FALSE);
+		glDepthFunc(GL_LEQUAL);
 
 		glFrontFace(GL_CW);
 
 		shader.Use();
-		glBindTexture(GL_TEXTURE_CUBE_MAP, m_Texture->m_ID);
+		m_Texture->Use();
 		shader.SetMat4("view", m_View);
 		shader.SetMat4("proj", m_Proj);
 
@@ -415,7 +415,7 @@ public:
 
 		glFrontFace(GL_CCW);
 
-		glDepthMask(GL_TRUE);
+		glDepthFunc(GL_LESS);
 	}
 
 public:

@@ -21,7 +21,7 @@ public:
 		m_ID = ID;
 	}
 
-	virtual void Use() const = 0;
+	virtual void Use(int index) const = 0;
 
 	bool operator==(const Texture& other) const
 	{
@@ -110,9 +110,9 @@ public:
 
 	void SetTag(std::string tag) { m_Tag = std::move(tag); }
 
-	void Use() const override
+	void Use(const int index = 0) const override
 	{
-		glActiveTexture(GL_TEXTURE0 + m_ID);
+		glActiveTexture(GL_TEXTURE0 + index);
 		glBindTexture(GL_TEXTURE_2D, m_ID);
 	}
 
@@ -244,9 +244,9 @@ public:
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, rWrap);
 	}
 
-	void Use() const override
+	void Use(const int index = 0) const override
 	{
-		glActiveTexture(GL_TEXTURE0 + m_ID);
+		glActiveTexture(GL_TEXTURE0 + index);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, m_ID);
 	}
 
@@ -269,8 +269,9 @@ public:
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, static_cast<GLsizei>(width), static_cast<GLsizei>(height), 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
 	}
 
-	void Use() const override
+	void Use(const int index = 0) const override
 	{
+		glActiveTexture(GL_TEXTURE0 + index);
 		glBindTexture(GL_TEXTURE_2D, m_ID);
 	}
 };
