@@ -405,7 +405,6 @@ public:
 		glFrontFace(GL_CW);
 
 		shader.Use();
-		shader.SetInt("skybox", 0);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, m_Texture->m_ID);
 		shader.SetMat4("view", m_View);
 		shader.SetMat4("proj", m_Proj);

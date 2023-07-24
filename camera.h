@@ -58,13 +58,13 @@ public:
     {
         const float velocity = m_MovementSpeed * deltaTime;
         if (direction == FORWARD)
-            m_Position += (m_CanFly ? m_Front : glm::vec3(m_Front.x, 0.0, m_Front.z)) * velocity;
+            m_Position += (m_CanFly ? m_Front : glm::normalize(glm::vec3(m_Front.x, 0.0, m_Front.z))) * velocity;
         if (direction == BACKWARD)
-            m_Position -= (m_CanFly ? m_Front : glm::vec3(m_Front.x, 0.0, m_Front.z)) * velocity;
+            m_Position -= (m_CanFly ? m_Front : glm::normalize(glm::vec3(m_Front.x, 0.0, m_Front.z))) * velocity;
         if (direction == LEFT)
-            m_Position -= (m_CanFly ? m_Right : glm::vec3(m_Right.x, 0.0, m_Right.z)) * velocity;
+            m_Position -= (m_CanFly ? m_Right : glm::normalize(glm::vec3(m_Right.x, 0.0, m_Right.z))) * velocity;
         if (direction == RIGHT)
-            m_Position += (m_CanFly ? m_Right : glm::vec3(m_Right.x, 0.0, m_Right.z)) * velocity;
+            m_Position += (m_CanFly ? m_Right : glm::normalize(glm::vec3(m_Right.x, 0.0, m_Right.z))) * velocity;
         if (direction == TOGGLE_FLY)
             m_CanFly = !m_CanFly;
     }

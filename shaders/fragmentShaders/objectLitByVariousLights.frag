@@ -100,7 +100,7 @@ void main()
     if (spotLight.innerCutOff != 0.0)
         result += CalcSpotLight(spotLight, norm, toViewer, textureValues);
 
-    FragColor = result;
+    FragColor = vec4(result.rgb, textureValues[0].a);
 }
 
 vec4 CalcDirLight(DirLight light, in vec3 normal, in vec3 toViewer, in mat4 textureValues)

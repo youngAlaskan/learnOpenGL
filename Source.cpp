@@ -191,6 +191,9 @@ int main()
 		{DrawingMode::SCREEN,     Shader("screen.vert",                 "texture2D.frag") }
 	};
 
+	shaders[DrawingMode::SKYBOX].Use();
+	shaders[DrawingMode::SKYBOX].SetInt("skybox", 0);
+
 	std::vector<std::string> faces
 	{
 		".\\textures\\skybox\\right.jpg",
