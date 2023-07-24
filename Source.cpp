@@ -187,8 +187,21 @@ int main()
 		{DrawingMode::ISOLATED,   Shader("positionColorNormalTex.vert", "variableColor.frag") },
 		{DrawingMode::LIT_OBJECT, Shader("positionColorNormalTex.vert", "objectLitByVariousLights.frag") },
 		{DrawingMode::NORMALS,    Shader("position.vert",               "uniformColor.frag") },
+		{DrawingMode::SKYBOX,     Shader("skybox.vert",                 "skybox.frag") },
 		{DrawingMode::SCREEN,     Shader("screen.vert",                 "texture2D.frag") }
 	};
+
+	std::vector<std::string> faces
+	{
+		".\\textures\\skybox\\right.jpg",
+		".\\textures\\skybox\\left.jpg",
+		".\\textures\\skybox\\top.jpg",
+		".\\textures\\skybox\\bottom.jpg",
+		".\\textures\\skybox\\front.jpg",
+		".\\textures\\skybox\\back.jpg"
+	};
+
+	auto skybox = Cubemap(faces);
 
 	std::vector<std::shared_ptr<TriangleMesh>> triangleMeshes;
 
@@ -293,6 +306,10 @@ int main()
 		glEnable(GL_DEPTH_TEST);
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		skybox.m_View = glm::mat4(glm::mat3(view));
+		skybox.m_Proj = proj;
+		skybox.Draw(shaders[DrawingMode::SKYBOX]);
 
 		if (renderAxis)
 		{

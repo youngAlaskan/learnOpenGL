@@ -76,5 +76,7 @@
     <None Include="shaders\fragmentShaders\objectLitByVariousLights.frag" />
     <None Include="shaders\fragmentShaders\texture2D.frag" />
     <None Include="shaders\vertexShaders\screen.vert" />
+    <None Include="shaders\vertexShaders\skybox.vert" />
+    <None Include="shaders\fragmentShaders\skybox.frag" />
   </ItemGroup>
 </Project>

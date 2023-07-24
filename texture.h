@@ -170,31 +170,33 @@ public:
 	{
 		glBindTexture(GL_TEXTURE_CUBE_MAP, m_ID);
 
+		int width, height, channelsN;
+		for (unsigned int i = 0; i < 6; i++)
+		{
+			unsigned char* data = stbi_load(filepaths[i].c_str(), &width, &height, &channelsN, 0);
+			if (data)
+				glTexImage2D(
+					GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+					0,
+					GL_RGBA,
+					width,
+					height,
+					0,
+					channelsN == 1 ? GL_RED : (channelsN == 4 ? GL_RGBA : GL_RGB),
+					GL_UNSIGNED_BYTE,
+					data
+				);
+			else
+				std::cout << "Failed to load cube map texture" << std::endl;
+
+			stbi_image_free(data);
+		}
+
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-		int width, height, channelsN;
-		for (unsigned int i = 0; i < 6; i++)
-		{
-			unsigned char* data = stbi_load(filepaths[i].c_str(), &width, &height, &channelsN, 0);
-			if (data) {
-				const GLint format = channelsN == 1 ? GL_RED : (channelsN == 4 ? GL_RGBA : GL_RGB);
-
-				glTexImage2D(
-					GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-					0, GL_RGBA, width, height, 0, format, GL_UNSIGNED_BYTE, data
-				);
-			}
-			else
-			{
-				std::cout << "Failed to load cube map texture" << std::endl;
-			}
-
-			stbi_image_free(data);
-		}
 
 		glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 	}

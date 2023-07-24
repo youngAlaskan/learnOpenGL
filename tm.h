@@ -17,6 +17,7 @@ enum class DrawingMode {
 	ISOLATED,
 	LIT_OBJECT,
 	NORMALS,
+	SKYBOX,
 	SCREEN
 };
 
@@ -374,6 +375,134 @@ private:
 
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		glBindVertexArray(0);
+	}
+};
+
+class Cubemap final : public Drawable
+{
+public:
+	Cubemap()
+	{
+		SetUp();
+	}
+
+	explicit Cubemap(const std::string& filepath)
+	{
+		m_Texture = std::make_shared<TexCube>(filepath);
+		SetUp();
+	}
+
+	explicit Cubemap(const std::vector<std::string>& filepaths)
+	{
+		m_Texture = std::make_shared<TexCube>(filepaths);
+		SetUp();
+	}
+
+	void Draw(const Shader& shader) const override
+	{
+		glDepthMask(GL_FALSE);
+
+		glFrontFace(GL_CW);
+
+		shader.Use();
+		shader.SetInt("skybox", 0);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, m_Texture->m_ID);
+		shader.SetMat4("view", m_View);
+		shader.SetMat4("proj", m_Proj);
+
+		glBindVertexArray(m_VAO);
+		glDrawElements(GL_TRIANGLES, static_cast<int>(m_VertexCount), GL_UNSIGNED_INT, nullptr);
+		glBindVertexArray(0);
+
+		glFrontFace(GL_CCW);
+
+		glDepthMask(GL_TRUE);
+	}
+
+public:
+	std::shared_ptr<TexCube> m_Texture;
+
+	glm::mat4 m_View = glm::mat4(1.0);
+	glm::mat4 m_Proj = glm::mat4(1.0);
+
+private:
+	void SetUp()
+	{
+		m_DrawingMode = DrawingMode::SKYBOX;
+		constexpr unsigned int BLF = 0, TLF = 1, TRF = 2, BRF = 3, BLB = 4, TLB = 5, TRB = 6, BRB = 7;
+		m_TriangleCount = 12;
+		m_VertexCount = 3 * m_TriangleCount;
+		m_ConnectivityData.reserve(sizeof(Vertex) * m_VertexCount);
+		m_Indices.reserve(m_VertexCount);
+
+		// Front
+		IndicesPush3I(BLF, TRF, TLF);
+		IndicesPush3I(BLF, BRF, TRF);
+
+		// Right
+		IndicesPush3I(BRF, TRB, TRF);
+		IndicesPush3I(BRF, BRB, TRB);
+
+		// Back
+		IndicesPush3I(BRB, TLB, TRB);
+		IndicesPush3I(BRB, BLB, TLB);
+
+		// Left
+		IndicesPush3I(BLB, TLF, TLB);
+		IndicesPush3I(BLB, BLF, TLF);
+
+		// Bottom
+		IndicesPush3I(BLB, BRF, BLF);
+		IndicesPush3I(BLB, BRB, BRF);
+
+		// Top
+		IndicesPush3I(TLF, TRB, TLB);
+		IndicesPush3I(TLF, TRF, TRB);
+
+		std::vector<glm::vec4> positions;
+		std::vector<glm::vec4> colors;
+		std::vector<glm::vec3> normals;
+		std::vector<glm::vec2> texCoords;
+
+		positions.emplace_back(-0.5f, -0.5f, 0.5f, 1.0f); // BLF
+		positions.emplace_back(-0.5f, 0.5f, 0.5f, 1.0f); // TLF
+		positions.emplace_back(0.5f, 0.5f, 0.5f, 1.0f); // TRF
+		positions.emplace_back(0.5f, -0.5f, 0.5f, 1.0f); // BRF
+		positions.emplace_back(-0.5f, -0.5f, -0.5f, 1.0f); // BLB
+		positions.emplace_back(-0.5f, 0.5f, -0.5f, 1.0f); // TLB
+		positions.emplace_back(0.5f, 0.5f, -0.5f, 1.0f); // TRB
+		positions.emplace_back(0.5f, -0.5f, -0.5f, 1.0f); // BRB
+
+		colors.emplace_back(1.0, 0.0, 1.0, 1.0); // BLF
+		colors.emplace_back(1.0, 0.0, 1.0, 1.0); // TLF
+		colors.emplace_back(1.0, 0.0, 1.0, 1.0); // TRF
+		colors.emplace_back(1.0, 0.0, 1.0, 1.0); // BRF
+		colors.emplace_back(1.0, 0.0, 1.0, 1.0); // BLB
+		colors.emplace_back(1.0, 0.0, 1.0, 1.0); // TLB
+		colors.emplace_back(1.0, 0.0, 1.0, 1.0); // TRB
+		colors.emplace_back(1.0, 0.0, 1.0, 1.0); // BRB
+
+		normals.emplace_back(0.0f, 0.0f, 1.0f); // POS Z
+		normals.emplace_back(1.0f, 0.0f, 0.0f); // POS X
+		normals.emplace_back(0.0f, 0.0f, -1.0f); // NEG Z
+		normals.emplace_back(-1.0f, 0.0f, 0.0f); // NEG X
+		normals.emplace_back(0.0f, -1.0f, 0.0f); // NEG Y
+		normals.emplace_back(0.0f, 1.0f, 0.0f); // POS Y
+
+		texCoords.emplace_back(0.0f, 0.0f);
+		texCoords.emplace_back(0.0f, 1.0f);
+		texCoords.emplace_back(1.0f, 1.0f);
+		texCoords.emplace_back(1.0f, 0.0f);
+
+		const auto texCoordIndices = std::vector<int>{ 0, 2, 1, 0, 3, 2 };
+
+		for (unsigned int i = 0; i < m_VertexCount; i++)
+			m_ConnectivityData.emplace_back(positions[m_Indices[i]], colors[m_Indices[i]], normals[i / 6], texCoords[texCoordIndices[i % 6]]);
+
+		for (unsigned int i = 0; i < m_VertexCount; i++)
+			m_Indices[i] = i;
+
+		SetVAOData();
 	}
 };
 
