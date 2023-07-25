@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Shader.h"
 #include "Texture.h"
 
 class Material
@@ -41,18 +40,7 @@ public:
         return nullptr;
     }
 
-    void SendToShader(const Shader& shader) const
-    {
-        for (int i = 0; i < static_cast<int>(m_Textures.size()); i++)
-            m_Textures[i]->Use(i);
-
-        shader.SetInt("material.diffuseEnd", m_DiffuseEnd);
-        shader.SetInt("material.specularEnd", m_SpecularEnd);
-        shader.SetInt("material.emissiveEnd", m_EmissiveEnd);
-        shader.SetFloat("material.shininess", m_Shininess);
-    }
-
-private:
+public:
     std::vector<std::shared_ptr<Tex2D>> m_Textures = std::vector<std::shared_ptr<Tex2D>>();
     int m_DiffuseEnd = 0, m_SpecularEnd = 0, m_EmissiveEnd = 0;
     float m_Shininess = 1.0f;

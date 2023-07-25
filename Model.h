@@ -24,27 +24,6 @@ public:
         LoadModel(path);
     }
 
-    // sets the model, view, and projection matrices of each mesh
-    void SetMVP(const glm::mat4& model, const glm::mat4& view, const glm::mat4& proj) const
-    {
-        for (auto& mesh : m_Meshes)
-            mesh->SetMVP(model, view, proj);
-    }
-
-    // draws the model, and thus all its meshes
-    void Draw(const Shader& shader) const
-    {
-        for (auto& mesh : m_Meshes)
-            mesh->Draw(shader);
-    }
-
-    // draws the model normals, and thus all of it's meshes normals
-    void DrawNormals(const Shader& shader, const glm::vec4 color = glm::vec4(1.0f, 0.0f, 1.0f, 1.0f)) const
-    {
-        for (auto& mesh : m_Meshes)
-            mesh->DrawNormals(shader, color);
-    }
-
 public:
     std::unordered_map<std::string, std::shared_ptr<Tex2D>> m_TexturesLoaded = std::unordered_map<std::string, std::shared_ptr<Tex2D>>(); // Stores all loaded textures with their file names as keys
     std::vector<std::shared_ptr<TriangleMesh>> m_Meshes = std::vector<std::shared_ptr<TriangleMesh>>(); // Vector of meshes within the model

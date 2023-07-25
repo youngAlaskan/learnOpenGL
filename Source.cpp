@@ -28,6 +28,8 @@
 
 #include "Scene.h"
 
+#include "Renderer.h"
+
 constexpr unsigned int SCR_WIDTH = 800;
 constexpr unsigned int SCR_HEIGHT = 600;
 
@@ -182,6 +184,8 @@ int main()
 	auto scene = std::make_shared<Scene>();
 	scene->Camera = camera;
 
+	auto renderer = Renderer(scene);
+
 	auto shaders = std::unordered_map<DrawingMode, Shader>
 	{
 		{ DrawingMode::ISOLATED,   Shader("positionColorNormalTex.vert", "variableColor.frag") },
@@ -213,10 +217,8 @@ int main()
 		".\\textures\\skybox\\back.jpg"
 	};
 
-	auto skybox = Cubemap(faces);
-	scene->Skybox = skybox.m_Texture;
-
-	std::vector<std::shared_ptr<TriangleMesh>> triangleMeshes;
+	auto skybox = std::make_shared<Cubemap>(faces);
+	scene->Skybox = skybox->m_Texture;
 
 	auto pointLight = std::make_shared<PointLight>(glm::vec4(2.0f, 1.0f, 3.0f, 1.0f), 100.0f, 0.2f, 0.5f, 0.99f);
 	scene->PointLights.emplace_back(pointLight);
@@ -225,8 +227,8 @@ int main()
 
 	auto pointLightMesh = std::make_shared<TriangleMesh>();
 	pointLightMesh->SetAsAACube(pointLight->m_Color);
-	pointLightMesh->SetModel(glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(pointLight->m_Pos)), glm::vec3(0.2f)));
-	triangleMeshes.emplace_back(pointLightMesh);
+	pointLightMesh->m_Transform.Model = glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(pointLight->m_Pos)), glm::vec3(0.2f));
+	renderer.m_Meshes.emplace_back(pointLightMesh);
 
 	scene->DirectionalLight = std::make_shared<DirectionalLight>(glm::normalize(glm::vec3(1.0, -1.0, 1.0)), 0.2f, 0.5f, 0.99f);
 
@@ -238,10 +240,10 @@ int main()
 	auto containerTextures = std::vector<std::shared_ptr<Tex2D>>{ containerDiffuse, containerSpecular, blackEmissive };
 	auto containerMaterial = std::make_shared<Material>(containerTextures, 0.5f);
 
-	auto containerCube = std::make_shared<TriangleMesh>(containerMaterial, scene, DrawingMode::LIT_OBJECT);
+	auto containerCube = std::make_shared<TriangleMesh>(containerMaterial, DrawingMode::LIT_OBJECT);
 	containerCube->SetAsAACube();
-	containerCube->SetModel(glm::translate(glm::mat4(1.0f), glm::vec3(-2.0f, 0.0f, 2.0f)));
-	triangleMeshes.emplace_back(containerCube);
+	containerCube->m_Transform.Model = glm::translate(glm::mat4(1.0f), glm::vec3(-2.0f, 0.0f, 2.0f));
+	renderer.m_Meshes.emplace_back(containerCube);
 
 	auto start = glfwGetTime();
 	auto backpack = Model("C:\\Dev\\LearnOpenGL\\assets\\backpack.obj");
@@ -249,32 +251,30 @@ int main()
 	std::cout << "Model load time: " << end - start << " seconds" << std::endl;
 
 	for (auto& mesh : backpack.m_Meshes)
-	{
-		mesh->SetScene(scene);
-		mesh->SetModel(glm::mat4(1.0f));
-		triangleMeshes.emplace_back(mesh);
-	}
+		renderer.m_Meshes.emplace_back(mesh);
 
-	auto floor = std::make_shared<TriangleMesh>(containerMaterial, scene, DrawingMode::REFRACTOR);
+	auto floor = std::make_shared<TriangleMesh>(containerMaterial, DrawingMode::REFRACTOR);
 	floor->SetAsAASquare();
-	floor->SetModel(glm::scale(glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -2.0f, 0.0f)), glm::radians(270.0f), glm::vec3(1.0f, 0.0f, 0.0f)), glm::vec3(10.0f)));
-	triangleMeshes.emplace_back(floor);
+	floor->m_Transform.Model = glm::scale(glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -2.0f, 0.0f)), glm::radians(270.0f), glm::vec3(1.0f, 0.0f, 0.0f)), glm::vec3(10.0f));
+	renderer.m_Meshes.emplace_back(floor);
 
 	auto grassDiffuse = std::make_shared<Tex2D>(".\\textures\\grass.png", "diffuse");
 	auto grassMaterial = std::make_shared<Material>(grassDiffuse, 0.2f);
 
-	auto square = std::make_shared<TriangleMesh>(grassMaterial, scene, DrawingMode::LIT_OBJECT);
+	auto square = std::make_shared<TriangleMesh>(grassMaterial, DrawingMode::LIT_OBJECT);
 	square->SetAsAASquare();
-	square->SetModel(glm::translate(glm::mat4(1.0f), glm::vec3(0.5f, 0.0f, 1.5f)));
-	triangleMeshes.emplace_back(square);
+	square->m_Transform.Model = glm::translate(glm::mat4(1.0f), glm::vec3(0.5f, 0.0f, 1.5f));
+	renderer.m_Meshes.emplace_back(square);
 
 	auto windowDiffuse = std::make_shared<Tex2D>(".\\textures\\blending_transparent_window.png", "diffuse");
 	auto windowMaterial = std::make_shared<Material>(windowDiffuse, 0.2f);
 
-	auto windowMesh = std::make_shared<TriangleMesh>(windowMaterial, scene, DrawingMode::LIT_OBJECT);
+	auto windowMesh = std::make_shared<TriangleMesh>(windowMaterial, DrawingMode::LIT_OBJECT);
 	windowMesh->SetAsAASquare();
-	windowMesh->SetModel(glm::translate(glm::mat4(1.0f), glm::vec3(0.4f, 0.0f, 2.0f)));
-	triangleMeshes.emplace_back(windowMesh);
+	windowMesh->m_Transform.Model = glm::translate(glm::mat4(1.0f), glm::vec3(0.4f, 0.0f, 2.0f));
+	renderer.m_Meshes.emplace_back(windowMesh);
+
+	renderer.m_Meshes.emplace_back(skybox);
 
 	auto origin = glm::vec3(0.0f, 0.0f, 0.0f);
 
@@ -310,9 +310,6 @@ int main()
 		scene->SpotLight->m_Pos = glm::vec4(camera->m_Position, 1.0f);
 		scene->SpotLight->m_Direction = camera->m_Front;
 
-		skybox.m_View = glm::mat4(glm::mat3(view));
-		skybox.m_Proj = proj;
-
 		// Render
 		// -------
 		glClearColor(0.53f, 0.81f, 0.92f, 1.0f);
@@ -329,16 +326,19 @@ int main()
 			zAxis.Draw();
 		}
 
-		for (auto& mesh : triangleMeshes)
+		for (auto mesh : renderer.m_Meshes)
 		{
-			mesh->SetView(view);
-			mesh->SetProj(proj);
-			mesh->Draw(shaders[mesh->m_DrawingMode]);
-			if (renderNormals)
-				mesh->DrawNormals(shaders[DrawingMode::NORMALS]);
+			if (mesh->m_Type == DrawableType::TRIANGLE_MESH)
+			{
+				mesh = std::static_pointer_cast<TriangleMesh>(mesh);
+				mesh->m_Transform.View = view;
+				mesh->m_Transform.Projection = proj;
+			}
 		}
 
-		skybox.Draw(shaders[DrawingMode::SKYBOX]);
+		skybox->m_Transform.View = glm::mat4(glm::mat3(view));
+
+		renderer.Render();
 
 		// Check and call events and swap buffers
 		glfwSwapBuffers(window);

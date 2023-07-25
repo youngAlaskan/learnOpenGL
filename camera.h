@@ -101,11 +101,6 @@ public:
             m_Zoom = 45.0f;
     }
 
-    void SendToShader(const Shader& shader) const
-    {
-        shader.SetVec3("viewPos", m_Position);
-    }
-
 public:
     // camera Attributes
     glm::vec3 m_Position{};

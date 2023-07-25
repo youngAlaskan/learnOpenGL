@@ -6,6 +6,7 @@
 #include <iostream>
 
 #include "Vertex.h"
+#include "Transform.h"
 
 #include "Light.h"
 #include "Camera.h"
@@ -23,6 +24,14 @@ enum class DrawingMode {
 	SCREEN
 };
 
+enum class DrawableType
+{
+	DRAWABLE,
+	TRIANGLE_MESH,
+	CUBE_MAP,
+	SCREEN
+};
+
 class Drawable
 {
 public:
@@ -32,8 +41,6 @@ public:
 		glGenBuffers(1, &m_VBO);
 		glGenBuffers(1, &m_EBO);
 	}
-
-	virtual void Draw(const Shader& shader) const = 0;
 
 	virtual ~Drawable()
 	{
@@ -48,7 +55,7 @@ public:
 	unsigned int m_TriangleCount = 0, m_VertexCount = 0;
 	unsigned int m_VAO = 0, m_VBO = 0, m_EBO = 0;
 
-	DrawingMode m_DrawingMode = DrawingMode::ISOLATED;
+	DrawableType m_Type = DrawableType::DRAWABLE;
 
 protected:
 	// Push x, y, and z onto m_Indices
@@ -103,8 +110,8 @@ public:
 		SetUp();
 	}
 
-	TriangleMesh(std::shared_ptr<Material> material, std::shared_ptr<Scene> scene, const DrawingMode drawingMode = DrawingMode::ISOLATED)
-		: m_Material(std::move(material)), m_Scene(std::move(scene))
+	explicit TriangleMesh(std::shared_ptr<Material> material, const DrawingMode drawingMode = DrawingMode::ISOLATED)
+		: m_Material(std::move(material))
 	{
 		m_DrawingMode = drawingMode;
 		SetUp();
@@ -124,33 +131,10 @@ public:
 	// Init shaders and generate VertexArrays and Buffers
 	void SetUp()
 	{
+		m_Type = DrawableType::TRIANGLE_MESH;
 		glGenVertexArrays(1, &m_NVAO);
 		glGenBuffers(1, &m_NVBO);
 	}
-
-	void SetModel(const glm::mat4& model)
-	{
-		m_Model = model;
-	}
-
-	void SetView(const glm::mat4& view)
-	{
-		m_View = view;
-	}
-
-	void SetProj(const glm::mat4& proj)
-	{
-		m_Proj = proj;
-	}
-
-	void SetMVP(const glm::mat4& model, const glm::mat4& view, const glm::mat4& proj)
-	{
-		m_Model = model;
-		m_View = view;
-		m_Proj = proj;
-	}
-
-	void SetScene(std::shared_ptr<Scene> scene) { m_Scene = std::move(scene); }
 
 	void SetAsAASquare()
 	{
@@ -275,70 +259,6 @@ public:
 	void SetMaterial(const std::shared_ptr<Material>& material) { m_Material = material; }
 	void SetVertexCount(const unsigned int count) { m_VertexCount = count; }
 
-	void Draw(const Shader& shader) const override
-	{
-		shader.Use();
-
-		switch (m_DrawingMode)
-		{
-		case DrawingMode::LIT_OBJECT:
-			if (m_Material)
-				m_Material->SendToShader(shader);
-
-			shader.SetInt("pointLightCount", PointLight::GetCount());
-
-			for (const auto& pointLight : m_Scene->PointLights)
-				pointLight->SendToShader(shader);
-
-			if (m_Scene->DirectionalLight)
-				m_Scene->DirectionalLight->SendToShader(shader);
-
-			if (m_Scene->SpotLight)
-				m_Scene->SpotLight->SendToShader(shader);
-
-			if (m_Scene->Camera)
-				m_Scene->Camera->SendToShader(shader);
-			break;
-		case DrawingMode::ISOLATED:
-			break;
-		case DrawingMode::REFRACTOR:
-			shader.SetFloat("refractiveIndex", m_RefractiveIndex);
-		case DrawingMode::MIRROR:
-			if (m_Scene->Skybox)
-				m_Scene->Skybox->Use();
-
-			if (m_Scene->Camera)
-				m_Scene->Camera->SendToShader(shader);
-			break;
-		default:
-			std::cerr << "ERROR::TRIANGLE_MESH::DRAW: Undefined draw type for this object!" << std::endl;
-			return;
-		}
-
-		shader.SetMat4("model", m_Model);
-		shader.SetMat4("view", m_View);
-		shader.SetMat4("proj", m_Proj);
-		shader.SetMat4("modelInv", glm::inverse(m_Model));
-
-		glBindVertexArray(m_VAO);
-		glDrawElements(GL_TRIANGLES, static_cast<int>(m_VertexCount), GL_UNSIGNED_INT, nullptr);
-		glBindVertexArray(0);
-	}
-
-	void DrawNormals(const Shader& shader = Shader("position.vert", "uniformColor.frag"), const glm::vec4& color = glm::vec4(1.0, 0.0, 1.0, 1.0f)) const
-	{
-		shader.Use();
-		shader.SetMat4("model", m_Model);
-		shader.SetMat4("view", m_View);
-		shader.SetMat4("proj", m_Proj);
-
-		shader.SetVec4("color", color);
-
-		glBindVertexArray(m_NVAO);
-		glDrawArrays(GL_LINES, 0, m_VertexCount * 2);
-		glBindVertexArray(0);
-	}
-
 	~TriangleMesh() override
 	{
 		glDeleteVertexArrays(1, &m_NVAO);
@@ -349,9 +269,8 @@ public:
 	std::shared_ptr<Material> m_Material;
 
 	unsigned int m_NVAO = 0, m_NVBO = 0;
-	glm::mat4 m_Model = glm::mat4(1.0f);
-	glm::mat4 m_View = glm::mat4(1.0f);
-	glm::mat4 m_Proj = glm::mat4(1.0f);
+	Transform m_Transform{};
+	DrawingMode m_DrawingMode = DrawingMode::ISOLATED;
 
 	float m_RefractiveIndex = 0.0f;
 
@@ -385,9 +304,6 @@ private:
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		glBindVertexArray(0);
 	}
-
-private:
-	std::shared_ptr<Scene> m_Scene;
 };
 
 class Cubemap final : public Drawable
@@ -410,36 +326,14 @@ public:
 		SetUp();
 	}
 
-	void Draw(const Shader& shader) const override
-	{
-		glDepthFunc(GL_LEQUAL);
-
-		glFrontFace(GL_CW);
-
-		shader.Use();
-		m_Texture->Use();
-		shader.SetMat4("view", m_View);
-		shader.SetMat4("proj", m_Proj);
-
-		glBindVertexArray(m_VAO);
-		glDrawElements(GL_TRIANGLES, static_cast<int>(m_VertexCount), GL_UNSIGNED_INT, nullptr);
-		glBindVertexArray(0);
-
-		glFrontFace(GL_CCW);
-
-		glDepthFunc(GL_LESS);
-	}
-
 public:
 	std::shared_ptr<TexCube> m_Texture;
-
-	glm::mat4 m_View = glm::mat4(1.0);
-	glm::mat4 m_Proj = glm::mat4(1.0);
+	Transform m_Transform{};
 
 private:
 	void SetUp()
 	{
-		m_DrawingMode = DrawingMode::SKYBOX;
+		m_Type = DrawableType::CUBE_MAP;
 		constexpr unsigned int BLF = 0, TLF = 1, TRF = 2, BRF = 3, BLB = 4, TLB = 5, TRB = 6, BRB = 7;
 		m_TriangleCount = 12;
 		m_VertexCount = 3 * m_TriangleCount;
@@ -523,7 +417,7 @@ public:
 	explicit ScreenMesh(std::shared_ptr<TexColorBuffer> texture = std::make_shared<TexColorBuffer>())
 		: m_Texture(std::move(texture))
 	{
-		m_DrawingMode = DrawingMode::SCREEN;
+		m_Type = DrawableType::SCREEN;
 		m_VertexCount = 6;
 		m_TriangleCount = 2;
 		m_Indices.reserve(sizeof(unsigned int) * m_TriangleCount * 3);
@@ -561,19 +455,6 @@ public:
 		SetVAOData();
 	}
 
-	void SetTexture(std::shared_ptr<TexColorBuffer> texture) { m_Texture = std::move(texture); }
-	std::shared_ptr<TexColorBuffer> GetTexture() { return m_Texture; }
-
-	void Draw(const Shader& shader) const override
-	{
-		shader.Use();
-		m_Texture->Use();
-
-		glBindVertexArray(m_VAO);
-		glDrawElements(GL_TRIANGLES, static_cast<int>(m_VertexCount), GL_UNSIGNED_INT, nullptr);
-		glBindVertexArray(0);
-	}
-
-private:
+public:
 	std::shared_ptr<TexColorBuffer> m_Texture;
 };

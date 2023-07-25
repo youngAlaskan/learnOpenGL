@@ -154,11 +154,13 @@
     <ClInclude Include="Material.h" />
     <ClInclude Include="Model.h" />
     <ClInclude Include="Renderbuffer.h" />
+    <ClInclude Include="Renderer.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="TM.h" />
+    <ClInclude Include="Transform.h" />
     <ClInclude Include="utils.h" />
     <ClInclude Include="Vertex.h" />
   </ItemGroup>
