@@ -2,37 +2,45 @@
 #include <vector>
 #include <unordered_map>
 
+#include "Line.h"
 #include "TM.h"
+#include "Shader.h"
 
 class Renderer
 {
 public:
-	Renderer() = default;
+	Renderer()
+	{
+		SetShaders();
+	}
+
 	explicit Renderer(std::shared_ptr<Scene> scene)
-		: m_Scene(std::move(scene)) {}
+		: m_Scene(std::move(scene))
+	{
+		SetShaders();
+	}
+
 	~Renderer() = default;
 
 	void Render()
 	{
-		for (auto mesh : m_Meshes)
+		for (const auto& drawable : m_Meshes)
 		{
-			switch (mesh->m_Type)
+			switch (drawable->m_Type)
 			{
 			case DrawableType::TRIANGLE_MESH:
-				mesh = std::static_pointer_cast<TriangleMesh>(mesh);
-				RenderTriangleMesh(mesh);
+				RenderTriangleMesh(std::static_pointer_cast<TriangleMesh>(drawable));
 				if (m_RenderNormals)
+					RenderNormals(std::static_pointer_cast<TriangleMesh>(drawable));
 				break;
 			case DrawableType::CUBE_MAP:
-				mesh = std::static_pointer_cast<Cubemap>(mesh);
-				RenderCubemap(mesh);
+				RenderCubemap(std::static_pointer_cast<CubemapMesh>(drawable));
 				break;
 			case DrawableType::SCREEN:
-				mesh = std::static_pointer_cast<ScreenMesh>(mesh);
-				RenderScreenMesh(mesh);
+				RenderScreenMesh(std::static_pointer_cast<ScreenMesh>(drawable));
 				break;
-			case DrawableType::DRAWABLE:
-				std::cerr << "ERROR::RENDERER::RENDER: Mesh type is not valid for function!" << std::endl;
+			case DrawableType::LINE:
+				RenderLine(std::static_pointer_cast<Line>(drawable));
 				break;
 			}
 		}
@@ -48,11 +56,12 @@ private:
 	{
 		const auto& shader = m_Shaders.at(mesh->m_DrawingMode);
 		shader.Use();
-		shader.SetTransform(mesh->m_Transform);
+		shader.SetTransform(mesh->m_Transform, true);
 
 		switch (mesh->m_DrawingMode)  // NOLINT(clang-diagnostic-switch-enum)
 		{
 		case DrawingMode::ISOLATED:
+			shader.SetVec4("color", glm::vec4(1.0));
 			break;
 		case DrawingMode::LIT_OBJECT:
 			if (mesh->m_Material)
@@ -67,7 +76,7 @@ private:
 			break;
 		case DrawingMode::REFRACTOR:
 			shader.SetFloat("refractiveIndex", mesh->m_RefractiveIndex);
-		case DrawingMode::MIRROR:
+		case DrawingMode::MIRROR:  // NOLINT(clang-diagnostic-implicit-fallthrough)
 			if (m_Scene->Skybox)
 				m_Scene->Skybox->Use();
 
@@ -75,6 +84,7 @@ private:
 			break;
 		default:
 			std::cerr << "ERROR::RENDERER::RENDER::RENDER_TRIANGLE_MESH: Draw type is not valid for this mesh type!" << std::endl;
+			return;
 		}
 
 		glBindVertexArray(mesh->m_VAO);
@@ -84,11 +94,9 @@ private:
 
 	void RenderNormals(const std::shared_ptr<TriangleMesh>& mesh) const
 	{
-		const auto& shader = m_Shaders.at(DrawingMode::NORMALS);
+		const auto& shader = m_Shaders.at(DrawingMode::LINES);
 		shader.Use();
-		shader.SetMat4("model", mesh->m_Transform.Model);
-		shader.SetMat4("view", mesh->m_Transform.View);
-		shader.SetMat4("proj", mesh->m_Transform.Projection);
+		shader.SetTransform(mesh->m_Transform);
 
 		shader.SetVec4("color", glm::vec4(1.0, 0.0, 1.0, 1.0));
 
@@ -97,7 +105,7 @@ private:
 		glBindVertexArray(0);
 	}
 
-	void RenderCubemap(const std::shared_ptr<Cubemap>& mesh) const
+	void RenderCubemap(const std::shared_ptr<CubemapMesh>& mesh) const
 	{
 		glDepthFunc(GL_LEQUAL);
 
@@ -120,10 +128,23 @@ private:
 	void RenderScreenMesh(const std::shared_ptr<ScreenMesh>& mesh) const
 	{
 		m_Shaders.at(DrawingMode::SCREEN).Use();
-		mesh->GetTexture()->Use();
+		mesh->m_Texture->Use();
 
 		glBindVertexArray(mesh->m_VAO);
 		glDrawElements(GL_TRIANGLES, static_cast<int>(mesh->m_VertexCount), GL_UNSIGNED_INT, nullptr);
+		glBindVertexArray(0);
+	}
+
+	void RenderLine(const std::shared_ptr<Line>& line) const
+	{
+		const auto& shader = m_Shaders.at(DrawingMode::LINES);
+		shader.Use();
+		shader.SetTransform(line->m_Transform);
+
+		shader.SetVec4("color", line->m_Color);
+
+		glBindVertexArray(line->m_VAO);
+		glDrawArrays(GL_LINES, 0, 2);
 		glBindVertexArray(0);
 	}
 
@@ -131,13 +152,13 @@ private:
 	{
 		m_Shaders = std::unordered_map<DrawingMode, Shader>
 		{
-			{ DrawingMode::ISOLATED,   Shader("positionColorNormalTex.vert", "variableColor.frag") },
-			{ DrawingMode::LIT_OBJECT, Shader("positionColorNormalTex.vert", "objectLitByVariousLights.frag") },
-			{ DrawingMode::MIRROR,     Shader("positionColorNormalTex.vert", "skyboxMirror.frag") },
-			{ DrawingMode::REFRACTOR,  Shader("positionColorNormalTex.vert", "skyboxRefractor.frag") },
-			{ DrawingMode::NORMALS,    Shader("position.vert",               "uniformColor.frag") },
-			{ DrawingMode::SKYBOX,     Shader("skybox.vert",                 "skybox.frag") },
-			{ DrawingMode::SCREEN,     Shader("screen.vert",                 "texture2D.frag") }
+			{ DrawingMode::ISOLATED,   Shader("positionNormalTex.vert", "uniformColor.frag") },
+			{ DrawingMode::LIT_OBJECT, Shader("positionNormalTex.vert", "objectLitByVariousLights.frag") },
+			{ DrawingMode::MIRROR,     Shader("positionNormalTex.vert", "skyboxMirror.frag") },
+			{ DrawingMode::REFRACTOR,  Shader("positionNormalTex.vert", "skyboxRefractor.frag") },
+			{ DrawingMode::LINES,      Shader("position.vert",          "uniformColor.frag") },
+			{ DrawingMode::SKYBOX,     Shader("skybox.vert",            "skybox.frag") },
+			{ DrawingMode::SCREEN,     Shader("screen.vert",            "texture2D.frag") }
 		};
 
 		m_Shaders[DrawingMode::LIT_OBJECT].Use();

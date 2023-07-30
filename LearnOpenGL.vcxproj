@@ -143,11 +143,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Drawable.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="Source.cpp" />
+    <ClCompile Include="TM.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="Drawable.h" />
     <ClInclude Include="Framebuffer.h" />
     <ClInclude Include="Light.h" />
     <ClInclude Include="Line.h" />
@@ -165,6 +168,7 @@
     <ClInclude Include="Vertex.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="ClassDiagram.cd" />
     <None Include="README.md" />
     <None Include="shaders\fragmentShaders\objectLitByVariousLights.frag" />
     <None Include="shaders\fragmentShaders\skybox.frag" />
@@ -172,12 +176,26 @@
     <None Include="shaders\fragmentShaders\skyboxRefractor.frag" />
     <None Include="shaders\fragmentShaders\texture2D.frag" />
     <None Include="shaders\fragmentShaders\uniformColor.frag" />
-    <None Include="shaders\fragmentShaders\variableColor.frag" />
     <None Include="shaders\vertexShaders\position.vert" />
-    <None Include="shaders\vertexShaders\positionColorNormalTex.vert" />
-    <None Include="shaders\vertexShaders\positionColorTex.vert" />
+    <None Include="shaders\vertexShaders\positionNormalTex.vert" />
     <None Include="shaders\vertexShaders\screen.vert" />
     <None Include="shaders\vertexShaders\skybox.vert" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="textures\awesomeface.png" />
+    <Image Include="textures\blending_transparent_window.png" />
+    <Image Include="textures\container.jpg" />
+    <Image Include="textures\container2.png" />
+    <Image Include="textures\container2_specular.png" />
+    <Image Include="textures\grass.png" />
+    <Image Include="textures\matrix.jpg" />
+    <Image Include="textures\skybox\back.jpg" />
+    <Image Include="textures\skybox\bottom.jpg" />
+    <Image Include="textures\skybox\front.jpg" />
+    <Image Include="textures\skybox\left.jpg" />
+    <Image Include="textures\skybox\right.jpg" />
+    <Image Include="textures\skybox\top.jpg" />
+    <Image Include="textures\wall.jpg" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

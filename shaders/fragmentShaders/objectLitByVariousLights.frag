@@ -1,4 +1,4 @@
-#version 460
+#version 460 core
 
 #define TEXTURE_CAPACITY 16
 #define POINT_LIGHT_CAPACITY 1
@@ -56,6 +56,7 @@ struct SpotLight
 };
 
 uniform sampler2D textures[TEXTURE_CAPACITY];
+uniform samplerCube skybox;
 
 uniform Material material;
 
@@ -68,7 +69,6 @@ uniform SpotLight spotLight;
 uniform vec3 viewPos;
 
 in vec4 fragPos;
-in vec4 color;
 in vec3 normal;
 in vec2 texCoord;
 
@@ -83,6 +83,7 @@ float CalcSpec(in vec3 fragToLight, in vec3 toViewer);
 
 void main()
 {
+
     vec3 norm = normalize(normal);
     vec3 toViewer = normalize(viewPos - vec3(fragPos));
 

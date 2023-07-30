@@ -1,7 +1,7 @@
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
+#include <glad\glad.h>
+#include <GLFW\glfw3.h>
+#include <glm\glm.hpp>
+#include <glm\gtc\matrix_transform.hpp>
 
 #include <iostream>
 #include <vector>
@@ -10,25 +10,45 @@
 #include <thread>
 #endif
 
+#define STB_IMAGE_IMPLEMENTATION
+
 #include "utils.h"
 
-#include "Renderbuffer.h"
-#include "Framebuffer.h"
-
-#include "Shader.h"
-#include "Texture.h"
-#include "Material.h"
-#include "Camera.h"
-
-#include "Line.h"
-#include "TM.h"
-#include "Light.h"
+// #include "Renderbuffer.h"
+// #include "Framebuffer.h"
 
 #include "Model.h"
-
-#include "Scene.h"
+// TM
+//   - Drawable
+//       - Transform
+//   - Vertex
+//   - Material
+//       - Texture
+//   - Scene
+//       - Light
+//       - Camera
+//       - Texture
 
 #include "Renderer.h"
+// Line
+//   - Drawable
+//       - Transform
+// TM
+//   - Drawable
+//       - Transform
+//   - Vertex
+//   - Material
+//       - Texture
+//   - Scene
+//       - Light
+//       - Camera
+//       - Texture
+// Shader
+//   - Transform
+//   - Material
+//       - Texture
+//   - Light
+//   - Camera
 
 constexpr unsigned int SCR_WIDTH = 800;
 constexpr unsigned int SCR_HEIGHT = 600;
@@ -186,27 +206,6 @@ int main()
 
 	auto renderer = Renderer(scene);
 
-	auto shaders = std::unordered_map<DrawingMode, Shader>
-	{
-		{ DrawingMode::ISOLATED,   Shader("positionColorNormalTex.vert", "variableColor.frag") },
-		{ DrawingMode::LIT_OBJECT, Shader("positionColorNormalTex.vert", "objectLitByVariousLights.frag") },
-		{ DrawingMode::MIRROR,     Shader("positionColorNormalTex.vert", "skyboxMirror.frag") },
-		{ DrawingMode::REFRACTOR,  Shader("positionColorNormalTex.vert", "skyboxRefractor.frag") },
-		{ DrawingMode::NORMALS,    Shader("position.vert",               "uniformColor.frag") },
-		{ DrawingMode::SKYBOX,     Shader("skybox.vert",                 "skybox.frag") },
-		{ DrawingMode::SCREEN,     Shader("screen.vert",                 "texture2D.frag") }
-	};
-
-	shaders[DrawingMode::LIT_OBJECT].Use();
-	for (int i = 0; i < 16; i++)
-		shaders[DrawingMode::LIT_OBJECT].SetInt("textures[" + std::to_string(i) + "]", i);
-
-	shaders[DrawingMode::MIRROR].Use();
-	shaders[DrawingMode::MIRROR].SetInt("skybox", 0);
-
-	shaders[DrawingMode::SKYBOX].Use();
-	shaders[DrawingMode::SKYBOX].SetInt("skybox", 0);
-
 	std::vector<std::string> faces
 	{
 		".\\textures\\skybox\\right.jpg",
@@ -217,7 +216,7 @@ int main()
 		".\\textures\\skybox\\back.jpg"
 	};
 
-	auto skybox = std::make_shared<Cubemap>(faces);
+	auto skybox = std::make_shared<CubemapMesh>(faces);
 	scene->Skybox = skybox->m_Texture;
 
 	auto pointLight = std::make_shared<PointLight>(glm::vec4(2.0f, 1.0f, 3.0f, 1.0f), 100.0f, 0.2f, 0.5f, 0.99f);
@@ -226,7 +225,7 @@ int main()
 	std::cout << PointLight::GetCount() << std::endl;
 
 	auto pointLightMesh = std::make_shared<TriangleMesh>();
-	pointLightMesh->SetAsAACube(pointLight->m_Color);
+	pointLightMesh->SetAsAACube();
 	pointLightMesh->m_Transform.Model = glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(pointLight->m_Pos)), glm::vec3(0.2f));
 	renderer.m_Meshes.emplace_back(pointLightMesh);
 
@@ -253,7 +252,7 @@ int main()
 	for (auto& mesh : backpack.m_Meshes)
 		renderer.m_Meshes.emplace_back(mesh);
 
-	auto floor = std::make_shared<TriangleMesh>(containerMaterial, DrawingMode::REFRACTOR);
+	auto floor = std::make_shared<TriangleMesh>(containerMaterial, DrawingMode::MIRROR);
 	floor->SetAsAASquare();
 	floor->m_Transform.Model = glm::scale(glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -2.0f, 0.0f)), glm::radians(270.0f), glm::vec3(1.0f, 0.0f, 0.0f)), glm::vec3(10.0f));
 	renderer.m_Meshes.emplace_back(floor);
@@ -282,18 +281,17 @@ int main()
 	Line yAxis(origin, glm::vec3( 0.0f, 10.0f,  0.0f));
 	Line zAxis(origin, glm::vec3( 0.0f,  0.0f, 10.0f));
 
-	xAxis.SetColor(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
-	yAxis.SetColor(glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
-	zAxis.SetColor(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
+	xAxis.m_Color = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+	yAxis.m_Color = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
+	zAxis.m_Color = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
 
 	glm::mat4 view, proj;
-	auto identity = glm::mat4(1.0f);
 
-	auto colorBuffer = std::make_shared<TexColorBuffer>(SCR_WIDTH, SCR_HEIGHT);
-	auto depthAndStencilBuffer = std::make_shared <Renderbuffer>(GL_DEPTH24_STENCIL8, SCR_WIDTH, SCR_HEIGHT);
-	auto framebuffer = Framebuffer(colorBuffer, depthAndStencilBuffer);
+	// auto colorBuffer = std::make_shared<TexColorBuffer>(SCR_WIDTH, SCR_HEIGHT);
+	// auto depthAndStencilBuffer = std::make_shared <Renderbuffer>(GL_DEPTH24_STENCIL8, SCR_WIDTH, SCR_HEIGHT);
+	// auto framebuffer = Framebuffer(colorBuffer, depthAndStencilBuffer);
 
-	auto billboard = std::make_shared<ScreenMesh>(colorBuffer);
+	// auto billboard = std::make_shared<ScreenMesh>(colorBuffer);
 
 	// Render Loop
 	std::cout << "Starting render loop" << std::endl;
@@ -315,29 +313,29 @@ int main()
 		glClearColor(0.53f, 0.81f, 0.92f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		if (renderAxis)
+		for (const auto& drawable : renderer.m_Meshes)
 		{
-			xAxis.SetMVP(identity, view, proj);
-			yAxis.SetMVP(identity, view, proj);
-			zAxis.SetMVP(identity, view, proj);
-
-			xAxis.Draw();
-			yAxis.Draw();
-			zAxis.Draw();
-		}
-
-		for (auto mesh : renderer.m_Meshes)
-		{
-			if (mesh->m_Type == DrawableType::TRIANGLE_MESH)
+			if (drawable->m_Type == DrawableType::TRIANGLE_MESH)
 			{
-				mesh = std::static_pointer_cast<TriangleMesh>(mesh);
-				mesh->m_Transform.View = view;
-				mesh->m_Transform.Projection = proj;
+				auto triangleMesh = std::static_pointer_cast<TriangleMesh>(drawable);
+				triangleMesh->m_Transform.View = view;
+				triangleMesh->m_Transform.Projection = proj;
+			}
+			else if (renderAxis && drawable->m_Type == DrawableType::LINE)
+			{
+				auto line = std::static_pointer_cast<Line>(drawable);
+				line->m_Transform.View = view;
+				line->m_Transform.Projection = proj;
+			}
+			else if (drawable->m_Type == DrawableType::CUBE_MAP)
+			{
+				auto cubemap = std::static_pointer_cast<CubemapMesh>(drawable);
+				cubemap->m_Transform.View = glm::mat4(glm::mat3(view));
+				cubemap->m_Transform.Projection = proj;
 			}
 		}
 
-		skybox->m_Transform.View = glm::mat4(glm::mat3(view));
-
+		renderer.m_RenderNormals = renderNormals;
 		renderer.Render();
 
 		// Check and call events and swap buffers

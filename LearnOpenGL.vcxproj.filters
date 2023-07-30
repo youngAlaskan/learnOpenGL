@@ -21,6 +21,12 @@
     <ClCompile Include="Source.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="TM.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Drawable.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="tm.h">
@@ -71,13 +77,14 @@
     <ClInclude Include="Transform.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Drawable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\vertexShaders\positionColorTex.vert" />
     <None Include="shaders\vertexShaders\position.vert" />
     <None Include="shaders\fragmentShaders\uniformColor.frag" />
-    <None Include="shaders\vertexShaders\positionColorNormalTex.vert" />
-    <None Include="shaders\fragmentShaders\variableColor.frag" />
+    <None Include="shaders\vertexShaders\positionNormalTex.vert" />
     <None Include="README.md" />
     <None Include="shaders\fragmentShaders\objectLitByVariousLights.frag" />
     <None Include="shaders\fragmentShaders\texture2D.frag" />
@@ -86,5 +93,50 @@
     <None Include="shaders\fragmentShaders\skybox.frag" />
     <None Include="shaders\fragmentShaders\skyboxMirror.frag" />
     <None Include="shaders\fragmentShaders\skyboxRefractor.frag" />
+    <None Include="ClassDiagram.cd" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="textures\skybox\back.jpg">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="textures\skybox\bottom.jpg">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="textures\skybox\front.jpg">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="textures\skybox\left.jpg">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="textures\skybox\right.jpg">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="textures\skybox\top.jpg">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="textures\awesomeface.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="textures\blending_transparent_window.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="textures\container.jpg">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="textures\container2.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="textures\container2_specular.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="textures\grass.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="textures\matrix.jpg">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="textures\wall.jpg">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>

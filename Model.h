@@ -4,15 +4,13 @@
 #include <map>
 #include <vector>
 
-#include <glm/glm.hpp>
+#include <glm\glm.hpp>
 
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
+#include <assimp\Importer.hpp>
+#include <assimp\scene.h>
+#include <assimp\postprocess.h>
 
 #include "TM.h"
-#include "Texture.h"
-#include "Vertex.h"
 
 class Model
 {
@@ -61,7 +59,7 @@ private:
             aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
             auto convertedMesh = ProcessMesh(mesh, scene);
             convertedMesh->m_DrawingMode = DrawingMode::LIT_OBJECT;
-            convertedMesh->SetVertexCount(mesh->mNumVertices);
+            convertedMesh->m_VertexCount = mesh->mNumVertices;
             m_Meshes.emplace_back(convertedMesh);
         }
         // after we've processed all of the meshes (if any) we then recursively process each of the children nodes
