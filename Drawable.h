@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Transform.h"
+#include "TransformComponent.h"
 
 enum class DrawingMode {
 	ISOLATED,
@@ -29,6 +29,6 @@ public:
 
 public:
 	unsigned int m_VAO = 0, m_VBO = 0, m_EBO = 0;
-	Transform m_Transform{};
+	TransformComponent m_TransformComponent{};
 	DrawableType m_Type;
 };

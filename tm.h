@@ -33,7 +33,7 @@ public:
 	TriangleMesh(std::vector<Vertex> connectivityData, std::vector<unsigned int> indices, std::shared_ptr<Material> material, DrawingMode drawingMode = DrawingMode::ISOLATED);
 
 	// Set Mesh as Axis-Aligned Square
-	void SetAsAASquare();
+	void SetAsAAPlane();
 	// Set Mesh as Axis-Aligned Cube with an optional solid color
 	void SetAsAACube();
 

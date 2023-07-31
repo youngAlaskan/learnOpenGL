@@ -147,6 +147,7 @@
     <ClCompile Include="glad.c" />
     <ClCompile Include="Source.cpp" />
     <ClCompile Include="TM.cpp" />
+    <ClCompile Include="UniformBuffer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
@@ -163,7 +164,8 @@
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="TM.h" />
-    <ClInclude Include="Transform.h" />
+    <ClInclude Include="TransformComponent.h" />
+    <ClInclude Include="UniformBuffer.h" />
     <ClInclude Include="utils.h" />
     <ClInclude Include="Vertex.h" />
   </ItemGroup>

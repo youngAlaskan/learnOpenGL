@@ -1,22 +1,29 @@
 #version 460 core
-layout (location = 0) in vec4 aPos;
-layout (location = 1) in vec3 aNormal;
-layout (location = 2) in vec2 aTexCoord;
+
+layout (location = 0) in vec4 a_Position;
+layout (location = 1) in vec3 a_Normal;
+layout (location = 2) in vec2 a_TexCoord;
 
 uniform mat4 modelInv;
 uniform mat4 model;
-uniform mat4 view;
-uniform mat4 proj;
+layout (std140) uniform Matrices
+{
+    mat4 projection;
+    mat4 view;
+};
 
-out vec4 fragPos;
-out vec3 normal;
-out vec2 texCoord;
+out VertexData
+{
+    vec4 FragPos;
+    vec3 Normal;
+    vec2 TexCoord;
+} vertexData;
 
 void main()
 {
-    fragPos = model * aPos;
-    normal = mat3(transpose(modelInv)) * aNormal;
-    texCoord = aTexCoord;
+    vertexData.FragPos = model * a_Position;
+    vertexData.Normal = normalize(mat3(transpose(modelInv)) * a_Normal);
+    vertexData.TexCoord = a_TexCoord;
 
-    gl_Position = proj * view * fragPos;
+    gl_Position = projection * view * vertexData.FragPos;
 } 

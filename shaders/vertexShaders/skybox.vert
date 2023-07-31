@@ -1,16 +1,18 @@
 #version 460 core
-layout (location = 0) in vec4 aPos;
-layout (location = 1) in vec4 aColor;
-layout (location = 2) in vec3 aNormal;
-layout (location = 3) in vec2 aTexCoord;
+layout (location = 0) in vec4 aPosition;
+layout (location = 1) in vec3 aNormal;
+layout (location = 2) in vec2 aTexCoord;
 
 out vec3 texCoords;
 
-uniform mat4 proj;
-uniform mat4 view;
+layout (std140) uniform Matrices
+{
+    mat4 projection;
+    mat4 view;
+};
 
 void main()
 {
-	texCoords = aPos.xyz;
-	gl_Position = (proj * view * aPos).xyww;
+	texCoords = aPosition.xyz;
+	gl_Position = (projection * mat4(mat3(view)) * aPosition).xyww;
 }

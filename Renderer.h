@@ -4,6 +4,7 @@
 
 #include "Line.h"
 #include "TM.h"
+#include "UniformBuffer.h"
 #include "Shader.h"
 
 class Renderer
@@ -22,8 +23,11 @@ public:
 
 	~Renderer() = default;
 
-	void Render()
+	void Render() const
 	{
+		if (m_RenderAxis)
+			RenderAxis();
+
 		for (const auto& drawable : m_Meshes)
 		{
 			switch (drawable->m_Type)
@@ -46,17 +50,46 @@ public:
 		}
 	}
 
+	void SetUniformBuffer(const std::shared_ptr<UniformBuffer>& uniformBuffer, const std::string& name) const
+	{
+		for (const auto& [drawingMode, shader] : m_Shaders)
+			shader.SetUniformBuffer(uniformBuffer, name);
+	}
+
 public:
 	std::shared_ptr<Scene> m_Scene;
 	std::vector<std::shared_ptr<Drawable>> m_Meshes;
-	bool m_RenderNormals = false;
+	bool m_RenderNormals = false, m_RenderAxis = false;
 
 private:
+	void RenderAxis() const
+	{
+		const auto& shader = m_Shaders.at(DrawingMode::LINES);
+		shader.Use();
+		shader.SetTransform({});
+
+		shader.SetVec4("color", m_XAxis.m_Color);
+
+		glBindVertexArray(m_XAxis.m_VAO);
+		glDrawArrays(GL_LINES, 0, 2);
+
+		shader.SetVec4("color", m_YAxis.m_Color);
+
+		glBindVertexArray(m_YAxis.m_VAO);
+		glDrawArrays(GL_LINES, 0, 2);
+
+		shader.SetVec4("color", m_ZAxis.m_Color);
+
+		glBindVertexArray(m_ZAxis.m_VAO);
+		glDrawArrays(GL_LINES, 0, 2);
+		glBindVertexArray(0);
+	}
+
 	void RenderTriangleMesh(const std::shared_ptr<TriangleMesh>& mesh) const
 	{
 		const auto& shader = m_Shaders.at(mesh->m_DrawingMode);
 		shader.Use();
-		shader.SetTransform(mesh->m_Transform, true);
+		shader.SetTransform(mesh->m_TransformComponent);
 
 		switch (mesh->m_DrawingMode)  // NOLINT(clang-diagnostic-switch-enum)
 		{
@@ -96,7 +129,7 @@ private:
 	{
 		const auto& shader = m_Shaders.at(DrawingMode::LINES);
 		shader.Use();
-		shader.SetTransform(mesh->m_Transform);
+		shader.SetTransform(mesh->m_TransformComponent);
 
 		shader.SetVec4("color", glm::vec4(1.0, 0.0, 1.0, 1.0));
 
@@ -113,8 +146,6 @@ private:
 
 		m_Shaders.at(DrawingMode::SKYBOX).Use();
 		mesh->m_Texture->Use();
-		m_Shaders.at(DrawingMode::SKYBOX).SetMat4("view", mesh->m_Transform.View);
-		m_Shaders.at(DrawingMode::SKYBOX).SetMat4("proj", mesh->m_Transform.Projection);
 
 		glBindVertexArray(mesh->m_VAO);
 		glDrawElements(GL_TRIANGLES, static_cast<int>(mesh->m_VertexCount), GL_UNSIGNED_INT, nullptr);
@@ -139,7 +170,7 @@ private:
 	{
 		const auto& shader = m_Shaders.at(DrawingMode::LINES);
 		shader.Use();
-		shader.SetTransform(line->m_Transform);
+		shader.SetTransform(line->m_TransformComponent);
 
 		shader.SetVec4("color", line->m_Color);
 
@@ -177,4 +208,8 @@ private:
 
 private:
 	std::unordered_map<DrawingMode, Shader> m_Shaders;
+
+	Line m_XAxis = Line(glm::vec3(0.0f), glm::vec3(10.0f, 0.0f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+	Line m_YAxis = Line(glm::vec3(0.0f), glm::vec3(0.0f, 10.0f, 0.0f), glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
+	Line m_ZAxis = Line(glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, 10.0f), glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
 };

@@ -16,8 +16,8 @@ class Line final : public Drawable
 public:
 	Line() { m_Type = DrawableType::LINE; }
 
-	Line(glm::vec3 start, glm::vec3 end)
-		: m_Start(start), m_End(end)
+	Line(glm::vec3 start, glm::vec3 end, glm::vec4 color = glm::vec4(1.0f, 0.0f, 1.0f, 1.0f))
+		: m_Start(start), m_End(end), m_Color(color)
 	{
 		m_Type = DrawableType::LINE;
 
@@ -31,7 +31,7 @@ public:
 		glBindVertexArray(m_VAO);
 
 		glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(m_Vertices), m_Vertices.data(), GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(m_Vertices), m_Vertices.data(), GL_STATIC_DRAW);  // NOLINT(bugprone-sizeof-container)
 
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), static_cast<void*>(nullptr));
 		glEnableVertexAttribArray(0);

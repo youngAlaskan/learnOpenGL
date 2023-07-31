@@ -124,6 +124,12 @@ public:
 		m_OuterCutOff = glm::cos(glm::radians(std::max(thetaDegrees * 1.125f, 0.0f)));
 	}
 
+	void Update(const glm::vec4& position, const glm::vec3& direction)
+	{
+		m_Pos = position;
+		m_Direction = direction;
+	}
+
 public:
 	glm::vec3 m_Direction = glm::vec3(0.0f);
 	float m_InnerCutOff = 0.0f, m_OuterCutOff = 0.0f;

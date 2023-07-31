@@ -20,7 +20,7 @@
 #include "Model.h"
 // TM
 //   - Drawable
-//       - Transform
+//       - TransformComponent
 //   - Vertex
 //   - Material
 //       - Texture
@@ -32,10 +32,10 @@
 #include "Renderer.h"
 // Line
 //   - Drawable
-//       - Transform
+//       - TransformComponent
 // TM
 //   - Drawable
-//       - Transform
+//       - TransformComponent
 //   - Vertex
 //   - Material
 //       - Texture
@@ -44,7 +44,7 @@
 //       - Camera
 //       - Texture
 // Shader
-//   - Transform
+//   - TransformComponent
 //   - Material
 //       - Texture
 //   - Light
@@ -204,7 +204,11 @@ int main()
 	auto scene = std::make_shared<Scene>();
 	scene->Camera = camera;
 
+	auto uniformMatrixBuffer = std::make_shared<UniformBuffer>();
+	uniformMatrixBuffer->SetData(2 * sizeof(glm::mat4), nullptr);
+	uniformMatrixBuffer->BindDataRange(0, 0, 2 * sizeof(glm::mat4));
 	auto renderer = Renderer(scene);
+	renderer.SetUniformBuffer(uniformMatrixBuffer, "Matrices");
 
 	std::vector<std::string> faces
 	{
@@ -226,7 +230,8 @@ int main()
 
 	auto pointLightMesh = std::make_shared<TriangleMesh>();
 	pointLightMesh->SetAsAACube();
-	pointLightMesh->m_Transform.Model = glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(pointLight->m_Pos)), glm::vec3(0.2f));
+	pointLightMesh->m_TransformComponent.Translation = pointLight->m_Pos;
+	pointLightMesh->m_TransformComponent.Scale = glm::vec3(0.2f);
 	renderer.m_Meshes.emplace_back(pointLightMesh);
 
 	scene->DirectionalLight = std::make_shared<DirectionalLight>(glm::normalize(glm::vec3(1.0, -1.0, 1.0)), 0.2f, 0.5f, 0.99f);
@@ -241,7 +246,7 @@ int main()
 
 	auto containerCube = std::make_shared<TriangleMesh>(containerMaterial, DrawingMode::LIT_OBJECT);
 	containerCube->SetAsAACube();
-	containerCube->m_Transform.Model = glm::translate(glm::mat4(1.0f), glm::vec3(-2.0f, 0.0f, 2.0f));
+	containerCube->m_TransformComponent.Translation = glm::vec3(-2.0f, 0.0f, 2.0f);
 	renderer.m_Meshes.emplace_back(containerCube);
 
 	auto start = glfwGetTime();
@@ -253,37 +258,29 @@ int main()
 		renderer.m_Meshes.emplace_back(mesh);
 
 	auto floor = std::make_shared<TriangleMesh>(containerMaterial, DrawingMode::MIRROR);
-	floor->SetAsAASquare();
-	floor->m_Transform.Model = glm::scale(glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -2.0f, 0.0f)), glm::radians(270.0f), glm::vec3(1.0f, 0.0f, 0.0f)), glm::vec3(10.0f));
+	floor->SetAsAAPlane();
+	floor->m_TransformComponent.Translation = glm::vec3(0.0f, -2.0f, 0.0f);
+	floor->m_TransformComponent.Rotation = glm::vec3(glm::radians(270.0f), 0.0f, 0.0f);
+	floor->m_TransformComponent.Scale = glm::vec3(10.0f, 10.0f, 10.0f);
 	renderer.m_Meshes.emplace_back(floor);
 
 	auto grassDiffuse = std::make_shared<Tex2D>(".\\textures\\grass.png", "diffuse");
 	auto grassMaterial = std::make_shared<Material>(grassDiffuse, 0.2f);
 
 	auto square = std::make_shared<TriangleMesh>(grassMaterial, DrawingMode::LIT_OBJECT);
-	square->SetAsAASquare();
-	square->m_Transform.Model = glm::translate(glm::mat4(1.0f), glm::vec3(0.5f, 0.0f, 1.5f));
+	square->SetAsAAPlane();
+	square->m_TransformComponent.Translation = glm::vec3(0.5f, 0.0f, 1.5f);
 	renderer.m_Meshes.emplace_back(square);
 
 	auto windowDiffuse = std::make_shared<Tex2D>(".\\textures\\blending_transparent_window.png", "diffuse");
 	auto windowMaterial = std::make_shared<Material>(windowDiffuse, 0.2f);
 
 	auto windowMesh = std::make_shared<TriangleMesh>(windowMaterial, DrawingMode::LIT_OBJECT);
-	windowMesh->SetAsAASquare();
-	windowMesh->m_Transform.Model = glm::translate(glm::mat4(1.0f), glm::vec3(0.4f, 0.0f, 2.0f));
+	windowMesh->SetAsAAPlane();
+	windowMesh->m_TransformComponent.Translation = glm::vec3(0.4f, 0.0f, 2.0f);
 	renderer.m_Meshes.emplace_back(windowMesh);
 
 	renderer.m_Meshes.emplace_back(skybox);
-
-	auto origin = glm::vec3(0.0f, 0.0f, 0.0f);
-
-	Line xAxis(origin, glm::vec3(10.0f,  0.0f,  0.0f));
-	Line yAxis(origin, glm::vec3( 0.0f, 10.0f,  0.0f));
-	Line zAxis(origin, glm::vec3( 0.0f,  0.0f, 10.0f));
-
-	xAxis.m_Color = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
-	yAxis.m_Color = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
-	zAxis.m_Color = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
 
 	glm::mat4 view, proj;
 
@@ -304,38 +301,18 @@ int main()
 		view = camera->GetViewMatrix();
 		proj = glm::perspective(glm::radians(camera->m_Zoom),
 			static_cast<float>(SCR_WIDTH) / static_cast<float>(SCR_HEIGHT), 0.1f, 100.0f);
+		uniformMatrixBuffer->SetSubData(0, sizeof(proj), glm::value_ptr(proj));
+		uniformMatrixBuffer->SetSubData(sizeof(proj), sizeof(view), glm::value_ptr(view));
 
-		scene->SpotLight->m_Pos = glm::vec4(camera->m_Position, 1.0f);
-		scene->SpotLight->m_Direction = camera->m_Front;
+		scene->SpotLight->Update(glm::vec4(camera->m_Position, 1.0f), camera->m_Front);
 
 		// Render
 		// -------
 		glClearColor(0.53f, 0.81f, 0.92f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		for (const auto& drawable : renderer.m_Meshes)
-		{
-			if (drawable->m_Type == DrawableType::TRIANGLE_MESH)
-			{
-				auto triangleMesh = std::static_pointer_cast<TriangleMesh>(drawable);
-				triangleMesh->m_Transform.View = view;
-				triangleMesh->m_Transform.Projection = proj;
-			}
-			else if (renderAxis && drawable->m_Type == DrawableType::LINE)
-			{
-				auto line = std::static_pointer_cast<Line>(drawable);
-				line->m_Transform.View = view;
-				line->m_Transform.Projection = proj;
-			}
-			else if (drawable->m_Type == DrawableType::CUBE_MAP)
-			{
-				auto cubemap = std::static_pointer_cast<CubemapMesh>(drawable);
-				cubemap->m_Transform.View = glm::mat4(glm::mat3(view));
-				cubemap->m_Transform.Projection = proj;
-			}
-		}
-
 		renderer.m_RenderNormals = renderNormals;
+		renderer.m_RenderAxis = renderAxis;
 		renderer.Render();
 
 		// Check and call events and swap buffers

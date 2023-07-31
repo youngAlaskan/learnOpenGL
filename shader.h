@@ -8,7 +8,8 @@
 #include <sstream>
 #include <iostream>
 
-#include "Transform.h"
+#include "TransformComponent.h"
+#include "UniformBuffer.h"
 #include "Material.h"
 #include "Light.h"
 #include "Camera.h"
@@ -128,13 +129,17 @@ public:
         glUniformMatrix4fv(glGetUniformLocation(m_ID, name.c_str()), 1, GL_FALSE, glm::value_ptr(m));
     }
 
-    void SetTransform(const Transform& transform, const bool setModelInverse = false) const
+    void SetTransform(const TransformComponent& transform) const
     {
-        SetMat4("model", transform.Model);
-        SetMat4("view", transform.View);
-        SetMat4("proj", transform.Projection);
-        if (setModelInverse)
-            SetMat4("modelInv", glm::inverse(transform.Model));
+        SetMat4("model", transform.GetTransform());
+        SetMat4("modelInv", glm::inverse(transform.GetTransform()));
+    }
+
+    void SetUniformBuffer(const std::shared_ptr<UniformBuffer>& uniformBuffer, const std::string& name) const
+    {
+        const unsigned int uniformBlockIndex = glGetUniformBlockIndex(m_ID, name.c_str());
+        if (uniformBlockIndex != GL_INVALID_INDEX)
+            glUniformBlockBinding(m_ID, uniformBlockIndex, uniformBuffer->m_Index);
     }
 
     void SetMaterial(const std::shared_ptr<Material>& material) const

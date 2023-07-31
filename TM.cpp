@@ -60,8 +60,8 @@ TriangleMesh::TriangleMesh(std::vector<Vertex> connectivityData, std::vector<uns
 	SetNVAOData();
 }
 
-// Set Mesh as Axis-Aligned Square
-void TriangleMesh::SetAsAASquare()
+// Set Mesh as Axis-Aligned Plane
+void TriangleMesh::SetAsAAPlane()
 {
 	m_VertexCount = 6;
 	m_TriangleCount = 2;
