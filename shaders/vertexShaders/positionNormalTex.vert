@@ -2,7 +2,7 @@
 
 layout (location = 0) in vec4 a_Position;
 layout (location = 1) in vec3 a_Normal;
-layout (location = 2) in vec2 a_TexCoord;
+layout (location = 2) in vec2 a_TexCoords;
 
 uniform mat4 modelInv;
 uniform mat4 model;
@@ -16,14 +16,14 @@ out VertexData
 {
     vec4 FragPos;
     vec3 Normal;
-    vec2 TexCoord;
-} vertexData;
+    vec2 TexCoords;
+} o_VertexData;
 
 void main()
 {
-    vertexData.FragPos = model * a_Position;
-    vertexData.Normal = normalize(mat3(transpose(modelInv)) * a_Normal);
-    vertexData.TexCoord = a_TexCoord;
+    o_VertexData.FragPos = model * a_Position;
+    o_VertexData.Normal = normalize(mat3(transpose(modelInv)) * a_Normal);
+    o_VertexData.TexCoords = a_TexCoords;
 
-    gl_Position = projection * view * vertexData.FragPos;
+    gl_Position = projection * view * o_VertexData.FragPos;
 } 

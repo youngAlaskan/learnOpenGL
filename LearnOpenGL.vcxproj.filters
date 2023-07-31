@@ -100,6 +100,7 @@
     <None Include="shaders\fragmentShaders\skyboxMirror.frag" />
     <None Include="shaders\fragmentShaders\skyboxRefractor.frag" />
     <None Include="ClassDiagram.cd" />
+    <None Include="shaders\geometryShaders\explode.geom" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="textures\skybox\back.jpg">

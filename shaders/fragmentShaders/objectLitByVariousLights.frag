@@ -72,8 +72,8 @@ in VertexData
 {
     vec4 FragPos;
     vec3 Normal;
-    vec2 TexCoord;
-} vertexData;
+    vec2 TexCoords;
+} i_VertexData;
 
 out vec4 FragColor;
 
@@ -87,7 +87,7 @@ float CalcSpec(in vec3 fragToLight, in vec3 toViewer);
 void main()
 {
 
-    vec3 toViewer = normalize(viewPos - vec3(vertexData.FragPos));
+    vec3 toViewer = normalize(viewPos - vec3(i_VertexData.FragPos));
 
     mat4 textureValues; // Ambient, Diffuse, Specular, Emissive
 
@@ -110,7 +110,7 @@ vec4 CalcDirLight(DirLight light, in vec3 toViewer, in mat4 textureValues)
 {
 	vec3 fragToLight = normalize(-light.direction);
 
-    float lambertian = max(dot(vertexData.Normal, fragToLight), 0.0);
+    float lambertian = max(dot(i_VertexData.Normal, fragToLight), 0.0);
     float spec = lambertian > 0.0 ? CalcSpec(fragToLight, toViewer) : 0.0;
 
     vec4 ambient  = textureValues[0];
@@ -127,12 +127,12 @@ vec4 CalcDirLight(DirLight light, in vec3 toViewer, in mat4 textureValues)
 
 vec4 CalcPointLight(PointLight light, in vec3 toViewer, in mat4 textureValues)
 {
-    float distance = length(light.position - vertexData.FragPos);
+    float distance = length(light.position - i_VertexData.FragPos);
     float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
 
-    vec3 fragToLight = normalize(vec3(light.position - vertexData.FragPos));
+    vec3 fragToLight = normalize(vec3(light.position - i_VertexData.FragPos));
 
-    float lambertian = max(dot(vertexData.Normal, fragToLight), 0.0);
+    float lambertian = max(dot(i_VertexData.Normal, fragToLight), 0.0);
     float spec = lambertian > 0.0 ? CalcSpec(fragToLight, toViewer) : 0.0;
 
     vec4 ambient  = textureValues[0];
@@ -150,16 +150,16 @@ vec4 CalcPointLight(PointLight light, in vec3 toViewer, in mat4 textureValues)
 vec4 CalcSpotLight(SpotLight light, in vec3 toViewer, in mat4 textureValues)
 {
 
-    vec3 fragToLight = normalize(vec3(light.position - vertexData.FragPos));
+    vec3 fragToLight = normalize(vec3(light.position - i_VertexData.FragPos));
 
     float phi = dot(fragToLight, normalize(-light.direction));
     float epsilon = light.innerCutOff - light.outerCutOff;
     float intensity = clamp((phi - light.outerCutOff) / epsilon, 0.0, 1.0);
 
-    float lambertian = max(dot(vertexData.Normal, fragToLight), 0.0);
+    float lambertian = max(dot(i_VertexData.Normal, fragToLight), 0.0);
     float spec = lambertian > 0.0 ? CalcSpec(fragToLight, toViewer) : 0.0;
     
-    float distance = length(light.position - vertexData.FragPos);
+    float distance = length(light.position - i_VertexData.FragPos);
     float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
 
     vec4 ambient  = textureValues[0];
@@ -176,7 +176,7 @@ vec4 CalcSpotLight(SpotLight light, in vec3 toViewer, in mat4 textureValues)
 
 float CalcSpec(in vec3 fragToLight, in vec3 toViewer)
 {
-    vec3 reflected = reflect(-fragToLight, vertexData.Normal);
+    vec3 reflected = reflect(-fragToLight, i_VertexData.Normal);
 
     float specAngle = max(dot(toViewer, reflected), 0.0);
     return pow(specAngle, material.shininess * 128.0);
@@ -187,17 +187,17 @@ void SetValues(out mat4 textureValues)
     // Iterate through diffuse textures
     for (int i = 0; i < material.diffuseEnd && i < TEXTURE_CAPACITY; i++)
     {
-        if (texture(textures[i], vertexData.TexCoord).a == 0.0)
+        if (texture(textures[i], i_VertexData.TexCoords).a == 0.0)
             discard;
-        textureValues[0] += texture(textures[i], vertexData.TexCoord);
-        textureValues[1] += texture(textures[i], vertexData.TexCoord);
+        textureValues[0] += texture(textures[i], i_VertexData.TexCoords);
+        textureValues[1] += texture(textures[i], i_VertexData.TexCoords);
     }
 
     // Iterate through specular textures
     for (int i = material.diffuseEnd; i < material.specularEnd && i < TEXTURE_CAPACITY; i++)
-        textureValues[2] += texture(textures[i], vertexData.TexCoord);
+        textureValues[2] += texture(textures[i], i_VertexData.TexCoords);
 
     // Iterate through emissive textures
     for (int i = material.specularEnd; i < material.emissiveEnd && i < TEXTURE_CAPACITY; i++)
-        textureValues[3] += texture(textures[i], vertexData.TexCoord);
+        textureValues[3] += texture(textures[i], i_VertexData.TexCoords);
 }
