@@ -38,7 +38,7 @@ TriangleMesh::TriangleMesh()
 	glGenBuffers(1, &m_NVBO);
 }
 
-TriangleMesh::TriangleMesh(std::shared_ptr<Material> material, const DrawingMode drawingMode)
+TriangleMesh::TriangleMesh(std::shared_ptr<MaterialComponent> material, const DrawingMode drawingMode)
 	: m_Material(std::move(material))
 {
 	m_DrawingMode = drawingMode;
@@ -47,7 +47,7 @@ TriangleMesh::TriangleMesh(std::shared_ptr<Material> material, const DrawingMode
 	glGenBuffers(1, &m_NVBO);
 }
 
-TriangleMesh::TriangleMesh(std::vector<Vertex> connectivityData, std::vector<unsigned int> indices, std::shared_ptr<Material> material, const DrawingMode drawingMode)
+TriangleMesh::TriangleMesh(std::vector<Vertex> connectivityData, std::vector<unsigned int> indices, std::shared_ptr<MaterialComponent> material, const DrawingMode drawingMode)
 	: m_Material(std::move(material))
 {
 	m_ConnectivityData = std::move(connectivityData);
@@ -97,68 +97,64 @@ void TriangleMesh::SetAsAAPlane()
 // Set Mesh as Axis-Aligned Cube
 void TriangleMesh::SetAsAACube()
 {
-	constexpr unsigned int BLF = 0, TLF = 1, TRF = 2, BRF = 3, BLB = 4, TLB = 5, TRB = 6, BRB = 7;
 	m_TriangleCount = 12;
-	m_VertexCount = 3 * m_TriangleCount;
+	m_VertexCount = 24;
 	m_ConnectivityData.reserve(sizeof(Vertex) * m_VertexCount);
 	m_Indices = {
-		// Front
-		BLF, TRF, TLF,
-		BLF, BRF, TRF,
+		0, 2, 1,
+		0, 3, 2,
 
-		// Right
-		BRF, TRB, TRF,
-		BRF, BRB, TRB,
+		4, 6, 5,
+		4, 7, 6,
 
-		// Back
-		BRB, TLB, TRB,
-		BRB, BLB, TLB,
+		8, 10, 9,
+		8, 11, 10,
 
-		// Left
-		BLB, TLF, TLB,
-		BLB, BLF, TLF,
+		12, 14, 13,
+		12, 15, 14,
 
-		// Bottom
-		BLB, BRF, BLF,
-		BLB, BRB, BRF,
+		16, 18, 17,
+		16, 19, 18,
 
-		// Top
-		TLF, TRB, TLB,
-		TLF, TRF, TRB
+		20, 22, 21,
+		20, 23, 22,
 	};
 
-	std::vector<glm::vec4> positions;
-	std::vector<glm::vec3> normals;
-	std::vector<glm::vec2> texCoords;
+	// +Z
+	m_ConnectivityData.emplace_back(glm::vec4(-0.5f, -0.5f, 0.5f, 1.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec2(0.0f, 0.0f));
+	m_ConnectivityData.emplace_back(glm::vec4(-0.5f,  0.5f, 0.5f, 1.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec2(0.0f, 1.0f));
+	m_ConnectivityData.emplace_back(glm::vec4( 0.5f,  0.5f, 0.5f, 1.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec2(1.0f, 1.0f));
+	m_ConnectivityData.emplace_back(glm::vec4( 0.5f, -0.5f, 0.5f, 1.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec2(1.0f, 0.0f));
 
-	positions.emplace_back(-0.5f, -0.5f, 0.5f, 1.0f); // BLF
-	positions.emplace_back(-0.5f, 0.5f, 0.5f, 1.0f); // TLF
-	positions.emplace_back(0.5f, 0.5f, 0.5f, 1.0f); // TRF
-	positions.emplace_back(0.5f, -0.5f, 0.5f, 1.0f); // BRF
-	positions.emplace_back(-0.5f, -0.5f, -0.5f, 1.0f); // BLB
-	positions.emplace_back(-0.5f, 0.5f, -0.5f, 1.0f); // TLB
-	positions.emplace_back(0.5f, 0.5f, -0.5f, 1.0f); // TRB
-	positions.emplace_back(0.5f, -0.5f, -0.5f, 1.0f); // BRB
+	// +X
+	m_ConnectivityData.emplace_back(glm::vec4(0.5f, -0.5f,  0.5f, 1.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec2(0.0f, 0.0f));
+	m_ConnectivityData.emplace_back(glm::vec4(0.5f,  0.5f,  0.5f, 1.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec2(0.0f, 1.0f));
+	m_ConnectivityData.emplace_back(glm::vec4(0.5f,  0.5f, -0.5f, 1.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec2(1.0f, 1.0f));
+	m_ConnectivityData.emplace_back(glm::vec4(0.5f, -0.5f, -0.5f, 1.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec2(1.0f, 0.0f));
 
-	normals.emplace_back(0.0f, 0.0f, 1.0f); // POS Z
-	normals.emplace_back(1.0f, 0.0f, 0.0f); // POS X
-	normals.emplace_back(0.0f, 0.0f, -1.0f); // NEG Z
-	normals.emplace_back(-1.0f, 0.0f, 0.0f); // NEG X
-	normals.emplace_back(0.0f, -1.0f, 0.0f); // NEG Y
-	normals.emplace_back(0.0f, 1.0f, 0.0f); // POS Y
+	// -Z
+	m_ConnectivityData.emplace_back(glm::vec4( 0.5f, -0.5f, -0.5f, 1.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec2(0.0f, 0.0f));
+	m_ConnectivityData.emplace_back(glm::vec4( 0.5f,  0.5f, -0.5f, 1.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec2(0.0f, 1.0f));
+	m_ConnectivityData.emplace_back(glm::vec4(-0.5f,  0.5f, -0.5f, 1.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec2(1.0f, 1.0f));
+	m_ConnectivityData.emplace_back(glm::vec4(-0.5f, -0.5f, -0.5f, 1.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec2(1.0f, 0.0f));
 
-	texCoords.emplace_back(0.0f, 0.0f);
-	texCoords.emplace_back(0.0f, 1.0f);
-	texCoords.emplace_back(1.0f, 1.0f);
-	texCoords.emplace_back(1.0f, 0.0f);
+	// -X
+	m_ConnectivityData.emplace_back(glm::vec4(-0.5f, -0.5f, -0.5f, 1.0f), glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec2(0.0f, 0.0f));
+	m_ConnectivityData.emplace_back(glm::vec4(-0.5f,  0.5f, -0.5f, 1.0f), glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec2(0.0f, 1.0f));
+	m_ConnectivityData.emplace_back(glm::vec4(-0.5f,  0.5f,  0.5f, 1.0f), glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec2(1.0f, 1.0f));
+	m_ConnectivityData.emplace_back(glm::vec4(-0.5f, -0.5f,  0.5f, 1.0f), glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec2(1.0f, 0.0f));
 
-	const auto texCoordIndices = std::vector<int>{ 0, 2, 1, 0, 3, 2 };
+	// +Y
+	m_ConnectivityData.emplace_back(glm::vec4(-0.5f, 0.5f,  0.5f, 1.0f), glm::vec3(0.0f,  1.0f, 0.0f), glm::vec2(0.0f, 0.0f));
+	m_ConnectivityData.emplace_back(glm::vec4(-0.5f, 0.5f, -0.5f, 1.0f), glm::vec3(0.0f,  1.0f, 0.0f), glm::vec2(0.0f, 1.0f));
+	m_ConnectivityData.emplace_back(glm::vec4( 0.5f, 0.5f, -0.5f, 1.0f), glm::vec3(0.0f,  1.0f, 0.0f), glm::vec2(1.0f, 1.0f));
+	m_ConnectivityData.emplace_back(glm::vec4( 0.5f, 0.5f,  0.5f, 1.0f), glm::vec3(0.0f,  1.0f, 0.0f), glm::vec2(1.0f, 0.0f));
 
-	for (unsigned int i = 0; i < m_VertexCount; i++)
-		m_ConnectivityData.emplace_back(positions[m_Indices[i]], normals[i / 6], texCoords[texCoordIndices[i % 6]]);
-
-	for (unsigned int i = 0; i < m_VertexCount; i++)
-		m_Indices[i] = i;
+	// -Y
+	m_ConnectivityData.emplace_back(glm::vec4(-0.5f, -0.5f, -0.5f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec2(0.0f, 0.0f));
+	m_ConnectivityData.emplace_back(glm::vec4(-0.5f, -0.5f,  0.5f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec2(0.0f, 1.0f));
+	m_ConnectivityData.emplace_back(glm::vec4( 0.5f, -0.5f,  0.5f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec2(1.0f, 1.0f));
+	m_ConnectivityData.emplace_back(glm::vec4( 0.5f, -0.5f, -0.5f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec2(1.0f, 0.0f));
 
 	SetVAOData();
 	SetNVAOData();
@@ -183,9 +179,9 @@ void TriangleMesh::SetNVAOData() const
 		normalData.emplace_back(vertex.Position.y);
 		normalData.emplace_back(vertex.Position.z);
 
-		normalData.emplace_back(vertex.Position.x + vertex.Normal.x);
-		normalData.emplace_back(vertex.Position.y + vertex.Normal.y);
-		normalData.emplace_back(vertex.Position.z + vertex.Normal.z);
+		normalData.emplace_back(vertex.Position.x + vertex.Normal.x * 0.5f);
+		normalData.emplace_back(vertex.Position.y + vertex.Normal.y * 0.5f);
+		normalData.emplace_back(vertex.Position.z + vertex.Normal.z * 0.5f);
 	}
 
 	glBindVertexArray(m_NVAO);

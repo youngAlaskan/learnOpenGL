@@ -21,10 +21,43 @@ public:
 		SetShaders();
 	}
 
-	~Renderer() = default;
-
 	void Render() const
 	{
+		glClearColor(0.53f, 0.81f, 0.92f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		if (m_RenderAxis)
+			RenderAxis();
+
+		for (const auto& drawable : m_Meshes)
+		{
+			switch (drawable->m_Type)
+			{
+			case DrawableType::TRIANGLE_MESH:
+				RenderTriangleMesh(std::static_pointer_cast<TriangleMesh>(drawable));
+				if (m_RenderNormals)
+					RenderNormals(std::static_pointer_cast<TriangleMesh>(drawable));
+				break;
+			case DrawableType::CUBE_MAP:
+				RenderCubemap(std::static_pointer_cast<CubemapMesh>(drawable));
+				break;
+			case DrawableType::SCREEN:
+				RenderScreenMesh(std::static_pointer_cast<ScreenMesh>(drawable));
+				break;
+			case DrawableType::LINE:
+				RenderLine(std::static_pointer_cast<Line>(drawable));
+				break;
+			}
+		}
+	}
+
+	void Render(const bool renderAxis, const bool renderNormals)
+	{
+		glClearColor(0.53f, 0.81f, 0.92f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		m_RenderAxis = renderAxis;
+		m_RenderNormals = renderNormals;
 		if (m_RenderAxis)
 			RenderAxis();
 
@@ -58,7 +91,7 @@ public:
 
 public:
 	std::shared_ptr<Scene> m_Scene;
-	std::vector<std::shared_ptr<Drawable>> m_Meshes;
+	std::vector<std::shared_ptr<Renderable>> m_Meshes;
 	bool m_RenderNormals = false, m_RenderAxis = false;
 
 private:
@@ -68,19 +101,19 @@ private:
 		shader.Use();
 		shader.SetTransform({});
 
-		shader.SetVec4("color", m_XAxis.m_Color);
+		shader.SetVec4("color", m_XAxis->m_Color);
 
-		glBindVertexArray(m_XAxis.m_VAO);
+		glBindVertexArray(m_XAxis->m_VAO);
 		glDrawArrays(GL_LINES, 0, 2);
+		
+		shader.SetVec4("color", m_YAxis->m_Color);
 
-		shader.SetVec4("color", m_YAxis.m_Color);
-
-		glBindVertexArray(m_YAxis.m_VAO);
+		glBindVertexArray(m_YAxis->m_VAO);
 		glDrawArrays(GL_LINES, 0, 2);
+		
+		shader.SetVec4("color", m_ZAxis->m_Color);
 
-		shader.SetVec4("color", m_ZAxis.m_Color);
-
-		glBindVertexArray(m_ZAxis.m_VAO);
+		glBindVertexArray(m_ZAxis->m_VAO);
 		glDrawArrays(GL_LINES, 0, 2);
 		glBindVertexArray(0);
 	}
@@ -121,7 +154,10 @@ private:
 		}
 
 		glBindVertexArray(mesh->m_VAO);
-		glDrawElements(GL_TRIANGLES, static_cast<int>(mesh->m_VertexCount), GL_UNSIGNED_INT, nullptr);
+		if (mesh->m_Indices.empty())
+			glDrawArrays(GL_TRIANGLES, 0, static_cast<int>(mesh->m_VertexCount));
+		else
+			glDrawElements(GL_TRIANGLES, static_cast<int>(mesh->m_Indices.size()), GL_UNSIGNED_INT, nullptr);
 		glBindVertexArray(0);
 	}
 
@@ -140,7 +176,7 @@ private:
 
 	void RenderCubemap(const std::shared_ptr<CubemapMesh>& mesh) const
 	{
-		glDepthFunc(GL_LEQUAL);
+		glDepthMask(GL_FALSE);
 
 		glFrontFace(GL_CW);
 
@@ -148,12 +184,15 @@ private:
 		mesh->m_Texture->Use();
 
 		glBindVertexArray(mesh->m_VAO);
-		glDrawElements(GL_TRIANGLES, static_cast<int>(mesh->m_VertexCount), GL_UNSIGNED_INT, nullptr);
+		if (mesh->m_Indices.empty())
+			glDrawArrays(GL_TRIANGLES, 0, static_cast<int>(mesh->m_VertexCount));
+		else
+			glDrawElements(GL_TRIANGLES, static_cast<int>(mesh->m_Indices.size()), GL_UNSIGNED_INT, nullptr);
 		glBindVertexArray(0);
 
 		glFrontFace(GL_CCW);
 
-		glDepthFunc(GL_LESS);
+		glDepthMask(GL_TRUE);
 	}
 
 	void RenderScreenMesh(const std::shared_ptr<ScreenMesh>& mesh) const
@@ -209,7 +248,7 @@ private:
 private:
 	std::unordered_map<DrawingMode, Shader> m_Shaders;
 
-	Line m_XAxis = Line(glm::vec3(0.0f), glm::vec3(10.0f, 0.0f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
-	Line m_YAxis = Line(glm::vec3(0.0f), glm::vec3(0.0f, 10.0f, 0.0f), glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
-	Line m_ZAxis = Line(glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, 10.0f), glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
+	std::shared_ptr<Line> m_XAxis = std::make_shared<Line>(glm::vec3(0.0f), glm::vec3(10.0f, 0.0f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+	std::shared_ptr<Line> m_YAxis = std::make_shared<Line>(glm::vec3(0.0f), glm::vec3(0.0f, 10.0f, 0.0f), glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
+	std::shared_ptr<Line> m_ZAxis = std::make_shared<Line>(glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, 10.0f), glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
 };

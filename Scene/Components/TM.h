@@ -1,17 +1,13 @@
 #pragma once
 
-#include <glm\glm.hpp>
 #include <vector>
 
-#include "Drawable.h"
+#include "Renderable.h"
 
-#include "Vertex.h"
-
-#include "Material.h"
-#include "Scene.h"
+#include "..\Vertex.h"
 
 // Abstract Class for Triangle Meshes
-class AbstractTriangleMesh : public Drawable
+class AbstractTriangleMesh : public Renderable
 {
 public:
 	std::vector<Vertex> m_ConnectivityData = std::vector<Vertex>();
@@ -29,8 +25,8 @@ class TriangleMesh final : public AbstractTriangleMesh
 {
 public:
 	TriangleMesh();
-	explicit TriangleMesh(std::shared_ptr<Material> material, DrawingMode drawingMode = DrawingMode::ISOLATED);
-	TriangleMesh(std::vector<Vertex> connectivityData, std::vector<unsigned int> indices, std::shared_ptr<Material> material, DrawingMode drawingMode = DrawingMode::ISOLATED);
+	explicit TriangleMesh(std::shared_ptr<MaterialComponent> material, DrawingMode drawingMode = DrawingMode::ISOLATED);
+	TriangleMesh(std::vector<Vertex> connectivityData, std::vector<unsigned int> indices, std::shared_ptr<MaterialComponent> material, DrawingMode drawingMode = DrawingMode::ISOLATED);
 
 	// Set Mesh as Axis-Aligned Square
 	void SetAsAAPlane();
@@ -40,7 +36,7 @@ public:
 	~TriangleMesh() override;
 
 public:
-	std::shared_ptr<Material> m_Material;
+	std::shared_ptr<MaterialComponent> m_Material;
 	unsigned int m_NVAO = 0, m_NVBO = 0;
 	float m_RefractiveIndex = 0.0f;
 

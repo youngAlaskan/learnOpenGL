@@ -20,12 +20,12 @@ enum class DrawableType
 	SCREEN
 };
 
-class Drawable
+class Renderable
 {
 public:
-	Drawable();
-	bool operator==(const Drawable& other) const;
-	virtual ~Drawable();
+	Renderable();
+	bool operator==(const Renderable& other) const;
+	virtual ~Renderable();
 
 public:
 	unsigned int m_VAO = 0, m_VBO = 0, m_EBO = 0;

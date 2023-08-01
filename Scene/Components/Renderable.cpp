@@ -1,15 +1,15 @@
-#include "Drawable.h"
+#include "Renderable.h"
 
 #include "glad\glad.h"
 
-Drawable::Drawable()
+Renderable::Renderable()
 {
 	glGenVertexArrays(1, &m_VAO);
 	glGenBuffers(1, &m_VBO);
 	glGenBuffers(1, &m_EBO);
 }
 
-bool Drawable::operator==(const Drawable& other) const
+bool Renderable::operator==(const Renderable& other) const
 {
 	return m_VAO == other.m_VAO &&
 		m_VBO == other.m_VBO &&
@@ -17,7 +17,7 @@ bool Drawable::operator==(const Drawable& other) const
 		m_Type == other.m_Type;
 }
 
-Drawable::~Drawable()
+Renderable::~Renderable()
 {
 	glDeleteVertexArrays(1, &m_VAO);
 	glDeleteBuffers(1, &m_VBO);

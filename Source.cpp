@@ -19,7 +19,7 @@
 
 #include "Model.h"
 // TM
-//   - Drawable
+//   - Renderable
 //       - TransformComponent
 //   - Vertex
 //   - Material
@@ -31,10 +31,10 @@
 
 #include "Renderer.h"
 // Line
-//   - Drawable
+//   - Renderable
 //       - TransformComponent
 // TM
-//   - Drawable
+//   - Renderable
 //       - TransformComponent
 //   - Vertex
 //   - Material
@@ -171,6 +171,7 @@ GLFWwindow* Init()
 	glDebugMessageCallback(MessageCallback, nullptr);
 
 	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -195,33 +196,26 @@ void UpdateFrameRate(GLFWwindow* window)
 	glfwSetWindowTitle(window, ("LearnOpenGL FPS: " + std::to_string(averageFrameRate)).c_str());
 }
 
-int main()
+std::pair<std::shared_ptr<Scene>, Renderer> SandboxScene()
 {
-	GLFWwindow* window = Init();
-	if (!window)
-		return -1;
-
 	auto scene = std::make_shared<Scene>();
-	scene->Camera = camera;
-
-	auto uniformMatrixBuffer = std::make_shared<UniformBuffer>();
-	uniformMatrixBuffer->SetData(2 * sizeof(glm::mat4), nullptr);
-	uniformMatrixBuffer->BindDataRange(0, 0, 2 * sizeof(glm::mat4));
 	auto renderer = Renderer(scene);
-	renderer.SetUniformBuffer(uniformMatrixBuffer, "Matrices");
+
+	scene->Camera = camera;
 
 	std::vector<std::string> faces
 	{
 		".\\textures\\skybox\\right.jpg",
-		".\\textures\\skybox\\left.jpg",
-		".\\textures\\skybox\\top.jpg",
-		".\\textures\\skybox\\bottom.jpg",
-		".\\textures\\skybox\\front.jpg",
-		".\\textures\\skybox\\back.jpg"
+			".\\textures\\skybox\\left.jpg",
+			".\\textures\\skybox\\top.jpg",
+			".\\textures\\skybox\\bottom.jpg",
+			".\\textures\\skybox\\front.jpg",
+			".\\textures\\skybox\\back.jpg"
 	};
 
 	auto skybox = std::make_shared<CubemapMesh>(faces);
 	scene->Skybox = skybox->m_Texture;
+	renderer.m_Meshes.emplace_back(skybox);
 
 	auto pointLight = std::make_shared<PointLight>(glm::vec4(2.0f, 1.0f, 3.0f, 1.0f), 100.0f, 0.2f, 0.5f, 0.99f);
 	scene->PointLights.emplace_back(pointLight);
@@ -280,15 +274,21 @@ int main()
 	windowMesh->m_TransformComponent.Translation = glm::vec3(0.4f, 0.0f, 2.0f);
 	renderer.m_Meshes.emplace_back(windowMesh);
 
-	renderer.m_Meshes.emplace_back(skybox);
+	return std::make_pair(scene, renderer);
+}
 
-	glm::mat4 view, proj;
+int main()
+{
+	GLFWwindow* window = Init();
+	if (!window)
+		return -1;
 
-	// auto colorBuffer = std::make_shared<TexColorBuffer>(SCR_WIDTH, SCR_HEIGHT);
-	// auto depthAndStencilBuffer = std::make_shared <Renderbuffer>(GL_DEPTH24_STENCIL8, SCR_WIDTH, SCR_HEIGHT);
-	// auto framebuffer = Framebuffer(colorBuffer, depthAndStencilBuffer);
+	auto [scene, renderer] = SandboxScene();
 
-	// auto billboard = std::make_shared<ScreenMesh>(colorBuffer);
+	const auto uniformMatrixBuffer = std::make_shared<UniformBuffer>();
+	uniformMatrixBuffer->SetData(2 * sizeof(glm::mat4), nullptr);
+	uniformMatrixBuffer->BindDataRange(0, 0, 2 * sizeof(glm::mat4));
+	renderer.SetUniformBuffer(uniformMatrixBuffer, "Matrices");
 
 	// Render Loop
 	std::cout << "Starting render loop" << std::endl;
@@ -298,22 +298,18 @@ int main()
 		ProcessInput(window);
 
 		// Set matrices
-		view = camera->GetViewMatrix();
-		proj = glm::perspective(glm::radians(camera->m_Zoom),
+		glm::mat4 view = camera->GetViewMatrix();
+		glm::mat4 proj = glm::perspective(glm::radians(camera->m_Zoom),
 			static_cast<float>(SCR_WIDTH) / static_cast<float>(SCR_HEIGHT), 0.1f, 100.0f);
 		uniformMatrixBuffer->SetSubData(0, sizeof(proj), glm::value_ptr(proj));
 		uniformMatrixBuffer->SetSubData(sizeof(proj), sizeof(view), glm::value_ptr(view));
 
-		scene->SpotLight->Update(glm::vec4(camera->m_Position, 1.0f), camera->m_Front);
+		if (scene->SpotLight)
+			scene->SpotLight->Update(glm::vec4(camera->m_Position, 1.0f), camera->m_Front);
 
 		// Render
 		// -------
-		glClearColor(0.53f, 0.81f, 0.92f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		renderer.m_RenderNormals = renderNormals;
-		renderer.m_RenderAxis = renderAxis;
-		renderer.Render();
+		renderer.Render(renderAxis, renderNormals);
 
 		// Check and call events and swap buffers
 		glfwSwapBuffers(window);

@@ -86,7 +86,6 @@ float CalcSpec(in vec3 fragToLight, in vec3 toViewer);
 
 void main()
 {
-
     vec3 toViewer = normalize(viewPos - vec3(i_VertexData.FragPos));
 
     mat4 textureValues; // Ambient, Diffuse, Specular, Emissive
