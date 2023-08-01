@@ -155,7 +155,6 @@
     <ClCompile Include="Scene\Components\LightComponent.cpp" />
     <ClCompile Include="Scene\Components\MaterialComponent.cpp" />
     <ClCompile Include="Scene\Components\Texture.cpp" />
-    <ClCompile Include="Scene\Components\Texture.cpp" />
     <ClCompile Include="Scene\Components\TransformComponent.cpp" />
     <ClCompile Include="Scene\Components\UniformBufferComponent.cpp" />
     <ClCompile Include="Source.cpp" />
@@ -179,7 +178,6 @@
     <ClInclude Include="Scene\Components\Light.h" />
     <ClInclude Include="Scene\Components\LightComponent.h" />
     <ClInclude Include="Scene\Components\MaterialComponent.h" />
-    <ClInclude Include="Scene\Components\Texture.h" />
     <ClInclude Include="Scene\Components\Texture.h" />
     <ClInclude Include="Scene\Components\TransformComponent.h" />
     <ClInclude Include="Scene\Components\UniformBufferComponent.h" />
