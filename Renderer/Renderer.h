@@ -1,11 +1,16 @@
 #pragma once
-#include <vector>
 #include <unordered_map>
 
-#include "Line.h"
-#include "TM.h"
-#include "UniformBuffer.h"
+#include "..\Scene\Scene.h"
+#include "..\Scene\Components\Line.h"
+#include "..\Scene\Components\Renderable\Renderable.h"
+#include "..\Scene\Components\Renderable\CubeComponent.h"
+#include "..\Scene\Components\Renderable\PlaneComponent.h"
+#include "..\Scene\Components\Renderable\TriangleMeshComponent.h"
+#include "..\Scene\Components\MaterialComponent.h"
+
 #include "Shader.h"
+#include "..\Scene\Entity.h"
 
 class Renderer
 {
@@ -15,13 +20,13 @@ public:
 		SetShaders();
 	}
 
-	explicit Renderer(std::shared_ptr<Scene> scene)
+	explicit Renderer(std::weak_ptr<Scene> scene)
 		: m_Scene(std::move(scene))
 	{
 		SetShaders();
 	}
 
-	void Render() const
+	void Render()
 	{
 		glClearColor(0.53f, 0.81f, 0.92f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -29,26 +34,7 @@ public:
 		if (m_RenderAxis)
 			RenderAxis();
 
-		for (const auto& drawable : m_Meshes)
-		{
-			switch (drawable->m_Type)
-			{
-			case DrawableType::TRIANGLE_MESH:
-				RenderTriangleMesh(std::static_pointer_cast<TriangleMesh>(drawable));
-				if (m_RenderNormals)
-					RenderNormals(std::static_pointer_cast<TriangleMesh>(drawable));
-				break;
-			case DrawableType::CUBE_MAP:
-				RenderCubemap(std::static_pointer_cast<CubemapMesh>(drawable));
-				break;
-			case DrawableType::SCREEN:
-				RenderScreenMesh(std::static_pointer_cast<ScreenMesh>(drawable));
-				break;
-			case DrawableType::LINE:
-				RenderLine(std::static_pointer_cast<Line>(drawable));
-				break;
-			}
-		}
+		RenderComponents();
 	}
 
 	void Render(const bool renderAxis, const bool renderNormals)
@@ -61,133 +47,139 @@ public:
 		if (m_RenderAxis)
 			RenderAxis();
 
-		for (const auto& drawable : m_Meshes)
+		RenderComponents();
+	}
+
+	void RenderComponents()
+	{
+		if (m_Scene.expired())
+			return;
+
+		std::shared_ptr<Scene> activeScene = m_Scene.lock();
+
+		// Set Common Shader info
+		// PointLight, Directional Light, SpotLight, Camera
+		auto pointLights = std::vector<PointLightComponent>();
+		for (auto handle : activeScene->GetAllEntitiesWith<PointLightComponent>())
+			pointLights.emplace_back(Entity(handle, m_Scene).GetComponent<PointLightComponent>());
+
+		auto directionalLights = std::vector<DirectionalLightComponent>();
+		for (auto handle : activeScene->GetAllEntitiesWith<DirectionalLightComponent>())
+			directionalLights.emplace_back(Entity(handle, m_Scene).GetComponent<DirectionalLightComponent>());
+
+		auto spotLights = std::vector<SpotLightComponent>();
+		for (auto handle : activeScene->GetAllEntitiesWith<SpotLightComponent>())
+			spotLights.emplace_back(Entity(handle, m_Scene).GetComponent<SpotLightComponent>());
+
+		for (const auto shader : m_Shaders)
 		{
-			switch (drawable->m_Type)
+			if (shader)
 			{
-			case DrawableType::TRIANGLE_MESH:
-				RenderTriangleMesh(std::static_pointer_cast<TriangleMesh>(drawable));
-				if (m_RenderNormals)
-					RenderNormals(std::static_pointer_cast<TriangleMesh>(drawable));
-				break;
-			case DrawableType::CUBE_MAP:
-				RenderCubemap(std::static_pointer_cast<CubemapMesh>(drawable));
-				break;
-			case DrawableType::SCREEN:
-				RenderScreenMesh(std::static_pointer_cast<ScreenMesh>(drawable));
-				break;
-			case DrawableType::LINE:
-				RenderLine(std::static_pointer_cast<Line>(drawable));
-				break;
+				shader->SetInt("pointLightCount", static_cast<int>(pointLights.size()));
+				shader->SetPointLights(pointLights);
+				shader->SetDirectionalLights(directionalLights);
+				shader->SetSpotLights(spotLights);
+				shader->SetCamera(activeScene->GetSceneCamera());
 			}
+		}
+
+		for (auto renderableEntity : activeScene->GetAllEntitiesWith<RenderableTag>())
+		{
+			auto entity = Entity(renderableEntity, activeScene);
+			if (entity.HasComponent<CubeComponent>())
+				RenderObject3D<CubeComponent>(entity);
+			else if (entity.HasComponent<PlaneComponent>())
+				RenderObject3D<PlaneComponent>(entity);
+			else if (entity.HasComponent<TriangleMeshComponent>())
+				RenderObject3D<TriangleMeshComponent>(entity);
+			else if (entity.HasComponent<Line>())
+				RenderLine(entity);
 		}
 	}
 
-	void SetUniformBuffer(const std::shared_ptr<UniformBuffer>& uniformBuffer, const std::string& name) const
+	void SetUniformBuffer(const std::shared_ptr<UniformBufferComponent>& uniformBuffer, const std::string& name) const
 	{
-		for (const auto& [drawingMode, shader] : m_Shaders)
-			shader.SetUniformBuffer(uniformBuffer, name);
+		m_IsolatedShader.SetUniformBuffer(uniformBuffer, name);
+		m_LitObjectShader.SetUniformBuffer(uniformBuffer, name);
+		m_MirrorShader.SetUniformBuffer(uniformBuffer, name);
+		m_RefractorShader.SetUniformBuffer(uniformBuffer, name);
+		m_LineShader.SetUniformBuffer(uniformBuffer, name);
+		m_SkyboxShader.SetUniformBuffer(uniformBuffer, name);
+		m_ScreenShader.SetUniformBuffer(uniformBuffer, name);
 	}
 
 public:
-	std::shared_ptr<Scene> m_Scene;
-	std::vector<std::shared_ptr<Renderable>> m_Meshes;
+	std::weak_ptr<Scene> m_Scene;
 	bool m_RenderNormals = false, m_RenderAxis = false;
 
 private:
 	void RenderAxis() const
 	{
-		const auto& shader = m_Shaders.at(DrawingMode::LINES);
-		shader.Use();
-		shader.SetTransform({});
+		m_LineShader.Use();
+		m_LineShader.SetTransform({});
 
-		shader.SetVec4("color", m_XAxis->m_Color);
+		m_LineShader.SetVec4("color", m_XAxis->m_Color);
 
-		glBindVertexArray(m_XAxis->m_VAO);
+		glBindVertexArray(m_XAxis->VAO);
 		glDrawArrays(GL_LINES, 0, 2);
 		
-		shader.SetVec4("color", m_YAxis->m_Color);
+		m_LineShader.SetVec4("color", m_YAxis->m_Color);
 
-		glBindVertexArray(m_YAxis->m_VAO);
+		glBindVertexArray(m_YAxis->VAO);
 		glDrawArrays(GL_LINES, 0, 2);
 		
-		shader.SetVec4("color", m_ZAxis->m_Color);
+		m_LineShader.SetVec4("color", m_ZAxis->m_Color);
 
-		glBindVertexArray(m_ZAxis->m_VAO);
+		glBindVertexArray(m_ZAxis->VAO);
 		glDrawArrays(GL_LINES, 0, 2);
 		glBindVertexArray(0);
 	}
 
-	void RenderTriangleMesh(const std::shared_ptr<TriangleMesh>& mesh) const
+	template <typename Component>
+	void RenderObject3D(Entity& entity)
 	{
-		const auto& shader = m_Shaders.at(mesh->m_DrawingMode);
-		shader.Use();
-		shader.SetTransform(mesh->m_TransformComponent);
+		const auto materialComponent = entity.GetComponent<MaterialComponent>();
+		const auto shader = materialComponent.m_Shader.lock();
+		shader->Use();
 
-		switch (mesh->m_DrawingMode)  // NOLINT(clang-diagnostic-switch-enum)
-		{
-		case DrawingMode::ISOLATED:
-			shader.SetVec4("color", glm::vec4(1.0));
-			break;
-		case DrawingMode::LIT_OBJECT:
-			if (mesh->m_Material)
-				shader.SetMaterial(mesh->m_Material);
+		shader->SetMaterial(materialComponent);
 
-			shader.SetInt("pointLightCount", PointLight::GetCount());
-			shader.SetPointLights(m_Scene->PointLights);
-			shader.SetDirectionalLight(m_Scene->DirectionalLight);
-			shader.SetSpotLight(m_Scene->SpotLight);
-
-			shader.SetCamera(m_Scene->Camera);
-			break;
-		case DrawingMode::REFRACTOR:
-			shader.SetFloat("refractiveIndex", mesh->m_RefractiveIndex);
-		case DrawingMode::MIRROR:  // NOLINT(clang-diagnostic-implicit-fallthrough)
-			if (m_Scene->Skybox)
-				m_Scene->Skybox->Use();
-
-			shader.SetCamera(m_Scene->Camera);
-			break;
-		default:
-			std::cerr << "ERROR::RENDERER::RENDER::RENDER_TRIANGLE_MESH: Draw type is not valid for this mesh type!" << std::endl;
-			return;
-		}
-
-		glBindVertexArray(mesh->m_VAO);
-		if (mesh->m_Indices.empty())
-			glDrawArrays(GL_TRIANGLES, 0, static_cast<int>(mesh->m_VertexCount));
+		const auto mesh = entity.GetComponent<Component>();
+		glBindVertexArray(mesh.VAO);
+		if (!mesh.EBO)
+			glDrawArrays(GL_TRIANGLES, 0, static_cast<int>(mesh.VertexCount));
 		else
-			glDrawElements(GL_TRIANGLES, static_cast<int>(mesh->m_Indices.size()), GL_UNSIGNED_INT, nullptr);
+			glDrawElements(GL_TRIANGLES, static_cast<int>(mesh.IndexCount), GL_UNSIGNED_INT, nullptr);
 		glBindVertexArray(0);
 	}
 
-	void RenderNormals(const std::shared_ptr<TriangleMesh>& mesh) const
+	void RenderNormals(Entity& entity) const
 	{
-		const auto& shader = m_Shaders.at(DrawingMode::LINES);
-		shader.Use();
-		shader.SetTransform(mesh->m_TransformComponent);
+		m_LineShader.Use();
 
-		shader.SetVec4("color", glm::vec4(1.0, 0.0, 1.0, 1.0));
+		m_LineShader.SetVec4("color", glm::vec4(1.0, 0.0, 1.0, 1.0));
 
-		glBindVertexArray(mesh->m_NVAO);
-		glDrawArrays(GL_LINES, 0, static_cast<GLint>(mesh->m_VertexCount * 2));
+		const auto object = entity.GetComponent<Object3D>();
+		glBindVertexArray(object.NVAO);
+		glDrawArrays(GL_LINES, 0, static_cast<GLint>(object.VertexCount * 2));
 		glBindVertexArray(0);
 	}
 
-	void RenderCubemap(const std::shared_ptr<CubemapMesh>& mesh) const
+	void RenderCubemap(Entity& entity) const
 	{
 		glDepthMask(GL_FALSE);
 
 		glFrontFace(GL_CW);
 
-		m_Shaders.at(DrawingMode::SKYBOX).Use();
-		mesh->m_Texture->Use();
+		m_SkyboxShader.Use();
+		entity.GetComponent<TexCube>().Use();
 
-		glBindVertexArray(mesh->m_VAO);
-		if (mesh->m_Indices.empty())
-			glDrawArrays(GL_TRIANGLES, 0, static_cast<int>(mesh->m_VertexCount));
+		const auto mesh = entity.GetComponent<Object3D>();
+		glBindVertexArray(mesh.VAO);
+		if (!mesh.EBO)
+			glDrawArrays(GL_TRIANGLES, 0, static_cast<int>(mesh.VertexCount));
 		else
-			glDrawElements(GL_TRIANGLES, static_cast<int>(mesh->m_Indices.size()), GL_UNSIGNED_INT, nullptr);
+			glDrawElements(GL_TRIANGLES, static_cast<int>(mesh.IndexCount), GL_UNSIGNED_INT, nullptr);
 		glBindVertexArray(0);
 
 		glFrontFace(GL_CCW);
@@ -195,58 +187,69 @@ private:
 		glDepthMask(GL_TRUE);
 	}
 
-	void RenderScreenMesh(const std::shared_ptr<ScreenMesh>& mesh) const
+	void RenderScreenMesh(Entity& entity) const
 	{
-		m_Shaders.at(DrawingMode::SCREEN).Use();
-		mesh->m_Texture->Use();
+		m_ScreenShader.Use();
+		entity.GetComponent<TexColorBuffer>().Use();
 
-		glBindVertexArray(mesh->m_VAO);
-		glDrawElements(GL_TRIANGLES, static_cast<int>(mesh->m_VertexCount), GL_UNSIGNED_INT, nullptr);
+		const auto planeComponent = entity.GetComponent<PlaneComponent>();
+		glBindVertexArray(planeComponent.VAO);
+		glDrawElements(GL_TRIANGLES, static_cast<int>(planeComponent.VertexCount), GL_UNSIGNED_INT, nullptr);
 		glBindVertexArray(0);
 	}
 
-	void RenderLine(const std::shared_ptr<Line>& line) const
+	void RenderLine(Entity& entity) const
 	{
-		const auto& shader = m_Shaders.at(DrawingMode::LINES);
-		shader.Use();
-		shader.SetTransform(line->m_TransformComponent);
+		m_LineShader.Use();
 
-		shader.SetVec4("color", line->m_Color);
+		const auto line = entity.GetComponent<Line>();
+		m_LineShader.SetVec4("color", line.m_Color);
 
-		glBindVertexArray(line->m_VAO);
+		glBindVertexArray(line.VAO);
 		glDrawArrays(GL_LINES, 0, 2);
 		glBindVertexArray(0);
 	}
 
 	void SetShaders()
 	{
-		m_Shaders = std::unordered_map<DrawingMode, Shader>
-		{
-			{ DrawingMode::ISOLATED,   Shader("positionNormalTex.vert", "uniformColor.frag") },
-			{ DrawingMode::LIT_OBJECT, Shader("positionNormalTex.vert", "objectLitByVariousLights.frag") },
-			{ DrawingMode::MIRROR,     Shader("positionNormalTex.vert", "skyboxMirror.frag") },
-			{ DrawingMode::REFRACTOR,  Shader("positionNormalTex.vert", "skyboxRefractor.frag") },
-			{ DrawingMode::LINES,      Shader("position.vert",          "uniformColor.frag") },
-			{ DrawingMode::SKYBOX,     Shader("skybox.vert",            "skybox.frag") },
-			{ DrawingMode::SCREEN,     Shader("screen.vert",            "texture2D.frag") }
-		};
+		m_IsolatedShader = Shader("positionNormalTex.vert", "uniformColor.frag");
+		m_Shaders.emplace_back(&m_IsolatedShader);
+		m_LitObjectShader = Shader("positionNormalTex.vert", "objectLitByVariousLights.frag");
+		m_Shaders.emplace_back(&m_LitObjectShader);
+		m_MirrorShader = Shader("positionNormalTex.vert", "skyboxMirror.frag");
+		m_Shaders.emplace_back(&m_MirrorShader);
+		m_RefractorShader = Shader("positionNormalTex.vert", "skyboxRefractor.frag");
+		m_Shaders.emplace_back(&m_RefractorShader);
+		m_LineShader = Shader("position.vert", "uniformColor.frag");
+		m_Shaders.emplace_back(&m_LineShader);
+		m_SkyboxShader = Shader("skybox.vert", "skybox.frag");
+		m_Shaders.emplace_back(&m_SkyboxShader);
+		m_ScreenShader = Shader("screen.vert", "texture2D.frag");
+		m_Shaders.emplace_back(&m_ScreenShader);
 
-		m_Shaders[DrawingMode::LIT_OBJECT].Use();
+		m_LitObjectShader.Use();
 		for (int i = 0; i < 16; i++)
-			m_Shaders[DrawingMode::LIT_OBJECT].SetInt("textures[" + std::to_string(i) + "]", i);
+			m_LitObjectShader.SetInt("textures[" + std::to_string(i) + "]", i);
 
-		m_Shaders[DrawingMode::MIRROR].Use();
-		m_Shaders[DrawingMode::MIRROR].SetInt("skybox", 0);
+		m_MirrorShader.Use();
+		m_MirrorShader.SetInt("skybox", 0);
 
-		m_Shaders[DrawingMode::REFRACTOR].Use();
-		m_Shaders[DrawingMode::REFRACTOR].SetInt("skybox", 0);
+		m_RefractorShader.Use();
+		m_RefractorShader.SetInt("skybox", 0);
 
-		m_Shaders[DrawingMode::SKYBOX].Use();
-		m_Shaders[DrawingMode::SKYBOX].SetInt("skybox", 0);
+		m_SkyboxShader.Use();
+		m_SkyboxShader.SetInt("skybox", 0);
 	}
 
 private:
-	std::unordered_map<DrawingMode, Shader> m_Shaders;
+	Shader m_IsolatedShader;
+	Shader m_LitObjectShader;
+	Shader m_MirrorShader;
+	Shader m_RefractorShader;
+	Shader m_LineShader;
+	Shader m_SkyboxShader;
+	Shader m_ScreenShader;
+	std::vector<Shader*> m_Shaders;
 
 	std::shared_ptr<Line> m_XAxis = std::make_shared<Line>(glm::vec3(0.0f), glm::vec3(10.0f, 0.0f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
 	std::shared_ptr<Line> m_YAxis = std::make_shared<Line>(glm::vec3(0.0f), glm::vec3(0.0f, 10.0f, 0.0f), glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));

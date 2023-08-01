@@ -17,38 +17,9 @@
 // #include "Renderbuffer.h"
 // #include "Framebuffer.h"
 
-#include "Model.h"
-// TM
-//   - Renderable
-//       - TransformComponent
-//   - Vertex
-//   - Material
-//       - Texture
-//   - Scene
-//       - Light
-//       - Camera
-//       - Texture
+#include "Scene\Scene.h"
 
-#include "Renderer.h"
-// Line
-//   - Renderable
-//       - TransformComponent
-// TM
-//   - Renderable
-//       - TransformComponent
-//   - Vertex
-//   - Material
-//       - Texture
-//   - Scene
-//       - Light
-//       - Camera
-//       - Texture
-// Shader
-//   - TransformComponent
-//   - Material
-//       - Texture
-//   - Light
-//   - Camera
+#include "Renderer\Renderer.h"
 
 constexpr unsigned int SCR_WIDTH = 800;
 constexpr unsigned int SCR_HEIGHT = 600;
@@ -201,8 +172,6 @@ std::pair<std::shared_ptr<Scene>, Renderer> SandboxScene()
 	auto scene = std::make_shared<Scene>();
 	auto renderer = Renderer(scene);
 
-	scene->Camera = camera;
-
 	std::vector<std::string> faces
 	{
 		".\\textures\\skybox\\right.jpg",
@@ -213,66 +182,54 @@ std::pair<std::shared_ptr<Scene>, Renderer> SandboxScene()
 			".\\textures\\skybox\\back.jpg"
 	};
 
-	auto skybox = std::make_shared<CubemapMesh>(faces);
-	scene->Skybox = skybox->m_Texture;
-	renderer.m_Meshes.emplace_back(skybox);
+	auto skyboxEntity = scene->CreateEntity("Skybox");
+	skyboxEntity.AddComponent<CubeComponent>();
+	skyboxEntity.AddComponent<TexCube>(faces);
 
-	auto pointLight = std::make_shared<PointLight>(glm::vec4(2.0f, 1.0f, 3.0f, 1.0f), 100.0f, 0.2f, 0.5f, 0.99f);
-	scene->PointLights.emplace_back(pointLight);
+	auto pointLightEntity = scene->CreateEntity("PointLightCube");
+	pointLightEntity.GetComponent<TransformComponent>().Translation = glm::vec4(2.0f, 1.0f, 3.0f, 1.0f);
+	pointLightEntity.GetComponent<TransformComponent>().Scale = glm::vec3(0.2f);
+	pointLightEntity.AddComponent<PointLightComponent>(glm::vec4(2.0f, 1.0f, 3.0f, 1.0f), 100.0f, 0.2f, 0.5f, 0.99f);
+	pointLightEntity.AddComponent<CubeComponent>();
 
-	std::cout << PointLight::GetCount() << std::endl;
+	auto directionalLightEntity = scene->CreateEntity("DirectionalLight");
+	directionalLightEntity.AddComponent<DirectionalLightComponent>(glm::normalize(glm::vec3(1.0, -1.0, 1.0)), 0.2f, 0.5f, 0.99f);
 
-	auto pointLightMesh = std::make_shared<TriangleMesh>();
-	pointLightMesh->SetAsAACube();
-	pointLightMesh->m_TransformComponent.Translation = pointLight->m_Pos;
-	pointLightMesh->m_TransformComponent.Scale = glm::vec3(0.2f);
-	renderer.m_Meshes.emplace_back(pointLightMesh);
+	auto spotLightEntity = scene->CreateEntity("Flashlight");
+	spotLightEntity.AddComponent<SpotLightComponent>(12.5f, 0.2f, 0.5f, 0.99f);
 
-	scene->DirectionalLight = std::make_shared<DirectionalLight>(glm::normalize(glm::vec3(1.0, -1.0, 1.0)), 0.2f, 0.5f, 0.99f);
-
-	scene->SpotLight = std::make_shared<SpotLight>(12.5f, 0.2f, 0.5f, 0.99f);
+	auto containerEntity = scene->CreateEntity("Container");
 
 	auto containerDiffuse = std::make_shared<Tex2D>(".\\textures\\container2.png", "diffuse");
 	auto containerSpecular = std::make_shared<Tex2D>(".\\textures\\container2_specular.png", "specular");
 	auto blackEmissive = std::make_shared<Tex2D>(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f), "emissive");
 	auto containerTextures = std::vector<std::shared_ptr<Tex2D>>{ containerDiffuse, containerSpecular, blackEmissive };
-	auto containerMaterial = std::make_shared<Material>(containerTextures, 0.5f);
+	containerEntity.AddComponent<MaterialComponent>(containerTextures, 0.5f);
 
-	auto containerCube = std::make_shared<TriangleMesh>(containerMaterial, DrawingMode::LIT_OBJECT);
-	containerCube->SetAsAACube();
-	containerCube->m_TransformComponent.Translation = glm::vec3(-2.0f, 0.0f, 2.0f);
-	renderer.m_Meshes.emplace_back(containerCube);
+	containerEntity.AddComponent<CubeComponent>();
+	containerEntity.GetComponent<TransformComponent>().Translation = glm::vec3(-2.0f, 0.0f, 2.0f);
 
 	auto start = glfwGetTime();
-	auto backpack = Model("C:\\Dev\\LearnOpenGL\\assets\\backpack.obj");
+	auto backpack = Model("C:\\Dev\\LearnOpenGL\\assets\\backpack.obj", scene->GetWeakPtr());
 	auto end = glfwGetTime();
 	std::cout << "Model load time: " << end - start << " seconds" << std::endl;
 
-	for (auto& mesh : backpack.m_Meshes)
-		renderer.m_Meshes.emplace_back(mesh);
+	auto floorEntity = scene->CreateEntity("Floor");
+	floorEntity.AddComponent<PlaneComponent>();
+	floorEntity.GetComponent<TransformComponent>().Translation = glm::vec3(0.0f, -2.0f, 0.0f);
+	floorEntity.GetComponent<TransformComponent>().Rotation = glm::vec3(glm::radians(270.0f), 0.0f, 0.0f);
+	floorEntity.GetComponent<TransformComponent>().Scale = glm::vec3(10.0f, 10.0f, 10.0f);
 
-	auto floor = std::make_shared<TriangleMesh>(containerMaterial, DrawingMode::MIRROR);
-	floor->SetAsAAPlane();
-	floor->m_TransformComponent.Translation = glm::vec3(0.0f, -2.0f, 0.0f);
-	floor->m_TransformComponent.Rotation = glm::vec3(glm::radians(270.0f), 0.0f, 0.0f);
-	floor->m_TransformComponent.Scale = glm::vec3(10.0f, 10.0f, 10.0f);
-	renderer.m_Meshes.emplace_back(floor);
-
+	auto grassEntity = scene->CreateEntity("Grass");
 	auto grassDiffuse = std::make_shared<Tex2D>(".\\textures\\grass.png", "diffuse");
-	auto grassMaterial = std::make_shared<Material>(grassDiffuse, 0.2f);
+	grassEntity.AddComponent<MaterialComponent>(grassDiffuse, 0.2f);
 
-	auto square = std::make_shared<TriangleMesh>(grassMaterial, DrawingMode::LIT_OBJECT);
-	square->SetAsAAPlane();
-	square->m_TransformComponent.Translation = glm::vec3(0.5f, 0.0f, 1.5f);
-	renderer.m_Meshes.emplace_back(square);
+	auto windowEntity = scene->CreateEntity("Window");
+	windowEntity.AddComponent<PlaneComponent>();
+	windowEntity.GetComponent<TransformComponent>().Translation = glm::vec3(0.4f, 0.0f, 2.0f);
 
 	auto windowDiffuse = std::make_shared<Tex2D>(".\\textures\\blending_transparent_window.png", "diffuse");
-	auto windowMaterial = std::make_shared<Material>(windowDiffuse, 0.2f);
-
-	auto windowMesh = std::make_shared<TriangleMesh>(windowMaterial, DrawingMode::LIT_OBJECT);
-	windowMesh->SetAsAAPlane();
-	windowMesh->m_TransformComponent.Translation = glm::vec3(0.4f, 0.0f, 2.0f);
-	renderer.m_Meshes.emplace_back(windowMesh);
+	windowEntity.AddComponent<MaterialComponent>(windowDiffuse, 0.2f);
 
 	return std::make_pair(scene, renderer);
 }
@@ -304,8 +261,8 @@ int main()
 		uniformMatrixBuffer->SetSubData(0, sizeof(proj), glm::value_ptr(proj));
 		uniformMatrixBuffer->SetSubData(sizeof(proj), sizeof(view), glm::value_ptr(view));
 
-		if (scene->SpotLight)
-			scene->SpotLight->Update(glm::vec4(camera->m_Position, 1.0f), camera->m_Front);
+		for (auto spotLightEntity : scene->GetAllEntitiesWith<SpotLightComponent>())
+			Entity(spotLightEntity, scene->GetWeakPtr()).GetComponent<SpotLightComponent>.Update(glm::vec4(camera->m_Position, 1.0f), camera->m_Front);
 
 		// Render
 		// -------

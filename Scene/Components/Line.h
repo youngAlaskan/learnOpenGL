@@ -4,7 +4,7 @@
 #include <glm\glm.hpp>
 #include <vector>
 
-#include "Renderable.h"
+#include "Renderable\Renderable.h"
 
 /* Largely based on the work of jackw11111
 * in his response to the following question:
@@ -14,7 +14,6 @@
 class Line final : public Renderable
 {
 public:
-	Line() { m_Type = DrawableType::LINE; }
 	Line(glm::vec3 start, glm::vec3 end, glm::vec4 color = glm::vec4(1.0f, 0.0f, 1.0f, 1.0f));
 
 public:

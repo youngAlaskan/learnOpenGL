@@ -1,36 +1,38 @@
 ﻿#pragma once
 
-#include "Scene.h"
+#include <memory>
+#include <utility>
 
 #include "entt\include\entt.hpp"
+
+class Scene;
 
 class Entity
 {
 public:
 	Entity() = default;
-	Entity(const entt::entity& handle, Scene* scene);
-	Entity(const Entity& other) = default;
+	Entity(const entt::entity& handle, std::weak_ptr<Scene> scene)
+		: m_Handle(handle), m_Scene(std::move(scene)) {}
+	Entity(const Entity&) = default;
 	~Entity() = default;
 
 	entt::entity GetHandle() const { return m_Handle; }
+	void SetHandle(const entt::entity& handle) { m_Handle = handle; }
+	void SetScene(const std::weak_ptr<Scene>& scene) { m_Scene = scene; }
 
 	template<typename T, typename... Args>
-	T& AddComponent(Args&&... args)
-		{ return m_Scene->m_Registry.emplace<T>(m_Handle, std::forward<Args>(args)...); }
+	T& AddComponent(Args&&... args);
 
 	template<typename T>
-	T& GetComponent()
-		{ return m_Scene->m_Registry.get<T>(m_Handle); }
+	T& GetComponent();
 
 	template<typename T>
-	bool HasComponent() const
-		{ return m_Scene->m_Registry.all_of<T>(m_Handle); }
+	bool HasComponent() const;
 
 	template<typename T>
-	void RemoveComponent() const
-		{ m_Scene->m_Registry.remove<T>(m_Handle); }
+	unsigned int RemoveComponent() const;
 
 private:
 	entt::entity m_Handle = entt::entity();
-	Scene* m_Scene;
+	std::weak_ptr<Scene> m_Scene;
 };

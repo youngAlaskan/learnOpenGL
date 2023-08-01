@@ -2,6 +2,7 @@
 
 #include "entt\include\entt.hpp"
 #include "Camera.h"
+#include "Model.h"
 
 class Entity;
 
@@ -19,6 +20,8 @@ public:
 
 	template<typename... Components>
 	auto GetAllEntitiesWith() { return m_Registry.view<Components...>(); }
+
+	std::weak_ptr<Scene> GetWeakPtr() { return { std::shared_ptr<Scene>(this) }; }
 
 	~Scene();
 

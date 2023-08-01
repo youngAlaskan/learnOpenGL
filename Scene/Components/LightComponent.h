@@ -16,7 +16,7 @@ public:
 	float m_KA = 1.0f, m_KD = 1.0f, m_KS = 1.0f;
 };
 
-class PointLightComponent : public LightComponent
+class PointLightComponent final : public LightComponent
 {
 public:
 	PointLightComponent() { SetIndex(); }
@@ -29,7 +29,7 @@ public:
 		{ m_Pos = pos; }
 	static int GetCount()
 		{ return s_Count; }
-	virtual ~PointLightComponent()
+	~PointLightComponent()
 		{ s_Count--; }
 
 public:
@@ -49,27 +49,70 @@ private:
 class DirectionalLightComponent final : public LightComponent
 {
 public:
-	DirectionalLightComponent() = default;
+	DirectionalLightComponent() { SetIndex(); }
 	explicit DirectionalLightComponent(const glm::vec3 direction)
-		: m_Direction(direction) {}
+		: m_Direction(direction) { SetIndex(); }
 	explicit DirectionalLightComponent(const glm::vec3 direction, const float kA, const float kD, const float kS)
-		: m_Direction(direction) { SetCoeffs(kA, kD, kS); }
+		: m_Direction(direction)
+	{
+		SetCoeffs(kA, kD, kS);
+		SetIndex();
+	}
+	static int GetCount()
+	{
+		return s_Count;
+	}
+	~DirectionalLightComponent()
+	{
+		s_Count--;
+	}
 
 public:
 	glm::vec3 m_Direction = glm::vec3(0.0f);
+	int m_Index = 0;
+
+private:
+	void SetIndex()
+	{
+		m_Index = s_Count++;
+	}
+
+private:
+	inline static int s_Count = 0;
 };
 
-class SpotLightComponent final : public PointLightComponent
+class SpotLightComponent final : public LightComponent
 {
 public:
-	SpotLightComponent() = default;
+	SpotLightComponent() { SetIndex(); }
 	explicit SpotLightComponent(float theta);
 	explicit SpotLightComponent(float theta, float kA, float kD, float kS);
 	explicit SpotLightComponent(glm::vec3 direction, float theta, float kA, float kD, float kS);
 	void SetCutOff(float thetaDegrees);
 	void Update(const glm::vec4& position, const glm::vec3& direction);
+	static int GetCount()
+	{
+		return s_Count;
+	}
+	~SpotLightComponent()
+	{
+		s_Count--;
+	}
 
 public:
+	glm::vec4 m_Pos = glm::vec4(0.0f);
+	float m_Distance = 0.0f;
+	float m_Constant = 1.0f, m_Linear = 0.0f, m_Quadratic = 0.0f;
 	glm::vec3 m_Direction = glm::vec3(0.0f);
 	float m_InnerCutOff = 0.0f, m_OuterCutOff = 0.0f;
+	int m_Index = 0;
+
+private:
+	void SetIndex()
+	{
+		m_Index = s_Count++;
+	}
+
+private:
+	inline static int s_Count = 0;
 };

@@ -144,20 +144,20 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Scene\Components\Line.cpp" />
-    <ClCompile Include="Scene\Components\Primatives\CubeComponent.cpp" />
-    <ClCompile Include="Scene\Components\Primatives\PlaneComponent.cpp" />
+    <ClCompile Include="Scene\Components\Renderable\CubeComponent.cpp" />
+    <ClCompile Include="Scene\Components\Renderable\PlaneComponent.cpp" />
+    <ClCompile Include="Scene\Components\Renderable\TriangleMeshComponent.cpp" />
     <ClCompile Include="Scene\Entity.cpp" />
     <ClCompile Include="glad.c" />
+    <ClCompile Include="Scene\Model.cpp" />
     <ClCompile Include="Scene\Scene.cpp" />
     <ClCompile Include="Scene\Components\Light.cpp" />
     <ClCompile Include="Scene\Components\LightComponent.cpp" />
     <ClCompile Include="Scene\Components\MaterialComponent.cpp" />
-    <ClCompile Include="Scene\Components\Renderable.cpp" />
     <ClCompile Include="Scene\Components\Texture.cpp" />
-    <ClCompile Include="Scene\Components\TextureComponent.cpp" />
-    <ClCompile Include="Scene\Components\TM.cpp" />
+    <ClCompile Include="Scene\Components\Texture.cpp" />
     <ClCompile Include="Scene\Components\TransformComponent.cpp" />
-    <ClCompile Include="Scene\Components\UniformBuffer.cpp" />
+    <ClCompile Include="Scene\Components\UniformBufferComponent.cpp" />
     <ClCompile Include="Source.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -166,9 +166,11 @@
     <ClInclude Include="Renderer\Renderbuffer.h" />
     <ClInclude Include="Renderer\Renderer.h" />
     <ClInclude Include="Renderer\Shader.h" />
-    <ClInclude Include="Scene\Components\Primatives\CubeComponent.h" />
-    <ClInclude Include="Scene\Components\Primatives\ObjectTypes.h" />
-    <ClInclude Include="Scene\Components\Primatives\PlaneComponent.h" />
+    <ClInclude Include="Scene\Components\ModelComponent.h" />
+    <ClInclude Include="Scene\Components\Renderable\CubeComponent.h" />
+    <ClInclude Include="Scene\Components\Renderable\PlaneComponent.h" />
+    <ClInclude Include="Scene\Components\Renderable\Renderable.h" />
+    <ClInclude Include="Scene\Components\Renderable\TriangleMeshComponent.h" />
     <ClInclude Include="Scene\Components\TagComponent.h" />
     <ClInclude Include="Scene\Entity.h" />
     <ClInclude Include="Scene\Components\Line.h" />
@@ -177,12 +179,10 @@
     <ClInclude Include="Scene\Components\Light.h" />
     <ClInclude Include="Scene\Components\LightComponent.h" />
     <ClInclude Include="Scene\Components\MaterialComponent.h" />
-    <ClInclude Include="Scene\Components\Renderable.h" />
     <ClInclude Include="Scene\Components\Texture.h" />
-    <ClInclude Include="Scene\Components\TextureComponent.h" />
-    <ClInclude Include="Scene\Components\TM.h" />
+    <ClInclude Include="Scene\Components\Texture.h" />
     <ClInclude Include="Scene\Components\TransformComponent.h" />
-    <ClInclude Include="Scene\Components\UniformBuffer.h" />
+    <ClInclude Include="Scene\Components\UniformBufferComponent.h" />
     <ClInclude Include="vendor\includes\stb_image\stb_image.h" />
     <ClInclude Include="utils.h" />
     <ClInclude Include="Scene\Vertex.h" />

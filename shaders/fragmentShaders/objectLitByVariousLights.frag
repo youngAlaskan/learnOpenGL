@@ -2,6 +2,8 @@
 
 #define TEXTURE_CAPACITY 16
 #define POINT_LIGHT_CAPACITY 1
+#define DIRECTIONAL_LIGHT_CAPACITY 1
+#define SPOT_LIGHT_CAPACITY 1
 
 struct Material
 {
@@ -60,11 +62,13 @@ uniform samplerCube skybox;
 
 uniform Material material;
 
+uniform int directionalLightCount;
 uniform int pointLightCount;
+uniform int spotLightCount;
 
-uniform DirLight dirLight;
+uniform DirLight dirLights[DIRECTIONAL_LIGHT_CAPACITY];
 uniform PointLight pointLights[POINT_LIGHT_CAPACITY];
-uniform SpotLight spotLight;
+uniform SpotLight spotLights[SPOT_LIGHT_CAPACITY];
 
 uniform vec3 viewPos;
 
@@ -93,14 +97,14 @@ void main()
     SetValues(textureValues);
 
     vec4 result = vec4(0.0);
-    if (dirLight.direction != vec3(0.0))
-        result += CalcDirLight(dirLight, toViewer, textureValues);
+    for (int i = 0; i < directionalLightCount && i < DIRECTIONAL_LIGHT_CAPACITY; i++)
+        result += CalcDirLight(dirLights[i], toViewer, textureValues);
 
     for (int i = 0; i < pointLightCount && i < POINT_LIGHT_CAPACITY; i++)
         result += CalcPointLight(pointLights[i], toViewer, textureValues);
 
-    if (spotLight.innerCutOff != 0.0)
-        result += CalcSpotLight(spotLight, toViewer, textureValues);
+    for (int i = 0; i < spotLightCount && i < SPOT_LIGHT_CAPACITY; i++)
+        result += CalcSpotLight(spotLights[i], toViewer, textureValues);
 
     FragColor = vec4(result.rgb, textureValues[0].a);
 }

@@ -8,11 +8,11 @@
 #include <sstream>
 #include <iostream>
 
-#include "TransformComponent.h"
-#include "UniformBuffer.h"
-#include "Material.h"
-#include "Light.h"
-#include "Camera.h"
+#include "..\Scene\Components\TransformComponent.h"
+#include "..\Scene\Components\UniformBufferComponent.h"
+#include "..\Scene\Components\MaterialComponent.h"
+#include "..\Scene\Components\LightComponent.h"
+#include "..\Scene\Camera.h"
 
 class Shader
 {
@@ -129,68 +129,77 @@ public:
         SetMat4("modelInv", glm::inverse(transform.GetTransform()));
     }
 
-    void SetUniformBuffer(const std::shared_ptr<UniformBuffer>& uniformBuffer, const std::string& name) const
+    void SetUniformBuffer(const std::shared_ptr<UniformBufferComponent>& uniformBuffer, const std::string& name) const
     {
         const unsigned int uniformBlockIndex = glGetUniformBlockIndex(m_ID, name.c_str());
         if (uniformBlockIndex != GL_INVALID_INDEX)
             glUniformBlockBinding(m_ID, uniformBlockIndex, uniformBuffer->m_Index);
     }
 
-    void SetMaterial(const std::shared_ptr<Material>& material) const
+    void SetMaterial(const MaterialComponent& material) const
     {
-        for (int i = 0; i < static_cast<int>(material->m_Textures.size()); i++)
-            material->m_Textures[i]->Use(i);
+        const auto textures = material.GetTextures();
+        for (int i = 0; i < static_cast<int>(textures.size()); i++)
+            textures[i]->Use(i);
 
-        SetInt("material.diffuseEnd",  material->m_DiffuseEnd);
-        SetInt("material.specularEnd", material->m_SpecularEnd);
-        SetInt("material.emissiveEnd", material->m_EmissiveEnd);
-        SetFloat("material.shininess", material->m_Shininess);
+        SetInt("material.diffuseEnd",  material.m_DiffuseEnd);
+        SetInt("material.specularEnd", material.m_SpecularEnd);
+        SetInt("material.emissiveEnd", material.m_EmissiveEnd);
+        SetFloat("material.shininess", material.m_Shininess);
     }
 
-    void SetPointLights(const std::vector<std::shared_ptr<PointLight>>& pointLights) const
+    void SetPointLights(const std::vector<PointLightComponent>& pointLights) const
     {
         for (const auto& pointLight : pointLights)
         {
-            const std::string prefix = "pointLights[" + std::to_string(pointLight->m_Index) + "].";
-            SetVec4(prefix + "position", pointLight->m_Pos);
-            SetVec4(prefix + "color",    pointLight->m_Color);
+            const std::string prefix = "pointLights[" + std::to_string(pointLight.m_Index) + "].";
+            SetVec4(prefix + "position", pointLight.m_Pos);
+            SetVec4(prefix + "color",    pointLight.m_Color);
 
-            SetFloat(prefix + "kA", pointLight->m_KA);
-            SetFloat(prefix + "kD", pointLight->m_KD);
-            SetFloat(prefix + "kS", pointLight->m_KS);
+            SetFloat(prefix + "kA", pointLight.m_KA);
+            SetFloat(prefix + "kD", pointLight.m_KD);
+            SetFloat(prefix + "kS", pointLight.m_KS);
 
-            SetFloat(prefix + "constant",  pointLight->m_Constant);
-            SetFloat(prefix + "linear",    pointLight->m_Linear);
-            SetFloat(prefix + "quadratic", pointLight->m_Quadratic);
+            SetFloat(prefix + "constant",  pointLight.m_Constant);
+            SetFloat(prefix + "linear",    pointLight.m_Linear);
+            SetFloat(prefix + "quadratic", pointLight.m_Quadratic);
         }
     }
 
-    void SetDirectionalLight(const std::shared_ptr<DirectionalLight>& directionalLight) const
+    void SetDirectionalLights(const std::vector<DirectionalLightComponent>& directionalLights) const
     {
-        SetVec3("dirLight.direction", directionalLight->m_Direction);
-        SetVec4("dirLight.color", directionalLight->m_Color);
+        for (const auto& directionalLight : directionalLights)
+        {
+            const std::string prefix = "directionalLights[" + std::to_string(directionalLight.m_Index) + "].";
+            SetVec3(prefix + "direction", directionalLight.m_Direction);
+            SetVec4(prefix + "color", directionalLight.m_Color);
 
-        SetFloat("dirLight.kA", directionalLight->m_KA);
-        SetFloat("dirLight.kD", directionalLight->m_KD);
-        SetFloat("dirLight.kS", directionalLight->m_KS);
+            SetFloat(prefix + "kA", directionalLight.m_KA);
+            SetFloat(prefix + "kD", directionalLight.m_KD);
+            SetFloat(prefix + "kS", directionalLight.m_KS);
+        }
     }
 
-    void SetSpotLight(const std::shared_ptr<SpotLight>& spotLight) const
+    void SetSpotLights(const std::vector<SpotLightComponent>& spotLights) const
     {
-        SetVec4("spotLight.position",  spotLight->m_Pos);
-        SetVec3("spotLight.direction", spotLight->m_Direction);
-        SetVec4("spotLight.color",     spotLight->m_Color);
+        for (const auto& spotLight : spotLights)
+        {
+            const std::string prefix = "spotLights[" + std::to_string(spotLight.m_Index) + "].";
+            SetVec4(prefix + "position", spotLight.m_Pos);
+            SetVec3(prefix + "direction", spotLight.m_Direction);
+            SetVec4(prefix + "color", spotLight.m_Color);
 
-        SetFloat("spotLight.kA", spotLight->m_KA);
-        SetFloat("spotLight.kD", spotLight->m_KD);
-        SetFloat("spotLight.kS", spotLight->m_KS);
+            SetFloat(prefix + "kA", spotLight.m_KA);
+            SetFloat(prefix + "kD", spotLight.m_KD);
+            SetFloat(prefix + "kS", spotLight.m_KS);
 
-        SetFloat("spotLight.constant",  spotLight->m_Constant);
-        SetFloat("spotLight.linear",    spotLight->m_Linear);
-        SetFloat("spotLight.quadratic", spotLight->m_Quadratic);
+            SetFloat(prefix + "constant", spotLight.m_Constant);
+            SetFloat(prefix + "linear", spotLight.m_Linear);
+            SetFloat(prefix + "quadratic", spotLight.m_Quadratic);
 
-        SetFloat("spotLight.innerCutOff", spotLight->m_InnerCutOff);
-        SetFloat("spotLight.outerCutOff", spotLight->m_OuterCutOff);
+            SetFloat(prefix + "innerCutOff", spotLight.m_InnerCutOff);
+            SetFloat(prefix + "outerCutOff", spotLight.m_OuterCutOff);
+        }
     }
 
     void SetCamera(const std::shared_ptr<Camera>& camera) const
@@ -239,31 +248,6 @@ private:
             }
         }
     }
-
-    //static std::string ReadFile(const std::string& filepath)
-    //{
-    //    std::ifstream fileStream;
-    //    fileStream.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-    //
-    //    try
-    //    {
-    //        
-    //        fileStream.open(filepath);
-    //        std::stringstream vShaderStream;
-    //        
-    //        vShaderStream << fileStream.rdbuf();
-    //        
-    //        fileStream.close();
-    //        
-    //        return vShaderStream.str();
-    //    }
-    //    catch (std::ifstream::failure& e)
-    //    {
-    //        std::cout << "ERROR::SHADER::FILE_NOT_SUCCESSFULLY_READ: " << e.what() << std::endl;
-    //    }
-    //
-    //    return {};
-    //}
 
     static std::string ReadFile(const std::string& filepath)
     {

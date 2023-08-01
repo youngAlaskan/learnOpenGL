@@ -29,13 +29,17 @@ PointLightComponent::PointLightComponent(const glm::vec4 position, const float d
 
 SpotLightComponent::SpotLightComponent(const float theta)
 		: m_InnerCutOff(glm::cos(glm::radians(std::max(theta * 0.875f, 0.0f)))),
-		m_OuterCutOff(glm::cos(glm::radians(std::max(theta * 1.125f, 0.0f)))) {}
+		m_OuterCutOff(glm::cos(glm::radians(std::max(theta * 1.125f, 0.0f))))
+{
+	SetIndex();
+}
 
 SpotLightComponent::SpotLightComponent(const float theta, const float kA, const float kD, const float kS)
 	: m_InnerCutOff(glm::cos(glm::radians(std::max(theta * 0.875f, 0.0f)))),
 	m_OuterCutOff(glm::cos(glm::radians(std::max(theta * 1.125f, 0.0f))))
 {
 	SetCoeffs(kA, kD, kS);
+	SetIndex();
 }
 
 SpotLightComponent::SpotLightComponent(const glm::vec3 direction, const float theta, const float kA, const float kD, const float kS)
@@ -44,6 +48,7 @@ SpotLightComponent::SpotLightComponent(const glm::vec3 direction, const float th
 	m_OuterCutOff(glm::cos(glm::radians(std::max(theta * 1.125f, 0.0f))))
 {
 	SetCoeffs(kA, kD, kS);
+	SetIndex();
 }
 
 void SpotLightComponent::SetCutOff(const float thetaDegrees)

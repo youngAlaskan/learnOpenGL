@@ -27,13 +27,7 @@
     <ClCompile Include="Scene\Scene.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Scene\Components\Renderable.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Scene\Components\TM.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Scene\Components\UniformBuffer.cpp">
+    <ClCompile Include="Scene\Components\UniformBufferComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Scene\Components\Light.cpp">
@@ -57,10 +51,16 @@
     <ClCompile Include="Scene\Components\Line.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Scene\Components\Primatives\CubeComponent.cpp">
+    <ClCompile Include="Scene\Components\Renderable\CubeComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Scene\Components\Primatives\PlaneComponent.cpp">
+    <ClCompile Include="Scene\Components\Renderable\PlaneComponent.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Components\Renderable\TriangleMeshComponent.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Model.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -95,19 +95,13 @@
     <ClInclude Include="Scene\Components\MaterialComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Scene\Components\Renderable.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Scene\Components\Texture.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Scene\Components\TM.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Scene\Components\TransformComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Scene\Components\UniformBuffer.h">
+    <ClInclude Include="Scene\Components\UniformBufferComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Scene\Components\LightComponent.h">
@@ -131,13 +125,19 @@
     <ClInclude Include="Scene\Components\TagComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Scene\Components\Primatives\CubeComponent.h">
+    <ClInclude Include="Scene\Components\ModelComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Scene\Components\Primatives\ObjectTypes.h">
+    <ClInclude Include="Scene\Components\Renderable\CubeComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Scene\Components\Primatives\PlaneComponent.h">
+    <ClInclude Include="Scene\Components\Renderable\PlaneComponent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Components\Renderable\Renderable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Components\Renderable\TriangleMeshComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

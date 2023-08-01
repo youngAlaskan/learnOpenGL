@@ -1,25 +1,25 @@
 #include "MaterialComponent.h"
 
-MaterialComponent::MaterialComponent(std::vector<std::shared_ptr<Tex2DComponent>> textures, const float shininess)
+MaterialComponent::MaterialComponent(std::vector<std::shared_ptr<Tex2D>> textures, const float shininess)
     : m_Shininess(shininess), m_Textures(std::move(textures))
 {
     SetIndices();
 }
 
-MaterialComponent::MaterialComponent(const std::shared_ptr<Tex2DComponent>& texture, const float shininess)
+MaterialComponent::MaterialComponent(const std::shared_ptr<Tex2D>& texture, const float shininess)
     : m_Shininess(shininess)
 {
     m_Textures.emplace_back(texture);
     SetIndices();
 }
 
-void MaterialComponent::SetTextures(const std::vector<std::shared_ptr<Tex2DComponent>>& textures)
+void MaterialComponent::SetTextures(const std::vector<std::shared_ptr<Tex2D>>& textures)
 {
     m_Textures = textures;
     SetIndices();
 }
 
-std::shared_ptr<Tex2DComponent> MaterialComponent::GetTexture(const std::string& tag)
+std::shared_ptr<Tex2D> MaterialComponent::GetTexture(const std::string& tag)
 {
     for (auto& texture : m_Textures)
         if (texture->m_Tag == tag) return texture;

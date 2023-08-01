@@ -2,10 +2,10 @@
 
 #include "glad\glad.h"
 
-class UniformBuffer
+class UniformBufferComponent
 {
 public:
-	explicit UniformBuffer()
+	explicit UniformBufferComponent()
 		{ glGenBuffers(1, &m_ID); }
 
 	// Sets the buffer data to the data provided. Can be used to allocate space

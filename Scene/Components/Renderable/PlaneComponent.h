@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "ObjectTypes.h"
+#include "Renderable.h"
 
 struct PlaneComponent : Object3D
 {

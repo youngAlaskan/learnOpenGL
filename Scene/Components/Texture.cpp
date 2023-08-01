@@ -1,10 +1,10 @@
-#include "TextureComponent.h"
+#include "Texture.h"
 
 #include <iostream>
 
 #include <stb_image\stb_image.h>
 
-Tex2DComponent::Tex2DComponent(const glm::vec4 color, std::string tag)
+Tex2D::Tex2D(const glm::vec4 color, std::string tag)
 	: m_Tag(std::move(tag))
 {
 	// load and create a texture 
@@ -31,7 +31,7 @@ Tex2DComponent::Tex2DComponent(const glm::vec4 color, std::string tag)
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-Tex2DComponent::Tex2DComponent(const std::string& filepath, std::string tag)
+Tex2D::Tex2D(const std::string& filepath, std::string tag)
 	: m_Tag(std::move(tag)), m_Path(filepath)
 {
 	// load and create a texture 
@@ -67,18 +67,18 @@ Tex2DComponent::Tex2DComponent(const std::string& filepath, std::string tag)
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void Tex2DComponent::SetWrap(const GLint sWrap, const GLint tWrap) {
+void Tex2D::SetWrap(const GLint sWrap, const GLint tWrap) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, sWrap);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, tWrap);
 }
 
-void Tex2DComponent::Use(const int index) const override
+void Tex2D::Use(const int index) const override
 {
 	glActiveTexture(GL_TEXTURE0 + index);
 	glBindTexture(GL_TEXTURE_2D, m_ID);
 }
 
-TexCubeComponent::TexCubeComponent(const std::string& filepath)
+TexCube::TexCube(const std::string& filepath)
 {
 	m_Paths.emplace_back(filepath);
 
@@ -119,7 +119,7 @@ TexCubeComponent::TexCubeComponent(const std::string& filepath)
 	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 }
 
-TexCubeComponent::TexCubeComponent(const std::vector<std::string>& filepaths)
+TexCube::TexCube(const std::vector<std::string>& filepaths)
 	: m_Paths(filepaths)
 {
 	glBindTexture(GL_TEXTURE_CUBE_MAP, m_ID);
@@ -157,7 +157,7 @@ TexCubeComponent::TexCubeComponent(const std::vector<std::string>& filepaths)
 	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 }
 
-TexCubeComponent::TexCubeComponent(const glm::vec4 color)
+TexCube::TexCube(const glm::vec4 color)
 {
 	glBindTexture(GL_TEXTURE_CUBE_MAP, m_ID);
 
@@ -192,13 +192,13 @@ TexCubeComponent::TexCubeComponent(const glm::vec4 color)
 	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 }
 
-void TexCubeComponent::SetWrap(const GLint sWrap, const GLint tWrap, const GLint rWrap) {
+void TexCube::SetWrap(const GLint sWrap, const GLint tWrap, const GLint rWrap) {
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, sWrap);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, tWrap);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, rWrap);
 }
 
-void TexCubeComponent::Use(const int index) const override
+void TexCube::Use(const int index) const override
 {
 	glActiveTexture(GL_TEXTURE0 + index);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, m_ID);
