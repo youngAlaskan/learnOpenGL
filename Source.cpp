@@ -1,0 +1,236 @@
+#include <glad\glad.h>
+#include <GLFW\glfw3.h>
+#include <glm\glm.hpp>
+#include <glm\gtc\matrix_transform.hpp>
+
+#include <iostream>
+#include <vector>
+// #define LOCK_FRAMERATE
+#ifdef LOCK_FRAMERATE
+#include <thread>
+#endif
+
+#include "utils.h"
+
+// #include "Renderbuffer.h"
+// #include "Framebuffer.h"
+
+#include "Scene\Scene.h"
+#include "Scene\Model.h"
+
+#include "Renderer\UniformBuffer.h"
+#include "Renderer\Renderer.h"
+
+constexpr unsigned int SCR_WIDTH = 800;
+constexpr unsigned int SCR_HEIGHT = 600;
+
+#ifdef LOCK_FRAMERATE
+constexpr unsigned int DESIRED_FRAME_RATE = 60;
+#endif
+
+bool renderFilled = true;
+bool renderAxis = false;
+bool renderNormals = false;
+
+float deltaTime = 0.0f;	// Time between current frame and last frame
+float lastFrame = 0.0f; // Time of last frame
+
+auto camera = std::make_shared<Camera>(glm::vec4(1.0f, 1.0f, 3.0f, 1.0f));
+float lastX = SCR_WIDTH / 2.0f;
+float lastY = SCR_HEIGHT / 2.0f;
+bool firstMouse = true;
+
+std::vector<int> frameRateHistory(10, 0);
+
+void FramebufferSizeCallback(GLFWwindow* window, int width, int height)
+{
+	glViewport(0, 0, width, height);
+}
+
+void ProcessInput(GLFWwindow* window)
+{
+	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+		glfwSetWindowShouldClose(window, true);
+
+	renderAxis = glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS;
+
+	renderNormals = glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS;
+
+	if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS)
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	else
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+		camera->ProcessKeyboard(FORWARD, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+		camera->ProcessKeyboard(BACKWARD, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+		camera->ProcessKeyboard(LEFT, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+		camera->ProcessKeyboard(RIGHT, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_V) == GLFW_PRESS)
+		camera->ProcessKeyboard(TOGGLE_FLY, deltaTime);
+}
+
+void MouseCallback(GLFWwindow* window, double xPosIn, double yPosIn)
+{
+	const auto xPos = static_cast<float>(xPosIn);
+	const auto yPos = static_cast<float>(yPosIn);
+
+	if (firstMouse)
+	{
+		lastX = xPos;
+		lastY = yPos;
+		firstMouse = false;
+	}
+
+	const float xOffset = xPos - lastX;
+	const float yOffset = lastY - yPos; // reversed since y-coordinates go from bottom to top
+
+	lastX = xPos;
+	lastY = yPos;
+
+	camera->ProcessMouseMovement(xOffset, yOffset);
+}
+
+void ScrollCallback(GLFWwindow* window, double xOffset, double yOffset)
+{
+	camera->ProcessMouseScroll(static_cast<float>(yOffset));
+}
+
+GLFWwindow* Init()
+{
+	// Initialize GLFW to use OpenGL 4.6
+	// ---------------------------------
+	glfwInit();
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+	// Create Window
+	// -------------
+	GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", nullptr, nullptr);
+	if (!window)
+	{
+		std::cout << "Failed to create GLFW window" << std::endl;
+		glfwTerminate();
+		return nullptr;
+	}
+
+	glfwMakeContextCurrent(window);
+	// Register window resizing callback
+	glfwSetFramebufferSizeCallback(window, FramebufferSizeCallback);
+
+	// Register mouse callback
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	glfwSetCursorPosCallback(window, MouseCallback);
+
+	// Register scroll callback
+	glfwSetScrollCallback(window, ScrollCallback);
+
+	// Initialize GLAD
+	// ---------------
+	if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)))
+	{
+		std::cout << "Failed to initialize GLAD" << std::endl;
+		return nullptr;
+	}
+
+	glEnable(GL_DEBUG_OUTPUT);
+	glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+	glDebugMessageCallback(MessageCallback, nullptr);
+
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
+
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	glEnable(GL_CULL_FACE);
+
+	return window;
+}
+
+void UpdateFrameRate(GLFWwindow* window)
+{
+	// Calculate Frame Rate
+	const auto currentFrame = static_cast<float>(glfwGetTime());
+	deltaTime = currentFrame - lastFrame;
+	lastFrame = currentFrame;
+	frameRateHistory.pop_back();
+	frameRateHistory.insert(frameRateHistory.begin(), static_cast<int>(1.0f / deltaTime));
+	int averageFrameRate = 0;
+	for (const int rate : frameRateHistory)
+		averageFrameRate += rate;
+	averageFrameRate /= static_cast<int>(frameRateHistory.size());
+	glfwSetWindowTitle(window, ("LearnOpenGL FPS: " + std::to_string(averageFrameRate)).c_str());
+}
+
+std::pair<std::shared_ptr<Scene>, Renderer> SandboxScene()
+{
+	auto renderer = Renderer();
+	auto scene = std::make_shared<Scene>(renderer);
+
+	return std::make_pair(scene, renderer);
+}
+
+int main()
+{
+	GLFWwindow* window = Init();
+	if (!window)
+		return -1;
+
+	litObjectShader->Use();
+	for (int i = 0; i < 16; i++)
+		litObjectShader->SetInt("textures[" + std::to_string(i) + "]", i);
+
+	mirrorShader->Use();
+	mirrorShader->SetInt("skybox", 0);
+
+	refractorShader->Use();
+	refractorShader->SetInt("skybox", 0);
+
+	skyboxShader->Use();
+	skyboxShader->SetInt("skybox", 0);
+
+	auto [scene, renderer] = SandboxScene();
+
+	const auto uniformMatrixBuffer = std::make_shared<UniformBuffer>();
+	uniformMatrixBuffer->SetData(2 * sizeof(glm::mat4), nullptr);
+	uniformMatrixBuffer->BindDataRange(0, 0, 2 * sizeof(glm::mat4));
+	renderer.SetUniformBuffer(uniformMatrixBuffer, "Matrices");
+
+	// Render Loop
+	std::cout << "Starting render loop" << std::endl;
+	while (!glfwWindowShouldClose(window))
+	{
+		UpdateFrameRate(window);
+		ProcessInput(window);
+
+		// Set matrices
+		glm::mat4 view = camera->GetViewMatrix();
+		glm::mat4 proj = glm::perspective(glm::radians(camera->m_Zoom),
+			static_cast<float>(SCR_WIDTH) / static_cast<float>(SCR_HEIGHT), 0.1f, 100.0f);
+		uniformMatrixBuffer->SetSubData(0, sizeof(proj), glm::value_ptr(proj));
+		uniformMatrixBuffer->SetSubData(sizeof(proj), sizeof(view), glm::value_ptr(view));
+
+		for (const auto entity : scene->GetAllEntitiesWith<SpotLightComponent>())
+			scene->GetComponent<SpotLightComponent>(entity).Update(glm::vec4(camera->m_Position, 1.0f), camera->m_Front);
+
+		// Render
+		// -------
+		renderer.Render(renderAxis, renderNormals);
+
+		// Check and call events and swap buffers
+		glfwSwapBuffers(window);
+		glfwPollEvents();
+		
+#ifdef LOCK_FRAMERATE
+		std::this_thread::sleep_for(std::chrono::nanoseconds(static_cast<int>(static_cast<float>(averageFrameRate) / static_cast<float>(DESIRED_FRAME_RATE) * 1e7f)));
+#endif
+	}
+
+	glfwTerminate();
+	return 0;
+}

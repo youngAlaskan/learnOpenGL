@@ -8,10 +8,10 @@
 #include "Components\MaterialComponent.h"
 #include "Components\ModelComponent.h"
 
-#include "Entity.h"
-
 void Model::LoadModel(const std::string& path)
 {
+    const auto activeScene = m_Scene.lock();
+
     // read file via ASSIMP
     auto importer = Assimp::Importer();
     const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs); // | aiProcess_CalcTangentSpace);
@@ -25,23 +25,23 @@ void Model::LoadModel(const std::string& path)
     m_Directory = path.substr(0, path.find_last_of('\\'));
 
     // process ASSIMP's root node recursively
-    ProcessNode(scene->mRootNode, scene);
+    ProcessNode(scene->mRootNode, scene, activeScene);
 }
 
 // processes a node in a recursive fashion. Processes each individual mesh located at the node and repeats this process on its children nodes (if any).
-void Model::ProcessNode(const aiNode* node, const aiScene* scene)
+void Model::ProcessNode(const aiNode* node, const aiScene* scene, const std::shared_ptr<Scene>& activeScene)
 {
     for (unsigned int i = 0; i < node->mNumMeshes; i++)
-        ProcessMesh(scene->mMeshes[node->mMeshes[i]], scene);
+        ProcessMesh(scene->mMeshes[node->mMeshes[i]], scene, activeScene);
 
     for (unsigned int i = 0; i < node->mNumChildren; i++)
-        ProcessNode(node->mChildren[i], scene);
+        ProcessNode(node->mChildren[i], scene, activeScene);
 }
 
-void Model::ProcessMesh(aiMesh* mesh, const aiScene* scene)
+void Model::ProcessMesh(aiMesh* mesh, const aiScene* scene, const std::shared_ptr<Scene>& activeScene)
 {
-    auto entity = m_Scene.lock()->CreateEntity();
-    entity.AddComponent<ModelComponent>(this);
+    auto entity = activeScene->CreateEntity();
+    activeScene->AddComponent<ModelComponent>(entity, this);
     
     std::vector<Vertex> vertices;
     std::vector<unsigned int> indices;
@@ -70,7 +70,7 @@ void Model::ProcessMesh(aiMesh* mesh, const aiScene* scene)
             indices.emplace_back(face.mIndices[j]);
     }
 
-    entity.AddComponent<TriangleMeshComponent>(vertices, indices);
+    activeScene->AddComponent<TriangleMeshComponent>(entity, vertices, indices);
 
     aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
@@ -100,7 +100,7 @@ void Model::ProcessMesh(aiMesh* mesh, const aiScene* scene)
     for (auto& texture : emissiveMaps)
         textures.emplace_back(std::move(texture));
 
-    entity.AddComponent<MaterialComponent>(std::move(textures), 0.5f);
+    activeScene->AddComponent<MaterialComponent>(entity, std::move(textures), 0.5f);
 }
 
 // checks all material textures of a given type and loads the textures if they're not loaded yet.

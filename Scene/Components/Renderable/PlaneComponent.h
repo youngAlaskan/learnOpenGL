@@ -5,5 +5,4 @@
 struct PlaneComponent : Object3D
 {
 	PlaneComponent();
-	PlaneComponent(PlaneComponent& cubeComponent) = default;
 };

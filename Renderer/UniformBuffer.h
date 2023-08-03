@@ -2,10 +2,10 @@
 
 #include "glad\glad.h"
 
-class UniformBufferComponent
+class UniformBuffer
 {
 public:
-	explicit UniformBufferComponent()
+	explicit UniformBuffer()
 		{ glGenBuffers(1, &m_ID); }
 
 	// Sets the buffer data to the data provided. Can be used to allocate space
@@ -16,6 +16,11 @@ public:
 	void BindDataRange(GLuint index, GLintptr offset, GLsizeiptr size);
 	// Binds the entire buffer to a specific index (binding point)
 	void BindData(GLuint index);
+
+	~UniformBuffer()
+	{
+		glDeleteBuffers(1, &m_ID);
+	}
 
 public:
 	unsigned int m_ID = 0; // Buffer ID

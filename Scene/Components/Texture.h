@@ -7,6 +7,10 @@
 #include <string>
 #include <vector>
 
+#define STB_IMAGE_IMPLEMENTATION
+
+class Shader;
+
 class Texture
 {
 public:
@@ -41,11 +45,6 @@ public:
 	std::string m_Path = std::string();
 };
 
-struct Tex2DComponent
-{
-	std::shared_ptr<Tex2D> Texture;
-};
-
 class TexCube final : public Texture
 {
 public:
@@ -59,9 +58,13 @@ public:
 	std::vector<std::string> m_Paths = std::vector<std::string>();
 };
 
-struct TexCubeComponent
+struct SkyboxComponent
 {
 	std::shared_ptr<TexCube> Texture;
+	std::weak_ptr<Shader> SkyboxShader;
+
+	SkyboxComponent(std::shared_ptr<TexCube> texture, std::weak_ptr<Shader> shader)
+		: Texture(std::move(texture)), SkyboxShader(std::move(shader)) {}
 };
 
 class TexColorBuffer final : public Texture
@@ -70,9 +73,4 @@ public:
 	explicit TexColorBuffer() = default;
 	explicit TexColorBuffer(unsigned int width, unsigned int height);
 	void Use(int index = 0) const override;
-};
-
-struct TexColorBufferComponent
-{
-	std::shared_ptr<TexColorBufferComponent> Texture;
 };

@@ -1,45 +1,25 @@
 #pragma once
 
-#include <glad\glad.h>
+#include <vector>
+
+#include "..\..\Vertex.h"
+#include "..\..\Renderer\IndexedVAO.h"
 
 struct RenderableTag {};
 
 struct Renderable
 {
-	unsigned int VAO = 0, VBO = 0, EBO = 0;
-	unsigned int VertexCount = 0, IndexCount = 0;
+	IndexedVAO VAO = IndexedVAO();
 
-	Renderable()
-	{
-		glGenVertexArrays(1, &VAO);
-		glGenBuffers(1, &VBO);
-		glGenBuffers(1, &EBO);
-	}
-	~Renderable()
-	{
-		glDeleteVertexArrays(1, &VAO);
-		glDeleteBuffers(1, &VBO);
-		glDeleteBuffers(1, &EBO);
-	}
+	void SetVAO(const std::vector<Vertex>& connectivityData, const std::vector<uint32_t>& indices);
 
-	operator unsigned int& () { return VAO; }
-	operator unsigned const int& () const { return VAO; }
+	operator uint32_t& () { return VAO; }
+	operator const uint32_t& () const { return VAO; }
 };
-
-struct Object3DTag {};
 
 struct Object3D : Renderable
 {
-	unsigned int NVAO = 0, NVBO = 0;
+	IndexedVAO NormalVAO = IndexedVAO();
 
-	Object3D()
-	{
-		glGenVertexArrays(1, &NVAO);
-		glGenBuffers(1, &NVBO);
-	}
-	~Object3D()
-	{
-		glDeleteVertexArrays(1, &NVAO);
-		glDeleteBuffers(1, &NVBO);
-	}
+	void SetNVAO(const std::vector<Vertex>& connectivityData);
 };

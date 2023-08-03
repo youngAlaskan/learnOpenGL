@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "Texture.h"
@@ -12,21 +13,35 @@ class MaterialComponent
 public:
     MaterialComponent() = default;
 
-    MaterialComponent(std::vector<std::shared_ptr<Tex2D>> textures, float shininess);
-    MaterialComponent(const std::shared_ptr<Tex2D>& texture, float shininess);
-    void SetTextures(const std::vector<std::shared_ptr<Tex2D>>& textures);
-    std::vector<std::shared_ptr<Tex2D>> GetTextures() const
-        { return m_Textures; }
-    std::shared_ptr<Tex2D> GetTexture(const std::string& tag);
+    MaterialComponent(const std::vector<std::shared_ptr<Tex2D>>& textures, float shininess);
+    MaterialComponent(std::weak_ptr<Shader> shader, const std::vector<std::shared_ptr<Tex2D>>& textures, float shininess);
 
 public:
-    int m_DiffuseEnd = 0, m_SpecularEnd = 0, m_EmissiveEnd = 0;
+    std::shared_ptr<Tex2D> m_BaseColorMap;
+    std::shared_ptr<Tex2D> m_AlbedoMap;
+    std::shared_ptr<Tex2D> m_MetallicMap;
+    std::shared_ptr<Tex2D> m_RoughnessMap;
+    std::shared_ptr<Tex2D> m_AmbientOcclusionMap;
+    std::shared_ptr<Tex2D> m_NormalMap;
+    std::shared_ptr<Tex2D> m_HeightMap;
+    std::shared_ptr<Tex2D> m_OpacityMap;
+    std::shared_ptr<Tex2D> m_EmissionMap;
     float m_Shininess = 1.0f;
+
     std::weak_ptr<Shader> m_Shader;
+};
 
-private:
-    void SetIndices();
+class CubeMapMaterialComponent
+{
+    CubeMapMaterialComponent() = default;
+    CubeMapMaterialComponent(std::shared_ptr<TexCube> texture)
+        : m_Texture(std::move(texture)) {}
 
-private:
-    std::vector<std::shared_ptr<Tex2D>> m_Textures = std::vector<std::shared_ptr<Tex2D>>();
+    CubeMapMaterialComponent(std::weak_ptr<Shader> shader, std::shared_ptr<TexCube> texture)
+        : m_Texture(std::move(texture)), m_Shader(std::move(shader)) {}
+
+public:
+    std::shared_ptr<TexCube> m_Texture;
+
+    std::weak_ptr<Shader> m_Shader;
 };

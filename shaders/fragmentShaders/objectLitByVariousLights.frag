@@ -2,16 +2,10 @@
 
 #define TEXTURE_CAPACITY 16
 #define POINT_LIGHT_CAPACITY 1
-#define DIRECTIONAL_LIGHT_CAPACITY 1
-#define SPOT_LIGHT_CAPACITY 1
 
 struct Material
 {
-    int diffuseEnd;
-    int specularEnd;
-    int emissiveEnd;
-    // int normalEnd;
-    // int heightEnd;
+    int activeMaps;
     float shininess;
 };
 
@@ -62,13 +56,11 @@ uniform samplerCube skybox;
 
 uniform Material material;
 
-uniform int directionalLightCount;
 uniform int pointLightCount;
-uniform int spotLightCount;
 
-uniform DirLight dirLights[DIRECTIONAL_LIGHT_CAPACITY];
+uniform DirLight dirLight;
 uniform PointLight pointLights[POINT_LIGHT_CAPACITY];
-uniform SpotLight spotLights[SPOT_LIGHT_CAPACITY];
+uniform SpotLight spotLight;
 
 uniform vec3 viewPos;
 
@@ -97,14 +89,13 @@ void main()
     SetValues(textureValues);
 
     vec4 result = vec4(0.0);
-    for (int i = 0; i < directionalLightCount && i < DIRECTIONAL_LIGHT_CAPACITY; i++)
-        result += CalcDirLight(dirLights[i], toViewer, textureValues);
+
+    result += CalcDirLight(dirLight, toViewer, textureValues);
 
     for (int i = 0; i < pointLightCount && i < POINT_LIGHT_CAPACITY; i++)
         result += CalcPointLight(pointLights[i], toViewer, textureValues);
 
-    for (int i = 0; i < spotLightCount && i < SPOT_LIGHT_CAPACITY; i++)
-        result += CalcSpotLight(spotLights[i], toViewer, textureValues);
+    result += CalcSpotLight(spotLight, toViewer, textureValues);
 
     FragColor = vec4(result.rgb, textureValues[0].a);
 }
@@ -188,19 +179,19 @@ float CalcSpec(in vec3 fragToLight, in vec3 toViewer)
 void SetValues(out mat4 textureValues)
 {
     // Iterate through diffuse textures
-    for (int i = 0; i < material.diffuseEnd && i < TEXTURE_CAPACITY; i++)
+    if (bool(material.activeMaps & 1))
     {
-        if (texture(textures[i], i_VertexData.TexCoords).a == 0.0)
+        if (texture(textures[0], i_VertexData.TexCoords).a == 0.0)
             discard;
-        textureValues[0] += texture(textures[i], i_VertexData.TexCoords);
-        textureValues[1] += texture(textures[i], i_VertexData.TexCoords);
+        textureValues[0] += texture(textures[1], i_VertexData.TexCoords);
+        textureValues[1] += texture(textures[1], i_VertexData.TexCoords);
     }
 
     // Iterate through specular textures
-    for (int i = material.diffuseEnd; i < material.specularEnd && i < TEXTURE_CAPACITY; i++)
-        textureValues[2] += texture(textures[i], i_VertexData.TexCoords);
+    if (bool(material.activeMaps & 2))
+        textureValues[2] += texture(textures[2], i_VertexData.TexCoords);
 
     // Iterate through emissive textures
-    for (int i = material.specularEnd; i < material.emissiveEnd && i < TEXTURE_CAPACITY; i++)
-        textureValues[3] += texture(textures[i], i_VertexData.TexCoords);
+    if (bool(material.activeMaps & 64))
+        textureValues[3] += texture(textures[7], i_VertexData.TexCoords);
 }

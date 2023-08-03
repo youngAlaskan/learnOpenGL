@@ -72,7 +72,7 @@ void Tex2D::SetWrap(const GLint sWrap, const GLint tWrap) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, tWrap);
 }
 
-void Tex2D::Use(const int index) const override
+void Tex2D::Use(const int index) const
 {
 	glActiveTexture(GL_TEXTURE0 + index);
 	glBindTexture(GL_TEXTURE_2D, m_ID);
@@ -198,13 +198,13 @@ void TexCube::SetWrap(const GLint sWrap, const GLint tWrap, const GLint rWrap) {
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, rWrap);
 }
 
-void TexCube::Use(const int index) const override
+void TexCube::Use(const int index) const
 {
 	glActiveTexture(GL_TEXTURE0 + index);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, m_ID);
 }
 
-TexColorBufferComponent::TexColorBufferComponent(const unsigned int width, const unsigned int height)
+TexColorBuffer::TexColorBuffer(const unsigned int width, const unsigned int height)
 {
 	glBindTexture(GL_TEXTURE_2D, m_ID);
 
@@ -214,7 +214,7 @@ TexColorBufferComponent::TexColorBufferComponent(const unsigned int width, const
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, static_cast<GLsizei>(width), static_cast<GLsizei>(height), 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
 }
 
-void TexColorBufferComponent::Use(const int index) const override
+void TexColorBuffer::Use(const int index) const
 {
 	glActiveTexture(GL_TEXTURE0 + index);
 	glBindTexture(GL_TEXTURE_2D, m_ID);

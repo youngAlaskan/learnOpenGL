@@ -33,9 +33,9 @@ private:
     // Loads a model with supported ASSIMP extensions from file and stores the resulting meshes in the meshes vector.
     void LoadModel(const std::string& path);
     // Processes a node in a recursive fashion. Processes each individual mesh located at the node and repeats this process on its children nodes (if any).
-    void ProcessNode(const aiNode* node, const aiScene* scene);
+    void ProcessNode(const aiNode* node, const aiScene* scene, const std::shared_ptr<Scene>& activeScene);
     // Processes a mesh, then returns an entity with triangle mesh and material components.
-    void ProcessMesh(aiMesh* mesh, const aiScene* scene);
+    void ProcessMesh(aiMesh* mesh, const aiScene* scene, const std::shared_ptr<Scene>& activeScene);
     // Checks all material textures of a given type and loads the textures if they're not loaded yet
     std::vector<std::shared_ptr<Tex2D>> LoadMaterialTextures(const aiMaterial* mat, aiTextureType type, const std::string& typeName);
 

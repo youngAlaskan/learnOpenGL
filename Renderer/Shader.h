@@ -9,9 +9,9 @@
 #include <iostream>
 
 #include "..\Scene\Components\TransformComponent.h"
-#include "..\Scene\Components\UniformBufferComponent.h"
+#include "UniformBuffer.h"
 #include "..\Scene\Components\MaterialComponent.h"
-#include "..\Scene\Components\LightComponent.h"
+#include "..\Scene\Light.h"
 #include "..\Scene\Camera.h"
 
 class Shader
@@ -129,7 +129,7 @@ public:
         SetMat4("modelInv", glm::inverse(transform.GetTransform()));
     }
 
-    void SetUniformBuffer(const std::shared_ptr<UniformBufferComponent>& uniformBuffer, const std::string& name) const
+    void SetUniformBuffer(const std::shared_ptr<UniformBuffer>& uniformBuffer, const std::string& name) const
     {
         const unsigned int uniformBlockIndex = glGetUniformBlockIndex(m_ID, name.c_str());
         if (uniformBlockIndex != GL_INVALID_INDEX)
@@ -138,17 +138,54 @@ public:
 
     void SetMaterial(const MaterialComponent& material) const
     {
-        const auto textures = material.GetTextures();
-        for (int i = 0; i < static_cast<int>(textures.size()); i++)
-            textures[i]->Use(i);
+        int activeMaps = 0;
 
-        SetInt("material.diffuseEnd",  material.m_DiffuseEnd);
-        SetInt("material.specularEnd", material.m_SpecularEnd);
-        SetInt("material.emissiveEnd", material.m_EmissiveEnd);
+        if (material.m_BaseColorMap)
+        {
+            SetInt("textures[0]", static_cast<int>(material.m_BaseColorMap->m_ID));
+            activeMaps |= 1;
+        }
+        if (material.m_AlbedoMap)
+        {
+            SetInt("textures[1]", static_cast<int>(material.m_AlbedoMap->m_ID));
+            activeMaps |= 2;
+        }
+        if (material.m_MetallicMap)
+        {
+            SetInt("textures[2]", static_cast<int>(material.m_MetallicMap->m_ID));
+            activeMaps |= 4;
+        }
+        if (material.m_RoughnessMap)
+        {
+            SetInt("textures[3]", static_cast<int>(material.m_RoughnessMap->m_ID));
+            activeMaps |= 8;
+        }
+        if (material.m_AmbientOcclusionMap)
+        {
+            SetInt("textures[4]", static_cast<int>(material.m_AmbientOcclusionMap->m_ID));
+            activeMaps |= 16;
+        }
+        if (material.m_NormalMap)
+        {
+            SetInt("textures[5]", static_cast<int>(material.m_NormalMap->m_ID));
+            activeMaps |= 32;
+        }
+        if (material.m_HeightMap)
+        {
+            SetInt("textures[6]", static_cast<int>(material.m_HeightMap->m_ID));
+            activeMaps |= 1;
+        }
+        if (material.m_EmissionMap)
+        {
+            SetInt("textures[7]", static_cast<int>(material.m_EmissionMap->m_ID));
+            activeMaps |= 64;
+        }
+
+        SetInt("material.activeMaps", activeMaps);
         SetFloat("material.shininess", material.m_Shininess);
     }
 
-    void SetPointLights(const std::vector<PointLightComponent>& pointLights) const
+    void SetPointLights(const std::vector<PointLight>& pointLights) const
     {
         for (const auto& pointLight : pointLights)
         {
@@ -166,7 +203,7 @@ public:
         }
     }
 
-    void SetDirectionalLights(const std::vector<DirectionalLightComponent>& directionalLights) const
+    void SetDirectionalLights(const std::vector<DirectionalLight>& directionalLights) const
     {
         for (const auto& directionalLight : directionalLights)
         {
@@ -180,7 +217,7 @@ public:
         }
     }
 
-    void SetSpotLights(const std::vector<SpotLightComponent>& spotLights) const
+    void SetSpotLights(const std::vector<SpotLight>& spotLights) const
     {
         for (const auto& spotLight : spotLights)
         {
@@ -274,4 +311,22 @@ private:
         CheckCompileErrors(shader, shaderName);
         return shader;
     }
+};
+
+inline auto isolatedShader = std::make_shared<Shader>("positionNormalTex.vert", "uniformColor.frag");
+inline auto litObjectShader = std::make_shared<Shader>("positionNormalTex.vert", "objectLitByVariousLights.frag");
+inline auto mirrorShader = std::make_shared<Shader>("positionNormalTex.vert", "skyboxMirror.frag");
+inline auto refractorShader = std::make_shared<Shader>("positionNormalTex.vert", "skyboxRefractor.frag");
+inline auto lineShader = std::make_shared<Shader>("position.vert", "uniformColor.frag");
+inline auto skyboxShader = std::make_shared<Shader>("skybox.vert", "skybox.frag");
+inline auto screenShader = std::make_shared<Shader>("screen.vert", "texture2D.frag");
+
+inline std::vector shaders = {
+    isolatedShader,
+    litObjectShader,
+    mirrorShader,
+    refractorShader,
+    lineShader,
+    skyboxShader,
+    screenShader
 };

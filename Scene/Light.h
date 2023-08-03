@@ -1,12 +1,11 @@
 #pragma once
 
-#include <algorithm>
 #include <glm\glm.hpp>
 
-class LightComponent
+class Light
 {
 public:
-	LightComponent() = default;
+	Light() = default;
 	void SetColor(const glm::vec4 color)
 		{ m_Color = color; }
 	void SetCoeffs(const float kA, const float kD, const float kS);
@@ -16,20 +15,20 @@ public:
 	float m_KA = 1.0f, m_KD = 1.0f, m_KS = 1.0f;
 };
 
-class PointLightComponent final : public LightComponent
+class PointLight final : public Light
 {
 public:
-	PointLightComponent() { SetIndex(); }
-	explicit PointLightComponent(const glm::vec4 position)
+	PointLight() { SetIndex(); }
+	explicit PointLight(const glm::vec4 position)
 		: m_Pos(position) { SetIndex(); }
-	explicit PointLightComponent(float distance);
-	explicit PointLightComponent(float distance, float kA, float kD, float kS);
-	explicit PointLightComponent(glm::vec4 position, float distance, float kA, float kD, float kS);
+	explicit PointLight(float distance);
+	explicit PointLight(float distance, float kA, float kD, float kS);
+	explicit PointLight(glm::vec4 position, float distance, float kA, float kD, float kS);
 	void SetPos(const glm::vec4 pos)
 		{ m_Pos = pos; }
 	static int GetCount()
 		{ return s_Count; }
-	~PointLightComponent()
+	~PointLight()
 		{ s_Count--; }
 
 public:
@@ -46,13 +45,13 @@ private:
 	inline static int s_Count = 0;
 };
 
-class DirectionalLightComponent final : public LightComponent
+class DirectionalLight final : public Light
 {
 public:
-	DirectionalLightComponent() { SetIndex(); }
-	explicit DirectionalLightComponent(const glm::vec3 direction)
+	DirectionalLight() { SetIndex(); }
+	explicit DirectionalLight(const glm::vec3 direction)
 		: m_Direction(direction) { SetIndex(); }
-	explicit DirectionalLightComponent(const glm::vec3 direction, const float kA, const float kD, const float kS)
+	explicit DirectionalLight(const glm::vec3 direction, const float kA, const float kD, const float kS)
 		: m_Direction(direction)
 	{
 		SetCoeffs(kA, kD, kS);
@@ -62,7 +61,7 @@ public:
 	{
 		return s_Count;
 	}
-	~DirectionalLightComponent()
+	~DirectionalLight()
 	{
 		s_Count--;
 	}
@@ -81,20 +80,20 @@ private:
 	inline static int s_Count = 0;
 };
 
-class SpotLightComponent final : public LightComponent
+class SpotLight final : public Light
 {
 public:
-	SpotLightComponent() { SetIndex(); }
-	explicit SpotLightComponent(float theta);
-	explicit SpotLightComponent(float theta, float kA, float kD, float kS);
-	explicit SpotLightComponent(glm::vec3 direction, float theta, float kA, float kD, float kS);
+	SpotLight() { SetIndex(); }
+	explicit SpotLight(float theta);
+	explicit SpotLight(float theta, float kA, float kD, float kS);
+	explicit SpotLight(glm::vec3 direction, float theta, float kA, float kD, float kS);
 	void SetCutOff(float thetaDegrees);
 	void Update(const glm::vec4& position, const glm::vec3& direction);
 	static int GetCount()
 	{
 		return s_Count;
 	}
-	~SpotLightComponent()
+	~SpotLight()
 	{
 		s_Count--;
 	}

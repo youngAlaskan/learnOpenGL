@@ -143,48 +143,48 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Scene\Components\Line.cpp" />
+    <ClCompile Include="Scene\Components\Renderable\Renderable.cpp" />
+    <ClCompile Include="Scene\Light.cpp" />
+    <ClCompile Include="Scene\Line.cpp" />
     <ClCompile Include="Scene\Components\Renderable\CubeComponent.cpp" />
     <ClCompile Include="Scene\Components\Renderable\PlaneComponent.cpp" />
     <ClCompile Include="Scene\Components\Renderable\TriangleMeshComponent.cpp" />
-    <ClCompile Include="Scene\Entity.cpp" />
     <ClCompile Include="glad.c" />
+    <ClCompile Include="Scene\Components\Texture.cpp" />
     <ClCompile Include="Scene\Model.cpp" />
     <ClCompile Include="Scene\Scene.cpp" />
-    <ClCompile Include="Scene\Components\Light.cpp" />
-    <ClCompile Include="Scene\Components\LightComponent.cpp" />
     <ClCompile Include="Scene\Components\MaterialComponent.cpp" />
-    <ClCompile Include="Scene\Components\Texture.cpp" />
     <ClCompile Include="Scene\Components\TransformComponent.cpp" />
-    <ClCompile Include="Scene\Components\UniformBufferComponent.cpp" />
+    <ClCompile Include="Renderer\UniformBuffer.cpp" />
+    <ClCompile Include="Source.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Renderer\IndexedVAO.h" />
     <ClInclude Include="Scene\Camera.h" />
     <ClInclude Include="Renderer\Framebuffer.h" />
     <ClInclude Include="Renderer\Renderbuffer.h" />
     <ClInclude Include="Renderer\Renderer.h" />
     <ClInclude Include="Renderer\Shader.h" />
+    <ClInclude Include="Scene\Light.h" />
     <ClInclude Include="Scene\Components\ModelComponent.h" />
     <ClInclude Include="Scene\Components\Renderable\CubeComponent.h" />
     <ClInclude Include="Scene\Components\Renderable\PlaneComponent.h" />
     <ClInclude Include="Scene\Components\Renderable\Renderable.h" />
     <ClInclude Include="Scene\Components\Renderable\TriangleMeshComponent.h" />
     <ClInclude Include="Scene\Components\TagComponent.h" />
-    <ClInclude Include="Scene\Entity.h" />
-    <ClInclude Include="Scene\Components\Line.h" />
+    <ClInclude Include="Scene\Line.h" />
+    <ClInclude Include="Scene\Components\Texture.h" />
     <ClInclude Include="Scene\Model.h" />
     <ClInclude Include="Scene\Scene.h" />
-    <ClInclude Include="Scene\Components\Light.h" />
-    <ClInclude Include="Scene\Components\LightComponent.h" />
     <ClInclude Include="Scene\Components\MaterialComponent.h" />
-    <ClInclude Include="Scene\Components\Texture.h" />
     <ClInclude Include="Scene\Components\TransformComponent.h" />
-    <ClInclude Include="Scene\Components\UniformBufferComponent.h" />
+    <ClInclude Include="Renderer\UniformBuffer.h" />
     <ClInclude Include="vendor\includes\stb_image\stb_image.h" />
     <ClInclude Include="utils.h" />
     <ClInclude Include="Scene\Vertex.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="ClassDiagram.cd" />
     <None Include="README.md" />
     <None Include="shaders\fragmentShaders\objectLitByVariousLights.frag" />
     <None Include="shaders\fragmentShaders\skybox.frag" />
