@@ -8,7 +8,13 @@
 
 class Shader;
 
-class MaterialComponent
+class AbstractMaterial
+{
+public:
+    std::weak_ptr<Shader> m_Shader;
+};
+
+class MaterialComponent final : public AbstractMaterial
 {
 public:
     MaterialComponent() = default;
@@ -27,21 +33,18 @@ public:
     std::shared_ptr<Tex2D> m_OpacityMap;
     std::shared_ptr<Tex2D> m_EmissionMap;
     float m_Shininess = 1.0f;
-
-    std::weak_ptr<Shader> m_Shader;
 };
 
-class CubeMapMaterialComponent
+class CubeMapMaterialComponent final : public AbstractMaterial
 {
+public:
     CubeMapMaterialComponent() = default;
     CubeMapMaterialComponent(std::shared_ptr<TexCube> texture)
         : m_Texture(std::move(texture)) {}
 
     CubeMapMaterialComponent(std::weak_ptr<Shader> shader, std::shared_ptr<TexCube> texture)
-        : m_Texture(std::move(texture)), m_Shader(std::move(shader)) {}
+        : m_Texture(std::move(texture)) { m_Shader = std::move(shader); }
 
 public:
     std::shared_ptr<TexCube> m_Texture;
-
-    std::weak_ptr<Shader> m_Shader;
 };

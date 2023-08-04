@@ -18,9 +18,6 @@
 #include "Scene\Scene.h"
 #include "Scene\Model.h"
 
-#include "Renderer\UniformBuffer.h"
-#include "Renderer\Renderer.h"
-
 constexpr unsigned int SCR_WIDTH = 800;
 constexpr unsigned int SCR_HEIGHT = 600;
 
@@ -149,6 +146,14 @@ GLFWwindow* Init()
 
 	glEnable(GL_CULL_FACE);
 
+	isolatedShader = std::make_shared<Shader>("positionNormalTex.vert", "uniformColor.frag");
+	litObjectShader = std::make_shared<Shader>("positionNormalTex.vert", "objectLitByVariousLights.frag");
+	mirrorShader = std::make_shared<Shader>("positionNormalTex.vert", "skyboxMirror.frag");
+	refractorShader = std::make_shared<Shader>("positionNormalTex.vert", "skyboxRefractor.frag");
+	lineShader = std::make_shared<Shader>("position.vert", "uniformColor.frag");
+	skyboxShader = std::make_shared<Shader>("skybox.vert", "skybox.frag");
+	screenShader = std::make_shared<Shader>("screen.vert", "texture2D.frag");
+
 	return window;
 }
 
@@ -170,7 +175,26 @@ void UpdateFrameRate(GLFWwindow* window)
 std::pair<std::shared_ptr<Scene>, Renderer> SandboxScene()
 {
 	auto renderer = Renderer();
-	auto scene = std::make_shared<Scene>(renderer);
+	auto scene = std::make_shared<Scene>(std::weak_ptr(std::make_shared<Renderer>(renderer)));
+
+	scene->m_SceneData.PointLights = std::make_shared<std::vector<PointLight>>();
+	scene->m_SceneData.PointLights->emplace_back(glm::vec4(2.0f, 1.0f, 3.0f, 1.0f), 100.0f, 0.2f, 0.5f, 0.99f);
+
+	scene->m_SceneData.Sun = std::make_shared<DirectionalLight>(glm::normalize(glm::vec3(1.0, -1.0, 1.0)), 0.2f, 0.5f, 0.99f);
+
+	scene->m_SceneData.Flashlight = std::make_shared<SpotLight>(12.5f, 0.2f, 0.5f, 0.99f);
+
+	std::vector<std::string> faces
+	{
+		".\\textures\\skybox\\right.jpg",
+			".\\textures\\skybox\\left.jpg",
+			".\\textures\\skybox\\top.jpg",
+			".\\textures\\skybox\\bottom.jpg",
+			".\\textures\\skybox\\front.jpg",
+			".\\textures\\skybox\\back.jpg"
+	};
+
+	scene->m_SceneData.Skybox = std::make_shared<Skybox>(faces);
 
 	return std::make_pair(scene, renderer);
 }
@@ -199,7 +223,7 @@ int main()
 	const auto uniformMatrixBuffer = std::make_shared<UniformBuffer>();
 	uniformMatrixBuffer->SetData(2 * sizeof(glm::mat4), nullptr);
 	uniformMatrixBuffer->BindDataRange(0, 0, 2 * sizeof(glm::mat4));
-	renderer.SetUniformBuffer(uniformMatrixBuffer, "Matrices");
+	// SetUniformBuffer(uniformMatrixBuffer, "Matrices");
 
 	// Render Loop
 	std::cout << "Starting render loop" << std::endl;
@@ -215,12 +239,10 @@ int main()
 		uniformMatrixBuffer->SetSubData(0, sizeof(proj), glm::value_ptr(proj));
 		uniformMatrixBuffer->SetSubData(sizeof(proj), sizeof(view), glm::value_ptr(view));
 
-		for (const auto entity : scene->GetAllEntitiesWith<SpotLightComponent>())
-			scene->GetComponent<SpotLightComponent>(entity).Update(glm::vec4(camera->m_Position, 1.0f), camera->m_Front);
+		scene->m_SceneData.Flashlight->Update(glm::vec4(camera->m_Position, 1.0f), camera->m_Front);
 
 		// Render
-		// -------
-		renderer.Render(renderAxis, renderNormals);
+		scene->OnUpdate();
 
 		// Check and call events and swap buffers
 		glfwSwapBuffers(window);

@@ -58,15 +58,6 @@ public:
 	std::vector<std::string> m_Paths = std::vector<std::string>();
 };
 
-struct SkyboxComponent
-{
-	std::shared_ptr<TexCube> Texture;
-	std::weak_ptr<Shader> SkyboxShader;
-
-	SkyboxComponent(std::shared_ptr<TexCube> texture, std::weak_ptr<Shader> shader)
-		: Texture(std::move(texture)), SkyboxShader(std::move(shader)) {}
-};
-
 class TexColorBuffer final : public Texture
 {
 public:

@@ -1,15 +1,19 @@
 #pragma once
 
 #include "entt\include\entt.hpp"
+
+#include "..\Renderer\Shader.h"
+
 #include "Camera.h"
 
 #include "..\Renderer\Renderer.h"
-#include "Light.h"
 
 class Scene
 {
 public:
 	Scene() = default;
+	Scene(std::weak_ptr<Renderer> renderer, const int viewportWidth = 0, const int viewportHeight = 0)
+		: m_ViewportWidth(viewportWidth), m_ViewportHeight(viewportHeight), m_Renderer(std::move(renderer)) {}
 	Scene(const int viewportWidth, const int viewportHeight)
 		: m_ViewportWidth(viewportWidth), m_ViewportHeight(viewportHeight) {}
 
@@ -35,20 +39,23 @@ public:
 
 	std::weak_ptr<Scene> GetWeakPtr() { return { std::shared_ptr<Scene>(this) }; }
 
+	void OnStart() const;
 	void OnUpdate();
 
+	void RenderSkybox() const;
+
+	static void UseMaterialShader(const MaterialComponent& materialComponent);
+	static void SendMaterialDataToShader(const MaterialComponent& materialComponent);
+
 	~Scene() = default;
+
+public:
+	SceneData m_SceneData;
 
 private:
 	entt::registry m_Registry = entt::registry();
 	std::shared_ptr<Camera> m_SceneCamera = std::make_shared<Camera>(glm::vec3(1.0f, 1.0f, 3.0f));
 	int m_ViewportWidth = 0, m_ViewportHeight = 0;
-
-	std::vector<PointLight> m_PointLights = std::vector<PointLight>();
-	DirectionalLight m_DirectionalLight;
-	SpotLight m_SpotLight;
-
-	entt::entity m_Skybox;
 
 	std::weak_ptr<Renderer> m_Renderer;
 };

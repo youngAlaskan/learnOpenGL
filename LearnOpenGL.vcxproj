@@ -143,7 +143,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Renderer\Shader.cpp" />
     <ClCompile Include="Scene\Components\Renderable\Renderable.cpp" />
+    <ClCompile Include="Scene\Components\Renderable\Skybox.cpp" />
     <ClCompile Include="Scene\Light.cpp" />
     <ClCompile Include="Scene\Line.cpp" />
     <ClCompile Include="Scene\Components\Renderable\CubeComponent.cpp" />
@@ -165,6 +167,7 @@
     <ClInclude Include="Renderer\Renderbuffer.h" />
     <ClInclude Include="Renderer\Renderer.h" />
     <ClInclude Include="Renderer\Shader.h" />
+    <ClInclude Include="Scene\Components\Renderable\Skybox.h" />
     <ClInclude Include="Scene\Light.h" />
     <ClInclude Include="Scene\Components\ModelComponent.h" />
     <ClInclude Include="Scene\Components\Renderable\CubeComponent.h" />
@@ -179,6 +182,7 @@
     <ClInclude Include="Scene\Components\MaterialComponent.h" />
     <ClInclude Include="Scene\Components\TransformComponent.h" />
     <ClInclude Include="Renderer\UniformBuffer.h" />
+    <ClInclude Include="Scene\SceneData.h" />
     <ClInclude Include="vendor\includes\stb_image\stb_image.h" />
     <ClInclude Include="utils.h" />
     <ClInclude Include="Scene\Vertex.h" />
