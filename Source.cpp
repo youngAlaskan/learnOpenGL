@@ -146,13 +146,13 @@ GLFWwindow* Init()
 
 	glEnable(GL_CULL_FACE);
 
-	isolatedShader = std::make_shared<Shader>("positionNormalTex.vert", "uniformColor.frag");
-	litObjectShader = std::make_shared<Shader>("positionNormalTex.vert", "objectLitByVariousLights.frag");
-	mirrorShader = std::make_shared<Shader>("positionNormalTex.vert", "skyboxMirror.frag");
-	refractorShader = std::make_shared<Shader>("positionNormalTex.vert", "skyboxRefractor.frag");
-	lineShader = std::make_shared<Shader>("position.vert", "uniformColor.frag");
-	skyboxShader = std::make_shared<Shader>("skybox.vert", "skybox.frag");
-	screenShader = std::make_shared<Shader>("screen.vert", "texture2D.frag");
+	g_IsolatedShader = std::make_shared<Shader>("positionNormalTex.vert", "uniformColor.frag");
+	g_LitObjectShader = std::make_shared<Shader>("positionNormalTex.vert", "objectLitByVariousLights.frag");
+	g_MirrorShader = std::make_shared<Shader>("positionNormalTex.vert", "skyboxMirror.frag");
+	g_RefractorShader = std::make_shared<Shader>("positionNormalTex.vert", "skyboxRefractor.frag");
+	g_LineShader = std::make_shared<Shader>("position.vert", "uniformColor.frag");
+	g_SkyboxShader = std::make_shared<Shader>("skybox.vert", "skybox.frag");
+	g_ScreenShader = std::make_shared<Shader>("screen.vert", "texture2D.frag");
 
 	return window;
 }
@@ -187,14 +187,17 @@ std::pair<std::shared_ptr<Scene>, Renderer> SandboxScene()
 	std::vector<std::string> faces
 	{
 		".\\textures\\skybox\\right.jpg",
-			".\\textures\\skybox\\left.jpg",
-			".\\textures\\skybox\\top.jpg",
-			".\\textures\\skybox\\bottom.jpg",
-			".\\textures\\skybox\\front.jpg",
-			".\\textures\\skybox\\back.jpg"
+		".\\textures\\skybox\\left.jpg",
+		".\\textures\\skybox\\top.jpg",
+		".\\textures\\skybox\\bottom.jpg",
+		".\\textures\\skybox\\front.jpg",
+		".\\textures\\skybox\\back.jpg"
 	};
 
-	scene->m_SceneData.Skybox = std::make_shared<Skybox>(faces);
+	scene->m_SceneData.Skybox = std::make_shared<Skybox>(std::weak_ptr<Shader>(g_SkyboxShader), std::make_shared<TexCube>(faces));
+
+	auto entity = scene->CreateEntity();
+	scene->AddComponent<CubeComponent>(entity);
 
 	return std::make_pair(scene, renderer);
 }
@@ -205,18 +208,18 @@ int main()
 	if (!window)
 		return -1;
 
-	litObjectShader->Use();
+	g_LitObjectShader->Use();
 	for (int i = 0; i < 16; i++)
-		litObjectShader->SetInt("textures[" + std::to_string(i) + "]", i);
+		g_LitObjectShader->SetInt("textures[" + std::to_string(i) + "]", i);
 
-	mirrorShader->Use();
-	mirrorShader->SetInt("skybox", 0);
+	g_MirrorShader->Use();
+	g_MirrorShader->SetInt("skybox", 0);
 
-	refractorShader->Use();
-	refractorShader->SetInt("skybox", 0);
+	g_RefractorShader->Use();
+	g_RefractorShader->SetInt("skybox", 0);
 
-	skyboxShader->Use();
-	skyboxShader->SetInt("skybox", 0);
+	g_SkyboxShader->Use();
+	g_SkyboxShader->SetInt("skybox", 0);
 
 	auto [scene, renderer] = SandboxScene();
 
@@ -232,13 +235,14 @@ int main()
 		UpdateFrameRate(window);
 		ProcessInput(window);
 
-		// Set matrices
+		// Set uniform view and projection matrices
 		glm::mat4 view = camera->GetViewMatrix();
 		glm::mat4 proj = glm::perspective(glm::radians(camera->m_Zoom),
 			static_cast<float>(SCR_WIDTH) / static_cast<float>(SCR_HEIGHT), 0.1f, 100.0f);
 		uniformMatrixBuffer->SetSubData(0, sizeof(proj), glm::value_ptr(proj));
 		uniformMatrixBuffer->SetSubData(sizeof(proj), sizeof(view), glm::value_ptr(view));
 
+		// Update flashlight position to match camera's
 		scene->m_SceneData.Flashlight->Update(glm::vec4(camera->m_Position, 1.0f), camera->m_Front);
 
 		// Render

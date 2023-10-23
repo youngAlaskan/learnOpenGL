@@ -33,35 +33,48 @@ public:
         
     }
 
-    // utility uniform functions
+    // Set uniform boolean
     void SetBool(const std::string& name, const bool value) const
         { glUniform1i(glGetUniformLocation(m_ID, name.c_str()), static_cast<int>(value)); }
+    // Set uniform int
     void SetInt(const std::string& name, const int value) const
         { glUniform1i(glGetUniformLocation(m_ID, name.c_str()), value); }
+    // Set uniform float
     void SetFloat(const std::string& name, const float value) const
         { glUniform1f(glGetUniformLocation(m_ID, name.c_str()), value); }
+    // Set uniform vec2
     void SetVec2(const std::string& name, glm::vec2 v) const
         { glUniform2fv(glGetUniformLocation(m_ID, name.c_str()), 1, glm::value_ptr(v)); }
+    // Set uniform vec3
     void SetVec3(const std::string& name, glm::vec3 v) const
         { glUniform3fv(glGetUniformLocation(m_ID, name.c_str()), 1, glm::value_ptr(v)); }
+    // Set uniform vec4
     void SetVec4(const std::string& name, glm::vec4 v) const
         { glUniform4fv(glGetUniformLocation(m_ID, name.c_str()), 1, glm::value_ptr(v)); }
+    // Set uniform mat2
     void SetMat2(const std::string& name, glm::mat2 m) const
         { glUniformMatrix2fv(glGetUniformLocation(m_ID, name.c_str()), 1, GL_FALSE, glm::value_ptr(m)); }
+    // Set uniform mat3
     void SetMat3(const std::string& name, glm::mat3 m) const
         { glUniformMatrix3fv(glGetUniformLocation(m_ID, name.c_str()), 1, GL_FALSE, glm::value_ptr(m)); }
+    // Set uniform mat4
     void SetMat4(const std::string& name, glm::mat4 m) const
         { glUniformMatrix4fv(glGetUniformLocation(m_ID, name.c_str()), 1, GL_FALSE, glm::value_ptr(m)); }
 
-    // Utility uniform object functions
+    // Set uniform transform
     void SetTransform(const TransformComponent& transform) const;
+    // Set uniform buffer
     void SetUniformBuffer(const std::shared_ptr<UniformBuffer>& uniformBuffer, const std::string& name) const;
+    // Set uniform point lights
     void SetPointLights(const std::vector<PointLight>& pointLights) const;
+    // Set uniform directional lights
     void SetDirectionalLight(const DirectionalLight& directionalLight) const;
+    // Set uniform spot light
     void SetSpotLight(const SpotLight& spotLight) const;
+    // Set unfiform view position, "viewPos"
     void SetCameraPosition(const glm::vec3& position) const
         { SetVec3("viewPos", position); }
-
+    // Set uniform scene data
     void SetSceneData(const SceneData& sceneData) const;
 
     ~Shader()
@@ -84,20 +97,20 @@ private:
     static unsigned int CreateShader(const char* shaderCode, GLenum shaderType, const char* shaderName);
 };
 
-inline std::shared_ptr<Shader> isolatedShader;
-inline std::shared_ptr<Shader> litObjectShader;
-inline std::shared_ptr<Shader> mirrorShader;
-inline std::shared_ptr<Shader> refractorShader;
-inline std::shared_ptr<Shader> lineShader;
-inline std::shared_ptr<Shader> skyboxShader;
-inline std::shared_ptr<Shader> screenShader;
+inline std::shared_ptr<Shader> g_IsolatedShader;
+inline std::shared_ptr<Shader> g_LitObjectShader;
+inline std::shared_ptr<Shader> g_MirrorShader;
+inline std::shared_ptr<Shader> g_RefractorShader;
+inline std::shared_ptr<Shader> g_LineShader;
+inline std::shared_ptr<Shader> g_SkyboxShader;
+inline std::shared_ptr<Shader> g_ScreenShader;
 
 inline std::vector shaders = {
-    isolatedShader,
-    litObjectShader,
-    mirrorShader,
-    refractorShader,
-    lineShader,
-    skyboxShader,
-    screenShader
+    g_IsolatedShader,
+    g_LitObjectShader,
+    g_MirrorShader,
+    g_RefractorShader,
+    g_LineShader,
+    g_SkyboxShader,
+    g_ScreenShader
 };
