@@ -58,3 +58,20 @@ inline void GLAPIENTRY MessageCallback(GLenum source,
 		<< errorSeverity[severity] << std::endl
 		<< "  MESSAGE: " << message << std::endl;
 }
+
+inline void Log(std::string message) {
+	std::cout << message << std::endl;
+}
+
+inline void Log(std::ostream stream, std::string message) {
+	stream << message << std::endl;
+}
+
+inline void Log(std::ostream stream, std::string message, bool newline) {
+	stream << message;
+	if (newline) stream << std::endl;
+}
+
+inline void LogError(std::string message) {
+	std::cerr << "ERROR::" << message << std::endl;
+}

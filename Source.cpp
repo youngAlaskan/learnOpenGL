@@ -172,11 +172,12 @@ void UpdateFrameRate(GLFWwindow* window)
 	glfwSetWindowTitle(window, ("LearnOpenGL FPS: " + std::to_string(averageFrameRate)).c_str());
 }
 
-std::pair<std::shared_ptr<Scene>, Renderer> SandboxScene()
+std::pair<std::shared_ptr<Scene>, std::shared_ptr<Renderer>> SandboxScene()
 {
-	auto renderer = Renderer();
-	auto scene = std::make_shared<Scene>(std::weak_ptr(std::make_shared<Renderer>(renderer)));
+	auto renderer = std::make_shared<Renderer>();
+	auto scene = std::make_shared<Scene>(std::weak_ptr(renderer));
 
+	// Set Scene Data
 	scene->m_SceneData.PointLights = std::make_shared<std::vector<PointLight>>();
 	scene->m_SceneData.PointLights->emplace_back(glm::vec4(2.0f, 1.0f, 3.0f, 1.0f), 100.0f, 0.2f, 0.5f, 0.99f);
 
@@ -184,20 +185,31 @@ std::pair<std::shared_ptr<Scene>, Renderer> SandboxScene()
 
 	scene->m_SceneData.Flashlight = std::make_shared<SpotLight>(12.5f, 0.2f, 0.5f, 0.99f);
 
-	std::vector<std::string> faces
+	auto cubeTexture = std::make_shared<TexCube>(
+		std::vector<std::string>
 	{
 		".\\textures\\skybox\\right.jpg",
-		".\\textures\\skybox\\left.jpg",
-		".\\textures\\skybox\\top.jpg",
-		".\\textures\\skybox\\bottom.jpg",
-		".\\textures\\skybox\\front.jpg",
-		".\\textures\\skybox\\back.jpg"
-	};
+			".\\textures\\skybox\\left.jpg",
+			".\\textures\\skybox\\top.jpg",
+			".\\textures\\skybox\\bottom.jpg",
+			".\\textures\\skybox\\front.jpg",
+			".\\textures\\skybox\\back.jpg"
+	}
+	);
 
-	scene->m_SceneData.Skybox = std::make_shared<Skybox>(std::weak_ptr<Shader>(g_SkyboxShader), std::make_shared<TexCube>(faces));
+	// Add skybox
+	auto skybox = scene->CreateEntity();
+	scene->AddEmptyComponent<SkyboxTag>(skybox);
+	scene->AddComponent<CubeComponent>(skybox);
+	auto skyboxMaterial = scene->AddComponent<CubeMapMaterialComponent>(
+		skybox, std::weak_ptr<Shader>(g_SkyboxShader), cubeTexture
+	);
+	scene->m_SceneData.SkyboxTexture = skyboxMaterial.m_Texture->m_ID;
 
+	// Display default cube
 	auto entity = scene->CreateEntity();
 	scene->AddComponent<CubeComponent>(entity);
+	scene->AddEmptyComponent<RenderableTag>(entity);
 
 	return std::make_pair(scene, renderer);
 }

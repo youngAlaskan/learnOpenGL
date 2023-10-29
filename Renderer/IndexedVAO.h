@@ -4,7 +4,7 @@
 
 struct IndexedVAO
 {
-	uint32_t* VAO = nullptr;
+	uint32_t* VAO = new uint32_t;
 	uint32_t IndexCount = 0;
 
 	IndexedVAO()

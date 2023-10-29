@@ -1,12 +1,11 @@
 #pragma once
 
 #include "entt\include\entt.hpp"
-
 #include "..\Renderer\Shader.h"
-
 #include "Camera.h"
-
 #include "..\Renderer\Renderer.h"
+#include "Components\MaterialComponent.h"
+#include "Components\Renderable\CubeComponent.h"
 
 class Scene
 {
@@ -29,6 +28,9 @@ public:
 	Component& AddComponent(const entt::entity entity, Args&&... args) { return m_Registry.emplace<Component>(entity, std::forward<Args>(args)...); }
 
 	template<typename Component>
+	void AddEmptyComponent(const entt::entity entity) { return m_Registry.emplace<Component>(entity); }
+
+	template<typename Component>
 	Component& GetComponent(const entt::entity entity) { return m_Registry.get<Component>(entity); }
 
 	template<typename Component>
@@ -42,7 +44,7 @@ public:
 	void OnStart() const;
 	void OnUpdate();
 
-	void RenderSkybox() const;
+	void RenderSkybox(const CubeComponent& mesh, const CubeMapMaterialComponent& material) const;
 
 	static void UseMaterialShader(const MaterialComponent& materialComponent);
 	static void SendMaterialDataToShader(const MaterialComponent& materialComponent);
@@ -50,7 +52,7 @@ public:
 	~Scene() = default;
 
 public:
-	SceneData m_SceneData;
+	SceneData m_SceneData = {};
 
 private:
 	entt::registry m_Registry = entt::registry();

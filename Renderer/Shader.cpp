@@ -118,8 +118,8 @@ void Shader::SetSceneData(const SceneData& sceneData) const
         SetDirectionalLight(*sceneData.Sun);
     if (sceneData.Flashlight)
         SetSpotLight(*sceneData.Flashlight);
-    if (sceneData.Skybox)
-        SetInt("skybox", static_cast<int>(sceneData.Skybox->Material->m_Texture->m_ID));
+    if (sceneData.SkyboxTexture)
+        SetInt("skybox", sceneData.SkyboxTexture);
     if (sceneData.ViewMatrix && sceneData.ProjectionMatrix)
     {
         const auto uniformMatrixBuffer = std::make_shared<UniformBuffer>();

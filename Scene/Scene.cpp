@@ -1,11 +1,16 @@
 #include "Scene.h"
 
+#include "..\utils.h"
 #include "Components\TransformComponent.h"
 #include "Components\TagComponent.h"
 #include "Components\Renderable\CubeComponent.h"
 #include "Components\Renderable\PlaneComponent.h"
 #include "Components\Renderable\TriangleMeshComponent.h"
 
+// Create an entity in the scene registry and give it a...
+// - TransformComponent
+// - TagComponenent
+// return the entt::entity reference
 entt::entity Scene::CreateEntity(const std::string& name)
 {
 	const auto entity = m_Registry.create();
@@ -15,8 +20,17 @@ entt::entity Scene::CreateEntity(const std::string& name)
 	return entity;
 }
 
+// Function to be executed once upon program start
 void Scene::OnStart() const
 {
+    assert(g_LitObjectShader);
+    assert(g_LitObjectShader);
+    assert(g_MirrorShader);
+    assert(g_RefractorShader);
+    assert(g_LineShader);
+    assert(g_SkyboxShader);
+    assert(g_ScreenShader);
+
 	g_LitObjectShader->SetSceneData(m_SceneData);
 	g_LitObjectShader->SetSceneData(m_SceneData);
 	g_MirrorShader->SetSceneData(m_SceneData);
@@ -26,18 +40,22 @@ void Scene::OnStart() const
 	g_ScreenShader->SetSceneData(m_SceneData);
 }
 
+// Function to be executed on every update iteration
 void Scene::OnUpdate()
 {
-	const auto& renderer = m_Renderer.lock();
-	if (!renderer) return;
+	auto renderer = m_Renderer.lock();
+    assert(renderer);
 
-	RenderSkybox();
+    for (const auto& entity : GetAllEntitiesWith<SkyboxTag>()) {
+        RenderSkybox(GetComponent<CubeComponent>(entity), GetComponent<CubeMapMaterialComponent>(entity));
+    }
 
 	// Draw all Vertex Array Buffers
 	for (const auto& entity : GetAllEntitiesWith<RenderableTag, MaterialComponent>())
 	{
 		UseMaterialShader(GetComponent<MaterialComponent>(entity));
 
+        // Render based on object type
 		if (HasComponent<CubeComponent>(entity))
 			renderer->RenderIndexed(GetComponent<CubeComponent>(entity).VAO);
 		else if (HasComponent<PlaneComponent>(entity))
@@ -47,25 +65,26 @@ void Scene::OnUpdate()
 	}
 }
 
-void Scene::RenderSkybox() const
+// Render the currently set skybox in m_SceneData
+void Scene::RenderSkybox(const CubeComponent& mesh, const CubeMapMaterialComponent& material) const
 {
-	if (!m_SceneData.Skybox) return;
+    assert(material.m_Shader.lock());
+    assert(material.m_Texture);
 
-    // Do not set depth buffer
+	// Do not set depth buffer
 	glDepthMask(GL_FALSE);
 
     // Cube is seen from inside, so winding order is backwards
 	glFrontFace(GL_CW);
 
     // Set active shader and texture(s)
-	m_SceneData.Skybox->Material->m_Shader.lock()->Use();
-    m_SceneData.Skybox->Material->m_Texture->Use();
+	material.m_Shader.lock()->Use();
+    material.m_Texture->Use();
 
     // Pass the skybox's mesh into the renderer
-    const auto mesh = m_SceneData.Skybox->CubeMesh;
     auto renderer = m_Renderer.lock();
     if (renderer)
-        renderer->RenderIndexed(mesh->VAO);
+        renderer->RenderIndexed(mesh.VAO);
 
     // Reset flags
 	glFrontFace(GL_CCW);
@@ -73,18 +92,20 @@ void Scene::RenderSkybox() const
 	glDepthMask(GL_TRUE);
 }
 
+// Set the active shader to be material's shader and populate shader data
 void Scene::UseMaterialShader(const MaterialComponent& materialComponent)
 {
-	if (materialComponent.m_Shader.expired()) return;
+    assert(materialComponent.m_Shader.lock());
 	materialComponent.m_Shader.lock()->Use();
 
     SendMaterialDataToShader(materialComponent);
 }
 
+// Populate the material struct in the shader file
 void Scene::SendMaterialDataToShader(const MaterialComponent& materialComponent)
 {
-    if (materialComponent.m_Shader.expired()) return;
-    const auto& shader = materialComponent.m_Shader.lock();
+    assert(materialComponent.m_Shader.lock());
+    auto shader = materialComponent.m_Shader.lock();
 
     int activeMaps = 0; // Bit Mask cooresponding to different texture types
     int index = 0; // Refers to the offset for the active texture flag
