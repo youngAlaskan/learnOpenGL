@@ -6,11 +6,17 @@ This project is built upon the [LearnOpenGL](https://learnopengl.com/) tutorial.
 ## Current features:
  - Model loading
  - Point lights, directional lights, and spotlights
- - Skyboxes
+ - Skybox
  - Custom Fragment, Geometry, and Vertex Shaders
  - Entity Component System
 
-Pictures pending restructuring finish
+Pictures pending restructuring completion
+
+## Planned features:
+ - Separate PBR and standard texture pipelines
+ - Switch to [ImGui](https://github.com/ocornut/imgui)
+ - C# scripting
+ - Vulkan rendering option
 
 --------------------------------------------------------
 
