@@ -34,32 +34,23 @@ public:
     }
 
     // Set uniform boolean
-    void SetBool(const std::string& name, const bool value) const
-        { glUniform1i(glGetUniformLocation(m_ID, name.c_str()), static_cast<int>(value)); }
+    void SetBool(const std::string& name, const bool value) const;
     // Set uniform int
-    void SetInt(const std::string& name, const int value) const
-        { glUniform1i(glGetUniformLocation(m_ID, name.c_str()), value); }
+    void SetInt(const std::string& name, const int value) const;
     // Set uniform float
-    void SetFloat(const std::string& name, const float value) const
-        { glUniform1f(glGetUniformLocation(m_ID, name.c_str()), value); }
+    void SetFloat(const std::string& name, const float value) const;
     // Set uniform vec2
-    void SetVec2(const std::string& name, glm::vec2 v) const
-        { glUniform2fv(glGetUniformLocation(m_ID, name.c_str()), 1, glm::value_ptr(v)); }
+    void SetVec2(const std::string& name, glm::vec2 v) const;
     // Set uniform vec3
-    void SetVec3(const std::string& name, glm::vec3 v) const
-        { glUniform3fv(glGetUniformLocation(m_ID, name.c_str()), 1, glm::value_ptr(v)); }
+    void SetVec3(const std::string& name, glm::vec3 v) const;
     // Set uniform vec4
-    void SetVec4(const std::string& name, glm::vec4 v) const
-        { glUniform4fv(glGetUniformLocation(m_ID, name.c_str()), 1, glm::value_ptr(v)); }
+    void SetVec4(const std::string& name, glm::vec4 v) const;
     // Set uniform mat2
-    void SetMat2(const std::string& name, glm::mat2 m) const
-        { glUniformMatrix2fv(glGetUniformLocation(m_ID, name.c_str()), 1, GL_FALSE, glm::value_ptr(m)); }
+    void SetMat2(const std::string& name, glm::mat2 m) const;
     // Set uniform mat3
-    void SetMat3(const std::string& name, glm::mat3 m) const
-        { glUniformMatrix3fv(glGetUniformLocation(m_ID, name.c_str()), 1, GL_FALSE, glm::value_ptr(m)); }
+    void SetMat3(const std::string& name, glm::mat3 m) const;
     // Set uniform mat4
-    void SetMat4(const std::string& name, glm::mat4 m) const
-        { glUniformMatrix4fv(glGetUniformLocation(m_ID, name.c_str()), 1, GL_FALSE, glm::value_ptr(m)); }
+    void SetMat4(const std::string& name, glm::mat4 m) const;
 
     // Set uniform transform
     void SetTransform(const TransformComponent& transform) const;

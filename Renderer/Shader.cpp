@@ -51,6 +51,69 @@ void Shader::CreateProgram(const unsigned int vertexShader, const unsigned int g
     CheckCompileErrors(m_ID, "PROGRAM");
 }
 
+void Shader::SetBool(const std::string& name, const bool value) const
+{
+    GLint location = glGetUniformLocation(m_ID, name.c_str());
+    assert(location != -1);
+    glUniform1i(location, static_cast<int>(value));
+}
+
+void Shader::SetInt(const std::string& name, const int value) const
+{
+    GLint location = glGetUniformLocation(m_ID, name.c_str());
+    assert(location != -1);
+    glUniform1i(location, value);
+}
+
+void Shader::SetFloat(const std::string& name, const float value) const
+{
+    GLint location = glGetUniformLocation(m_ID, name.c_str());
+    assert(location != -1);
+    glUniform1f(location, value);
+}
+
+void Shader::SetVec2(const std::string& name, glm::vec2 v) const
+{
+    GLint location = glGetUniformLocation(m_ID, name.c_str());
+    assert(location != -1);
+    glUniform2fv(location, 1, glm::value_ptr(v));
+}
+
+void Shader::SetVec3(const std::string& name, glm::vec3 v) const
+{
+    GLint location = glGetUniformLocation(m_ID, name.c_str());
+    assert(location != -1);
+    glUniform3fv(location, 1, glm::value_ptr(v));
+}
+
+void Shader::SetVec4(const std::string& name, glm::vec4 v) const
+{
+    GLint location = glGetUniformLocation(m_ID, name.c_str());
+    assert(location != -1);
+    glUniform4fv(location, 1, glm::value_ptr(v));
+}
+
+void Shader::SetMat2(const std::string& name, glm::mat2 m) const
+{
+    GLint location = glGetUniformLocation(m_ID, name.c_str());
+    assert(location != -1);
+    glUniformMatrix2fv(location, 1, GL_FALSE, glm::value_ptr(m));
+}
+
+void Shader::SetMat3(const std::string& name, glm::mat3 m) const
+{
+    GLint location = glGetUniformLocation(m_ID, name.c_str());
+    assert(location != -1);
+    glUniformMatrix3fv(location, 1, GL_FALSE, glm::value_ptr(m));
+}
+
+void Shader::SetMat4(const std::string& name, glm::mat4 m) const
+{
+    GLint location = glGetUniformLocation(m_ID, name.c_str());
+    assert(location != -1);
+    glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(m));
+}
+
 void Shader::SetTransform(const TransformComponent& transform) const
 {
     SetMat4("model", transform.GetTransform());

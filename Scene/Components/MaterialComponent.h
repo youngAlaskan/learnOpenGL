@@ -33,6 +33,7 @@ public:
     std::shared_ptr<Tex2D> m_OpacityMap;
     std::shared_ptr<Tex2D> m_EmissionMap;
     float m_Shininess = 1.0f;
+    bool m_SetShininess = true;
 };
 
 class CubeMapMaterialComponent final : public AbstractMaterial

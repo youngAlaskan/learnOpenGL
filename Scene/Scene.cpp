@@ -46,6 +46,8 @@ void Scene::OnUpdate()
 	auto renderer = m_Renderer.lock();
     assert(renderer);
 
+    assert(GetAllEntitiesWith<SkyboxTag>().size() < 2);
+
     for (const auto& entity : GetAllEntitiesWith<SkyboxTag>()) {
         RenderSkybox(GetComponent<CubeComponent>(entity), GetComponent<CubeMapMaterialComponent>(entity));
     }
@@ -101,7 +103,7 @@ void Scene::UseMaterialShader(const MaterialComponent& materialComponent)
     SendMaterialDataToShader(materialComponent);
 }
 
-// Populate the material struct in the shader file
+// Populate the material struct in the shader file as well as the texture array
 void Scene::SendMaterialDataToShader(const MaterialComponent& materialComponent)
 {
     assert(materialComponent.m_Shader.lock());
@@ -159,7 +161,8 @@ void Scene::SendMaterialDataToShader(const MaterialComponent& materialComponent)
         activeMaps |= 0b10000000;
     }
 
-    shader->SetInt("activeMaps", activeMaps);
-    shader->SetFloat("shininess", materialComponent.m_Shininess);
+    shader->SetInt("material.activeMaps", activeMaps);
+    if (materialComponent.m_SetShininess)
+        shader->SetFloat("material.shininess", materialComponent.m_Shininess);
 }
 

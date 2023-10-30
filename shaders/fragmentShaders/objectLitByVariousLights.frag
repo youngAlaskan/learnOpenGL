@@ -3,6 +3,15 @@
 #define TEXTURE_CAPACITY 16
 #define POINT_LIGHT_CAPACITY 1
 
+#define BASE_COLOR_MASK 1
+#define ALBEDO_MASK     2
+#define METALLIC_MASK   4
+#define ROUGHNESS_MASK  8
+#define AMBIENT_MASK    16
+#define NORMAL_MASK     32
+#define HEIGHT_MASK     64
+#define EMISSIVE_MASK  128
+
 struct Material
 {
     int activeMaps;
@@ -179,7 +188,7 @@ float CalcSpec(in vec3 fragToLight, in vec3 toViewer)
 void SetValues(out mat4 textureValues)
 {
     // Iterate through diffuse textures
-    if (bool(material.activeMaps & 1))
+    if (bool(material.activeMaps & BASE_COLOR_MASK))
     {
         if (texture(textures[0], i_VertexData.TexCoords).a == 0.0)
             discard;
@@ -188,10 +197,10 @@ void SetValues(out mat4 textureValues)
     }
 
     // Iterate through specular textures
-    if (bool(material.activeMaps & 2))
+    if (bool(material.activeMaps & ALBEDO_MASK))
         textureValues[2] += texture(textures[2], i_VertexData.TexCoords);
 
     // Iterate through emissive textures
-    if (bool(material.activeMaps & 64))
+    if (bool(material.activeMaps & EMISSIVE_MASK))
         textureValues[3] += texture(textures[7], i_VertexData.TexCoords);
 }

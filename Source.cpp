@@ -146,13 +146,13 @@ GLFWwindow* Init()
 
 	glEnable(GL_CULL_FACE);
 
-	g_IsolatedShader = std::make_shared<Shader>("positionNormalTex.vert", "uniformColor.frag");
+	g_IsolatedShader = std::make_shared<Shader>("positionNormalTex.vert", "texture2D.frag");
 	g_LitObjectShader = std::make_shared<Shader>("positionNormalTex.vert", "objectLitByVariousLights.frag");
 	g_MirrorShader = std::make_shared<Shader>("positionNormalTex.vert", "skyboxMirror.frag");
 	g_RefractorShader = std::make_shared<Shader>("positionNormalTex.vert", "skyboxRefractor.frag");
 	g_LineShader = std::make_shared<Shader>("position.vert", "uniformColor.frag");
 	g_SkyboxShader = std::make_shared<Shader>("skybox.vert", "skybox.frag");
-	g_ScreenShader = std::make_shared<Shader>("screen.vert", "texture2D.frag");
+	//g_ScreenShader = std::make_shared<Shader>("screen.vert", "texture2D.frag");
 
 	return window;
 }
@@ -187,29 +187,36 @@ std::pair<std::shared_ptr<Scene>, std::shared_ptr<Renderer>> SandboxScene()
 
 	auto cubeTexture = std::make_shared<TexCube>(
 		std::vector<std::string>
-	{
-		".\\textures\\skybox\\right.jpg",
+		{
+			".\\textures\\skybox\\right.jpg",
 			".\\textures\\skybox\\left.jpg",
 			".\\textures\\skybox\\top.jpg",
 			".\\textures\\skybox\\bottom.jpg",
 			".\\textures\\skybox\\front.jpg",
 			".\\textures\\skybox\\back.jpg"
-	}
+		}
 	);
 
 	// Add skybox
-	auto skybox = scene->CreateEntity();
-	scene->AddEmptyComponent<SkyboxTag>(skybox);
-	scene->AddComponent<CubeComponent>(skybox);
-	auto skyboxMaterial = scene->AddComponent<CubeMapMaterialComponent>(
-		skybox, std::weak_ptr<Shader>(g_SkyboxShader), cubeTexture
-	);
-	scene->m_SceneData.SkyboxTexture = skyboxMaterial.m_Texture->m_ID;
+	//auto skybox = scene->CreateEntity();
+	//scene->AddEmptyComponent<SkyboxTag>(skybox);
+	//scene->AddComponent<CubeComponent>(skybox);
+	//auto& skyboxMaterial = scene->AddComponent<CubeMapMaterialComponent>(
+	//	skybox, std::weak_ptr<Shader>(g_SkyboxShader), cubeTexture
+	//);
+	//scene->m_SceneData.SkyboxTexture = skyboxMaterial.m_Texture->m_ID;
 
 	// Display default cube
-	auto entity = scene->CreateEntity();
-	scene->AddComponent<CubeComponent>(entity);
-	scene->AddEmptyComponent<RenderableTag>(entity);
+	auto defaultCube = scene->CreateEntity();
+	scene->AddComponent<CubeComponent>(defaultCube);
+	auto textures = std::vector<std::shared_ptr<Tex2D>> {
+		std::make_shared<Tex2D>(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f), "BaseColor")
+	};
+	auto& material = scene->AddComponent<MaterialComponent>(
+		defaultCube, std::weak_ptr<Shader>(g_IsolatedShader), textures, 1.0f
+	);
+	material.m_SetShininess = false;
+	scene->AddEmptyComponent<RenderableTag>(defaultCube);
 
 	return std::make_pair(scene, renderer);
 }
@@ -217,8 +224,11 @@ std::pair<std::shared_ptr<Scene>, std::shared_ptr<Renderer>> SandboxScene()
 int main()
 {
 	GLFWwindow* window = Init();
-	if (!window)
-		return -1;
+	if (!window) return EXIT_FAILURE;
+
+	g_IsolatedShader->Use();
+	for (int i = 0; i < 16; i++)
+		g_IsolatedShader->SetInt("textures[" + std::to_string(i) + "]", i);
 
 	g_LitObjectShader->Use();
 	for (int i = 0; i < 16; i++)
@@ -270,5 +280,5 @@ int main()
 	}
 
 	glfwTerminate();
-	return 0;
+	return EXIT_SUCCESS;
 }
